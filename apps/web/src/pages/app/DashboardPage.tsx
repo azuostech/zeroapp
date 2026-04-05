@@ -14,7 +14,8 @@ export function DashboardPage() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <h1 className="sectionTitle">📊 Dashboard Financeiro</h1>
+      <p className="sectionDesc">Resumo mensal, distribuição de gastos e lançamentos recentes.</p>
       <MonthSelector value={month} onChange={setMonth} />
       <div className="card-grid section">
         <Card><h3>Entradas</h3><p>R$ {summary.data?.entradas?.toFixed(2) ?? '0.00'}</p></Card>
@@ -32,6 +33,7 @@ export function DashboardPage() {
           }}
         />
       </div>
+      <div className="footerNote"><strong>Dica:</strong> mantenha o mês sempre completo para ganhar mais ZeroCoins.</div>
     </div>
   );
 }

@@ -10,7 +10,8 @@ export const env = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? '',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ?? '',
   GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL ?? '',
-  FRONTEND_URL: process.env.FRONTEND_URL ?? 'http://localhost:5173'
+  FRONTEND_URL: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  NODE_ENV: process.env.NODE_ENV ?? 'development'
 };
 
 export const assertEnv = () => {

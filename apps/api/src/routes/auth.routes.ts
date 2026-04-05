@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../config/prisma.js';
+import { env } from '../config/env.js';
 import { requireAuth } from '../middleware/auth.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, refreshExpiryDate } from '../utils/jwt.js';
 import { sanitizeUser } from '../utils/user.js';
@@ -13,7 +14,7 @@ const router = Router();
 
 const authLimiter = rateLimit({
   windowMs: 60_000,
-  max: 20,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -30,12 +31,13 @@ const loginSchema = z.object({
   password: z.string().min(6)
 });
 
-const googleSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2),
-  googleId: z.string().min(4),
-  avatar: z.string().url().optional()
-});
+const cookieOptions = {
+  httpOnly: true,
+  secure: env.NODE_ENV === 'production',
+  sameSite: env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
+  path: '/api/auth',
+  maxAge: 7 * 24 * 60 * 60 * 1000
+};
 
 const issueSession = async (
   userId: string,
@@ -70,28 +72,20 @@ router.post('/register', authLimiter, async (req, res) => {
   }
 
   const hashed = await bcrypt.hash(password, 10);
-
-  const referrer = referralCode
-    ? await prisma.user.findUnique({ where: { referralCode } })
-    : null;
+  const referrer = referralCode ? await prisma.user.findUnique({ where: { referralCode } }) : null;
 
   const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashed,
-      referredById: referrer?.id
-    }
+    data: { name, email, password: hashed, referredById: referrer?.id }
   });
 
   await gamificationService.onRegistration(user.id);
-  if (referrer) {
-    await gamificationService.onReferralRegistered(referrer.id);
-  }
+  if (referrer) await gamificationService.onReferralRegistered(referrer.id);
 
   const updatedUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
   const session = await issueSession(updatedUser.id, updatedUser.role, updatedUser.tier);
-  res.status(201).json({ user: sanitizeUser(updatedUser), ...session });
+  res.cookie('refreshToken', session.refreshToken, cookieOptions);
+
+  res.status(201).json({ user: sanitizeUser(updatedUser), accessToken: session.accessToken });
 });
 
 router.post('/login', authLimiter, async (req, res) => {
@@ -115,39 +109,23 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 
   const session = await issueSession(user.id, user.role, user.tier);
-  res.json({ user: sanitizeUser(user), ...session });
+  res.cookie('refreshToken', session.refreshToken, cookieOptions);
+
+  res.json({ user: sanitizeUser(user), accessToken: session.accessToken });
 });
 
-router.post('/google', authLimiter, async (req, res) => {
-  const parsed = googleSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json(parsed.error.flatten());
-  }
+router.get('/google', (_req, res) => {
+  const redirect = `${env.FRONTEND_URL}/login?google=not-configured`;
+  res.redirect(redirect);
+});
 
-  const { email, name, googleId, avatar } = parsed.data;
-
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { name, googleId, avatar },
-    create: { name, email, googleId, avatar, password: null }
-  });
-
-  if (!user.isActive) {
-    return res.status(403).json({ message: 'Usuário bloqueado' });
-  }
-
-  const hasHistory = await prisma.coinHistory.count({ where: { userId: user.id } });
-  if (hasHistory === 0) {
-    await gamificationService.onRegistration(user.id);
-  }
-
-  const updatedUser = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
-  const session = await issueSession(updatedUser.id, updatedUser.role, updatedUser.tier);
-  res.json({ user: sanitizeUser(updatedUser), ...session });
+router.get('/google/callback', (_req, res) => {
+  const redirect = `${env.FRONTEND_URL}/login?google=callback`;
+  res.redirect(redirect);
 });
 
 router.post('/refresh', async (req, res) => {
-  const token = req.body?.refreshToken as string | undefined;
+  const token = (req.cookies?.refreshToken as string | undefined) ?? (req.body?.refreshToken as string | undefined);
   if (!token) {
     return res.status(400).json({ message: 'Refresh token obrigatório' });
   }
@@ -172,10 +150,12 @@ router.post('/refresh', async (req, res) => {
 });
 
 router.post('/logout', async (req, res) => {
-  const token = req.body?.refreshToken as string | undefined;
+  const token = (req.cookies?.refreshToken as string | undefined) ?? (req.body?.refreshToken as string | undefined);
   if (token) {
     await prisma.refreshToken.deleteMany({ where: { token } });
   }
+
+  res.clearCookie('refreshToken', cookieOptions);
   res.status(204).send();
 });
 

@@ -1,6 +1,8 @@
 import axios from 'axios';
+const explicitApiUrl = import.meta.env.VITE_API_URL;
+const baseURL = explicitApiUrl ? `${explicitApiUrl}/api` : '/api';
 export const api = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL ?? 'http://localhost:3001'}/api`
+    baseURL
 });
 export const setAuthToken = (token) => {
     if (!token) {

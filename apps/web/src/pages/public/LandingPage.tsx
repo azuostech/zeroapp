@@ -6,9 +6,11 @@ export function LandingPage() {
   return (
     <div className="container" style={{ padding: '3rem 0' }}>
       <section style={{ textAlign: 'center', marginBottom: 24 }}>
-        <h1>ZERO</h1>
+        <h1 style={{ color: '#00C853', fontSize: '3rem' }}>ZERO</h1>
         <p>Comece a controlar suas finanças do zero.</p>
+        <p style={{ color: '#888', marginBottom: 16 }}>O app que recompensa sua disciplina financeira.</p>
         <Link to="/cadastro"><Button variant="primary">Criar conta grátis</Button></Link>
+        <Link to="/resgatar" style={{ marginLeft: 12 }}><Button variant="secondary">Já tenho código de ingresso</Button></Link>
       </section>
 
       <section className="card-grid">
@@ -26,11 +28,13 @@ export function LandingPage() {
       </section>
 
       <section className="section" style={{ textAlign: 'center' }}>
-        <h3>Tem ingresso do Workshop?</h3>
-        <Link to="/app/resgatar"><Button>Resgatar código</Button></Link>
+        <h3>Pronto para começar do zero?</h3>
+        <Link to="/cadastro"><Button>Criar conta grátis</Button></Link>
       </section>
 
-      <footer style={{ marginTop: 40, color: '#888' }}>@jacksonsouzarc | @jackson.autogoverno</footer>
+      <footer style={{ marginTop: 40, color: '#888' }}>
+        © ZERO — Controle Financeiro Pessoal · Jackson Souza · @jacksonsouzarc · @jackson.autogoverno
+      </footer>
     </div>
   );
 }

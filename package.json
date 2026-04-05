@@ -13,7 +13,8 @@
     "build": "npm run build --workspaces",
     "db:migrate": "npm run db:migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
-    "db:studio": "npm run db:studio --workspace=apps/api"
+    "db:studio": "npm run db:studio --workspace=apps/api",
+    "db:reset": "npm run db:reset --workspace=apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.0.1",

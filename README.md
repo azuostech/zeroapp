@@ -37,6 +37,12 @@ npm run db:migrate
 npm run db:seed
 ```
 
+Se precisar recriar do zero:
+
+```bash
+npm run db:reset
+```
+
 5. Suba o projeto:
 
 ```bash
@@ -52,7 +58,7 @@ npm run dev
 ## Usuário admin seed
 
 - Email: `admin@zero.app`
-- Senha: `Zero@2025`
+- Senha: `Zero@2025!`
 
 ## Deploy Na Vercel
 

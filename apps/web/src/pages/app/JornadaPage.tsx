@@ -10,7 +10,8 @@ export function JornadaPage() {
 
   return (
     <div>
-      <h1>Jornada do Herói</h1>
+      <h1 className="sectionTitle">🦸 Jornada do Herói</h1>
+      <p className="sectionDesc">Evolua de fase, complete missões e desbloqueie badges.</p>
       <p><PhaseChip phase={user?.phase ?? 'BOMBEIRO'} /> <CoinDisplay amount={user?.coins ?? 0} /></p>
       <div className="card-grid">
         {(missions.data ?? []).map((m) => <MissionCard key={m.id} mission={m} />)}

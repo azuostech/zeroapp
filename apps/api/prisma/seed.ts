@@ -4,7 +4,7 @@ import { Phase, PrismaClient, Tier } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const password = await bcrypt.hash('Zero@2025', 10);
+  const password = await bcrypt.hash('Zero@2025!', 10);
 
   await prisma.user.upsert({
     where: { email: 'admin@zero.app' },
@@ -38,18 +38,18 @@ async function main() {
   }
 
   const missions = [
-    { key: 'bombeiro_entrada', name: 'Cadastrar primeira entrada', description: 'Registre sua primeira entrada', phase: Phase.BOMBEIRO, coinReward: 30 },
-    { key: 'bombeiro_saida', name: 'Cadastrar primeira saída', description: 'Registre sua primeira saída', phase: Phase.BOMBEIRO, coinReward: 30 },
-    { key: 'bombeiro_dashboard', name: 'Ver dashboard completo', description: 'Acesse o dashboard financeiro', phase: Phase.BOMBEIRO, coinReward: 20 },
-    { key: 'sobrevivente_divida', name: 'Mapear 1 dívida', description: 'Cadastre ao menos uma dívida', phase: Phase.SOBREVIVENTE, coinReward: 50 },
-    { key: 'sobrevivente_meta', name: 'Criar primeira meta', description: 'Cadastre uma meta de sonho', phase: Phase.SOBREVIVENTE, coinReward: 50 },
-    { key: 'sobrevivente_mes', name: 'Fechar 1 mês completo', description: 'Preencha 1 mês completo', phase: Phase.SOBREVIVENTE, coinReward: 100 },
-    { key: 'construtor_quitar', name: 'Quitar uma dívida', description: 'Marque uma dívida como quitada', phase: Phase.CONSTRUTOR, coinReward: 120 },
-    { key: 'construtor_3meses', name: 'Manter 3 meses ativos', description: 'Três meses consecutivos', phase: Phase.CONSTRUTOR, coinReward: 150 },
-    { key: 'construtor_reserva', name: 'Meta reserva emergência', description: 'Crie meta de reserva', phase: Phase.CONSTRUTOR, coinReward: 90 },
-    { key: 'multiplicador_investimento', name: 'Primeiro investimento', description: 'Cadastre investimento inicial', phase: Phase.MULTIPLICADOR, coinReward: 120 },
-    { key: 'multiplicador_meta100', name: 'Atingir 100% da meta', description: 'Concluir uma meta', phase: Phase.MULTIPLICADOR, coinReward: 160 },
-    { key: 'multiplicador_indicacao', name: 'Indicar amigo cadastrado', description: 'Convide um amigo', phase: Phase.MULTIPLICADOR, coinReward: 140 }
+    { key: 'primeiro_lancamento', name: 'Cadastrar primeiro lançamento', description: 'Registrar primeiro lançamento financeiro', phase: Phase.BOMBEIRO, coinReward: 10 },
+    { key: 'primeira_saida', name: 'Cadastrar primeira saída', description: 'Registrar primeira saída', phase: Phase.BOMBEIRO, coinReward: 10 },
+    { key: 'ver_dashboard', name: 'Acessar Dashboard', description: 'Visualizar dashboard completo', phase: Phase.BOMBEIRO, coinReward: 5 },
+    { key: 'mapear_divida', name: 'Mapear primeira dívida', description: 'Cadastrar ao menos uma dívida', phase: Phase.SOBREVIVENTE, coinReward: 20 },
+    { key: 'criar_meta', name: 'Criar primeira meta', description: 'Criar primeira meta de sonho', phase: Phase.SOBREVIVENTE, coinReward: 20 },
+    { key: 'primeiro_mes_completo', name: 'Fechar 1 mês completo', description: 'Completar entradas e saídas do mês', phase: Phase.SOBREVIVENTE, coinReward: 100 },
+    { key: 'quitar_divida', name: 'Quitar uma dívida', description: 'Marcar dívida como quitada', phase: Phase.CONSTRUTOR, coinReward: 200 },
+    { key: 'sequencia_3_meses', name: '3 meses consecutivos ativos', description: 'Manter constância por 3 meses', phase: Phase.CONSTRUTOR, coinReward: 250 },
+    { key: 'meta_reserva', name: 'Meta de reserva de emergência', description: 'Criar meta de reserva', phase: Phase.CONSTRUTOR, coinReward: 30 },
+    { key: 'primeiro_investimento', name: 'Registrar primeiro investimento', description: 'Adicionar investimento inicial', phase: Phase.MULTIPLICADOR, coinReward: 50 },
+    { key: 'meta_atingida_100', name: 'Atingir 100% de uma meta', description: 'Concluir meta em 100%', phase: Phase.MULTIPLICADOR, coinReward: 150 },
+    { key: 'indicar_amigo', name: 'Indicar amigo cadastrado', description: 'Convidar amigo com cadastro confirmado', phase: Phase.MULTIPLICADOR, coinReward: 80 }
   ];
 
   for (const mission of missions) {
@@ -57,9 +57,9 @@ async function main() {
   }
 
   const codes = [
-    { code: 'WORKSHOP-001', tier: Tier.MOVIMENTO, coinBonus: 500 },
-    { code: 'WORKSHOP-002', tier: Tier.MOVIMENTO, coinBonus: 500 },
-    { code: 'WORKSHOP-003', tier: Tier.MOVIMENTO, coinBonus: 500 }
+    { code: 'WORKSHOP2025A', tier: Tier.MOVIMENTO, coinBonus: 500 },
+    { code: 'WORKSHOP2025B', tier: Tier.MOVIMENTO, coinBonus: 500 },
+    { code: 'GRUPO2025A', tier: Tier.ACELERACAO, coinBonus: 300 }
   ];
 
   for (const c of codes) {

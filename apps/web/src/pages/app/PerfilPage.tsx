@@ -10,7 +10,8 @@ export function PerfilPage() {
 
   return (
     <div>
-      <h1>Perfil</h1>
+      <h1 className="sectionTitle">👤 Perfil</h1>
+      <p className="sectionDesc">Dados da conta, código de indicação e conquistas.</p>
       <Card>
         <Avatar name={user?.name ?? 'U'} avatar={user?.avatar} />
         <h3>{user?.name}</h3>

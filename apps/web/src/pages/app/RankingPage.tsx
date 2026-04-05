@@ -7,7 +7,8 @@ export function RankingPage() {
 
   return (
     <div>
-      <h1>Ranking</h1>
+      <h1 className="sectionTitle">🏆 Ranking</h1>
+      <p className="sectionDesc">Leaderboard com usuários participantes e evolução por fase.</p>
       <Table>
         <thead>
           <tr><th>#</th><th>Nome</th><th>Fase</th><th>Coins</th></tr>

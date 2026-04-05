@@ -27,6 +27,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro" element={<RegisterPage />} />
+        <Route path="/resgatar" element={<Navigate to="/app/resgatar" replace />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
