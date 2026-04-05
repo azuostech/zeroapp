@@ -1,0 +1,12 @@
+{
+  "name": "ZERO — Controle Financeiro",
+  "short_name": "ZERO",
+  "theme_color": "#00C853",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "start_url": "/app/dashboard",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
