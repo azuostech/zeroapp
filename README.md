@@ -53,3 +53,28 @@ npm run dev
 
 - Email: `admin@zero.app`
 - Senha: `Zero@2025`
+
+## Deploy Na Vercel
+
+O projeto está preparado para deploy único (frontend + API serverless) com `vercel.json`.
+
+### Variáveis de ambiente (Vercel)
+
+Configure no painel da Vercel:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_CALLBACK_URL`
+- `FRONTEND_URL` (URL pública do seu app na Vercel)
+- `VITE_API_URL` (deixe vazio para usar `/api` no mesmo domínio, ou defina URL externa)
+
+### Fluxo
+
+1. Importar o repositório na Vercel
+2. Framework: `Other`
+3. Build command: `npm run build --workspace=apps/web`
+4. Output directory: `apps/web/dist`
+5. Deploy
