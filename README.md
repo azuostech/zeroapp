@@ -1,86 +1,110 @@
-# ZERO - Controle Financeiro Pessoal
+# 📦 Método Jackson Souza — Deploy no Vercel
 
-Monorepo do app ZERO com frontend React + Vite e backend Node + Express + Prisma.
+## Estrutura de arquivos
 
-## Estrutura
-
-- `apps/web`: frontend
-- `apps/api`: backend
-- `packages/shared`: tipos compartilhados
-
-## Requisitos
-
-- Node.js 20+
-- PostgreSQL
-
-## Setup
-
-1. Instale dependências:
-
-```bash
-npm install
+```
+/
+├── index.html        → Login e Cadastro
+├── app.html          → App financeiro (usuários)
+├── admin.html        → Painel do administrador
+├── vercel.json       → Configuração do Vercel
+└── supabase-setup.sql → Script do banco de dados
 ```
 
-2. Configure variáveis de ambiente:
+---
+
+## 🚀 Como fazer o deploy
+
+### Opção A — Via GitHub (recomendado)
+
+1. Crie um repositório no GitHub (pode ser privado)
+2. Faça upload dos 4 arquivos: `index.html`, `app.html`, `admin.html`, `vercel.json`
+3. Acesse [vercel.com](https://vercel.com) → **Add New Project**
+4. Conecte o repositório GitHub
+5. Clique em **Deploy** — pronto
+
+Toda vez que você atualizar um arquivo no GitHub, o Vercel publica automaticamente.
+
+---
+
+### Opção B — Via Vercel CLI (terminal)
 
 ```bash
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+npm install -g vercel
+vercel login
+vercel --prod
 ```
 
-3. Ajuste `DATABASE_URL` no backend e credenciais Google OAuth.
+---
 
-4. Rode migrações e seed:
+### Opção C — Drag & Drop (mais simples)
 
-```bash
-npm run db:migrate
-npm run db:seed
+1. Acesse [vercel.com/new](https://vercel.com/new)
+2. Arraste a pasta com os arquivos
+3. Deploy feito
+
+---
+
+## ⚙️ Configurar as variáveis
+
+Nos 3 arquivos HTML, substitua no topo do `<script>`:
+
+```js
+const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+const SUPABASE_KEY = 'SUA_ANON_KEY';
 ```
 
-Se precisar recriar do zero:
+Você encontra esses valores em:
+**Supabase → seu projeto → Settings → API**
 
-```bash
-npm run db:reset
+---
+
+## 🗄️ Configurar o Supabase
+
+1. Acesse [supabase.com](https://supabase.com) → seu projeto
+2. Vá em **SQL Editor**
+3. Cole o conteúdo do arquivo `supabase-setup.sql` e clique em **Run**
+
+---
+
+## 👑 Criar sua conta de administrador
+
+1. Acesse seu app no Vercel e crie uma conta normalmente
+2. No Supabase → SQL Editor, execute:
+
+```sql
+UPDATE profiles
+SET role = 'admin', status = 'active'
+WHERE email = 'seu@email.com';
 ```
 
-5. Suba o projeto:
+---
 
-```bash
-npm run dev
-```
+## 🌐 URLs após o deploy
 
-## OAuth Google
+| Rota | Arquivo |
+|------|---------|
+| `seuapp.vercel.app/` | index.html — Login |
+| `seuapp.vercel.app/app` | app.html — App financeiro |
+| `seuapp.vercel.app/admin` | admin.html — Painel admin |
 
-- Crie credenciais OAuth no Google Cloud
-- Authorized redirect URI: `http://localhost:3001/api/auth/google/callback`
-- Preencha `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`
+---
 
-## Usuário admin seed
+## 🔒 Segurança no Supabase
 
-- Email: `admin@zero.app`
-- Senha: `Zero@2025!`
+Vá em **Supabase → Authentication → URL Configuration** e adicione:
 
-## Deploy Na Vercel
+- **Site URL:** `https://seuapp.vercel.app`
+- **Redirect URLs:** `https://seuapp.vercel.app/index.html`
 
-O projeto está preparado para deploy único (frontend + API serverless) com `vercel.json`.
+Isso garante que os e-mails de confirmação e redefinição de senha redirecionem corretamente.
 
-### Variáveis de ambiente (Vercel)
+---
 
-Configure no painel da Vercel:
+## ✅ Checklist final
 
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_CALLBACK_URL`
-- `FRONTEND_URL` (URL pública do seu app na Vercel)
-- `VITE_API_URL` (deixe vazio para usar `/api` no mesmo domínio, ou defina URL externa)
-
-### Fluxo
-
-1. Importar o repositório na Vercel
-2. Framework: `Other`
-3. Build command: `npm run build --workspace=apps/web`
-4. Output directory: `apps/web/dist`
-5. Deploy
+- [ ] SQL executado no Supabase
+- [ ] URL e Key do Supabase nos 3 HTMLs
+- [ ] Arquivos no Vercel (GitHub ou drag & drop)
+- [ ] URL do Supabase configurada (Authentication → URL Configuration)
+- [ ] Conta de admin criada e atualizada via SQL

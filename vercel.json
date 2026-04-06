@@ -1,17 +1,11 @@
 {
   "version": 2,
-  "installCommand": "npm install",
-  "buildCommand": "npm run build --workspace=apps/web",
-  "outputDirectory": "apps/web/dist",
-  "functions": {
-    "api/index.ts": {
-      "includeFiles": "apps/api/**"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    }
+  "builds": [
+    { "src": "*.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/app", "dest": "/app.html" },
+    { "src": "/admin", "dest": "/admin.html" }
   ]
 }
