@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 
-function normalizeSiteUrl(requestUrl) {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  const fallback = new URL(requestUrl).origin;
-  const base = (configured || fallback).trim();
-  return base.endsWith('/') ? base.slice(0, -1) : base;
+function getSiteOrigin(requestUrl) {
+  const fallbackOrigin = new URL(requestUrl).origin;
+  const configured = (process.env.NEXT_PUBLIC_SITE_URL || '').trim();
+  if (!configured) return fallbackOrigin;
+
+  try {
+    const normalized = configured.startsWith('http://') || configured.startsWith('https://') ? configured : `https://${configured}`;
+    return new URL(normalized).origin;
+  } catch (_) {
+    return fallbackOrigin;
+  }
 }
 
 export async function POST(request) {
@@ -22,7 +28,7 @@ export async function POST(request) {
   }
 
   const supabase = await createServerSupabase();
-  const redirectTo = `${normalizeSiteUrl(request.url)}/auth/reset-password`;
+  const redirectTo = new URL('/auth/reset-password', getSiteOrigin(request.url)).toString();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) {
