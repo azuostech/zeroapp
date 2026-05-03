@@ -1,0 +1,133 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 10% 10%, rgba(0, 200, 83, 0.08), transparent 40%), #0a0a0a;
+  padding: 20px;
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  background: #151515;
+  border: 1px solid #2a2a2a;
+  border-radius: 18px;
+  padding: 32px;
+  color: #f3f3f3;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
+  font-family: 'Playfair Display', serif;
+}
+
+.subtitle {
+  margin: 0 0 22px;
+  color: #9aa19d;
+  font-size: 14px;
+}
+
+.info {
+  margin: 0 0 16px;
+  color: #b2b2b2;
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #b6cdbf;
+}
+
+.input {
+  width: 100%;
+  background: #222;
+  border: 1px solid #313131;
+  border-radius: 10px;
+  color: #fff;
+  padding: 12px 14px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #00c853;
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.14);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.primaryButton {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  margin-top: 8px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #00c853, #ffd700);
+  color: #061109;
+  font-weight: 700;
+}
+
+.primaryButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.alertError {
+  background: rgba(255, 68, 68, 0.12);
+  border: 1px solid #ff4444;
+  color: #ff7e7e;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.successIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #00c853, #ffd700);
+  color: #041108;
+  font-size: 42px;
+  font-weight: 700;
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 22px;
+  color: #9aa19d;
+  font-size: 13px;
+}
+
+.backLink:hover {
+  color: #00c853;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+}

@@ -11,6 +11,9 @@ function translateError(msg = '') {
   if (msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
   if (msg.includes('already registered')) return 'Este e-mail já está cadastrado.';
   if (msg.includes('Password should')) return 'A senha deve ter pelo menos 6 caracteres.';
+  if (msg.includes('Email rate limit exceeded')) return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.';
+  if (msg.includes('Invalid email')) return 'Informe um e-mail válido.';
+  if (msg.includes('not found')) return 'Não encontramos esse e-mail.';
   if (msg.includes('Gateway Timeout') || msg.includes('504')) {
     return 'Cadastro indisponível no momento (timeout no servidor). Verifique SMTP/Email no Supabase e tente novamente.';
   }
@@ -25,6 +28,10 @@ export default function LoginPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [pendingVisible, setPendingVisible] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -98,11 +105,35 @@ export default function LoginPage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') !== 'success') return;
+    setTab('login');
+    setForgotMode(false);
+    setForgotSent(false);
+    setMessage({ text: 'Senha redefinida com sucesso. Faça login com sua nova senha.', type: 'success' });
+  }, []);
+
   const clearMsg = () => setMessage({ text: '', type: '' });
 
   const switchTab = (nextTab) => {
     setTab(nextTab);
     setPendingVisible(false);
+    setForgotMode(false);
+    setForgotSent(false);
+    clearMsg();
+  };
+
+  const openForgotPassword = () => {
+    setForgotMode(true);
+    setForgotSent(false);
+    setForgotEmail(loginEmail.trim());
+    clearMsg();
+  };
+
+  const closeForgotPassword = () => {
+    setForgotMode(false);
+    setForgotSent(false);
     clearMsg();
   };
 
@@ -197,6 +228,32 @@ export default function LoginPage() {
     setSignupLoading(false);
   };
 
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    setForgotLoading(true);
+    clearMsg();
+
+    try {
+      const response = await fetch('/api/auth/reset-password-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim() })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Não foi possível enviar o link de recuperação.');
+      }
+
+      setForgotSent(true);
+      setMessage({ text: 'Link enviado! Verifique sua caixa de entrada e também o spam.', type: 'success' });
+    } catch (error) {
+      setMessage({ text: translateError(error.message), type: 'error' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="login-shell">
       <div className="bg-glow" />
@@ -233,39 +290,77 @@ export default function LoginPage() {
             {message.text}
           </div>
 
-          <form style={{ display: tab === 'login' ? 'block' : 'none' }} onSubmit={handleLogin}>
-            <div className="form-group">
-              <label>E-mail</label>
-              <input
-                type="email"
-                placeholder="seu@email.com"
-                required
-                autoComplete="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Senha</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn-main" disabled={loginLoading}>
-              {loginLoading ? (
-                <>
-                  <span className="spinner" /> Aguarde...
-                </>
-              ) : (
-                'Entrar'
-              )}
-            </button>
-          </form>
+          <div style={{ display: tab === 'login' ? 'block' : 'none' }}>
+            <form style={{ display: forgotMode ? 'none' : 'block' }} onSubmit={handleLogin}>
+              <div className="form-group">
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  required
+                  autoComplete="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Senha</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                />
+              </div>
+              <button type="button" className="forgot-link" onClick={openForgotPassword}>
+                Esqueci minha senha
+              </button>
+              <button type="submit" className="btn-main" disabled={loginLoading}>
+                {loginLoading ? (
+                  <>
+                    <span className="spinner" /> Aguarde...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </button>
+            </form>
+
+            <form style={{ display: forgotMode ? 'block' : 'none' }} onSubmit={handleForgotPassword}>
+              <div className="forgot-head">{forgotSent ? 'E-mail enviado!' : 'Recuperar senha'}</div>
+              <div className="forgot-sub">
+                {forgotSent
+                  ? 'Se o e-mail estiver cadastrado, você receberá um link para criar nova senha.'
+                  : 'Digite seu e-mail para receber o link de recuperação.'}
+              </div>
+              <div className="form-group">
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  required
+                  autoComplete="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  disabled={forgotLoading}
+                />
+              </div>
+              <button type="submit" className="btn-main" disabled={forgotLoading}>
+                {forgotLoading ? (
+                  <>
+                    <span className="spinner" /> Enviando...
+                  </>
+                ) : (
+                  'Enviar link'
+                )}
+              </button>
+              <button type="button" className="back-link-btn" onClick={closeForgotPassword} disabled={forgotLoading}>
+                Voltar para login
+              </button>
+            </form>
+          </div>
 
           <form style={{ display: tab === 'signup' && !pendingVisible ? 'block' : 'none' }} onSubmit={handleSignup}>
             <div className="form-group">
@@ -603,6 +698,52 @@ export default function LoginPage() {
           cursor: not-allowed;
           transform: none;
           box-shadow: none;
+        }
+
+        .forgot-link {
+          border: none;
+          background: transparent;
+          color: var(--green);
+          font-size: 12px;
+          margin-top: -4px;
+          margin-bottom: 8px;
+          padding: 0;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .forgot-link:hover {
+          color: #00df5e;
+        }
+
+        .forgot-head {
+          font-family: 'Playfair Display', serif;
+          font-size: 20px;
+          margin-bottom: 6px;
+        }
+
+        .forgot-sub {
+          color: var(--dim);
+          font-size: 13px;
+          line-height: 1.5;
+          margin-bottom: 18px;
+        }
+
+        .back-link-btn {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: transparent;
+          color: var(--dim);
+          font-size: 13px;
+          padding: 11px;
+          margin-top: 10px;
+          cursor: pointer;
+        }
+
+        .back-link-btn:hover {
+          border-color: var(--green);
+          color: var(--text);
         }
 
         .spinner {
