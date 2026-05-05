@@ -6,8 +6,11 @@ import { MAVF_PILLARS } from '@/lib/mavf-config';
 import QuestionSlider from '@/components/mavf/QuestionSlider';
 import WheelChart from '@/components/mavf/WheelChart';
 import MAVFPaywall from '@/components/mavf/MAVFPaywall';
+import MAVFTabs from '@/components/mavf/MAVFTabs';
+import ObjectivesList from '@/components/mavf/ObjectivesList';
 
 export default function MAVFPage() {
+  const [activeTab, setActiveTab] = useState('mapa');
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [currentTier, setCurrentTier] = useState('DESPERTAR');
@@ -97,56 +100,39 @@ export default function MAVFPage() {
     return <MAVFPaywall currentTier={currentTier} />;
   }
 
+  const activeResponses = activeSession ? responsesBySession[activeSession.id] || [] : [];
+  const mapTitle = activeSession
+    ? `MAVF — ${activeSession.title}`
+    : lastCompletedSession
+      ? `MAVF — ${lastCompletedSession.title}`
+      : 'MAVF — Meu Mapa';
+
+  let mapContent = null;
+
   if (!activeSession && !lastCompletedSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[#1a1a1a] text-[#fff]">
-        <div className="max-w-lg text-center bg-[#222222] border border-[#333333] rounded-[12px] p-8">
-          <div className="text-6xl mb-6">💤</div>
-          <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
-          <p className="text-[#888]">
-            Aguarde o mentor iniciar a próxima sessão de autoavaliação.
-          </p>
-        </div>
+    mapContent = (
+      <div className="max-w-lg text-center bg-[#222222] border border-[#333333] rounded-[12px] p-8 mx-auto">
+        <div className="text-6xl mb-6">💤</div>
+        <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
+        <p className="text-[#888]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
       </div>
     );
-  }
-
-  if (!activeSession && lastCompletedSession) {
-    return (
-      <div className="min-h-screen bg-[#1a1a1a] text-[#fff] p-4 md:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF — {lastCompletedSession.title}</h1>
-            <p className="text-[#888]">Sessão finalizada. Aqui está a revelação da sua roda.</p>
-          </div>
-
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-6 mb-6">
-            <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
-          </div>
-
-          <div className="text-center">
-            <Link
-              href="/mavf/historico"
-              className="inline-flex bg-[#00C853] text-[#000] font-bold px-5 py-3 rounded-[8px]"
-            >
-              Comparar sessões anteriores
-            </Link>
-          </div>
+  } else if (!activeSession && lastCompletedSession) {
+    mapContent = (
+      <>
+        <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-6 mb-6">
+          <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
         </div>
-      </div>
+        <div className="text-center">
+          <Link href="/mavf/historico" className="inline-flex bg-[#00C853] text-[#000] font-bold px-5 py-3 rounded-[8px]">
+            Comparar sessões anteriores
+          </Link>
+        </div>
+      </>
     );
-  }
-
-  const activeResponses = responsesBySession[activeSession.id] || [];
-
-  return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 md:p-8 text-[#fff]">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF — {activeSession.title}</h1>
-          <p className="text-[#888]">Responda cada pilar com sinceridade. A roda será revelada no final.</p>
-        </div>
-
+  } else {
+    mapContent = (
+      <>
         <div className="mb-8 bg-[#222222] border border-[#333333] rounded-[12px] p-4">
           <div className="flex justify-between text-xs text-[#888] uppercase tracking-[0.5px] mb-2">
             <span>Progresso</span>
@@ -207,6 +193,25 @@ export default function MAVFPage() {
             );
           })}
         </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#1a1a1a] p-4 md:p-8 text-[#fff]">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">{mapTitle}</h1>
+          <p className="text-[#888]">
+            {activeTab === 'mapa'
+              ? 'Responda com sinceridade e acompanhe sua evolução ao longo das sessões.'
+              : 'Transforme a autoavaliação em metas práticas e mensuráveis.'}
+          </p>
+        </div>
+
+        <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />
+
+        {activeTab === 'mapa' ? mapContent : <ObjectivesList sessionId={activeSession?.id || lastCompletedSession?.id || null} />}
       </div>
     </div>
   );
