@@ -26,6 +26,14 @@ function canAccessObjectives(profile) {
   return Boolean(profile?.is_admin) || MAVF_ALLOWED_TIERS.includes(profile?.tier);
 }
 
+function normalizeObjectivesError(error) {
+  const message = error?.message || '';
+  if (error?.code === 'PGRST205' || message.includes("Could not find the table 'public.mavf_objectives'")) {
+    return 'Tabela mavf_objectives não encontrada. Execute o arquivo mavf-objectives.sql no Supabase SQL Editor.';
+  }
+  return message || 'Erro interno ao processar objetivos.';
+}
+
 export async function GET(request) {
   const supabase = await createServerSupabase();
   const { searchParams } = new URL(request.url);
@@ -53,7 +61,7 @@ export async function GET(request) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
   }
 
   return NextResponse.json({ objectives: objectives || [] });
@@ -116,7 +124,7 @@ export async function POST(request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
   }
 
   return NextResponse.json({ objective }, { status: 201 });

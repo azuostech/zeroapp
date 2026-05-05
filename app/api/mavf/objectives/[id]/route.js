@@ -26,9 +26,21 @@ function canAccessObjectives(profile) {
   return Boolean(profile?.is_admin) || MAVF_ALLOWED_TIERS.includes(profile?.tier);
 }
 
+function normalizeObjectivesError(error) {
+  const message = error?.message || '';
+  if (error?.code === 'PGRST205' || message.includes("Could not find the table 'public.mavf_objectives'")) {
+    return 'Tabela mavf_objectives não encontrada. Execute o arquivo mavf-objectives.sql no Supabase SQL Editor.';
+  }
+  return message || 'Erro interno ao processar objetivos.';
+}
+
 async function getObjectiveById(supabase, id) {
   const { data: objective, error } = await supabase.from('mavf_objectives').select('*').eq('id', id).maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    const enriched = new Error(normalizeObjectivesError(error));
+    enriched.code = error.code;
+    throw enriched;
+  }
   return objective;
 }
 
@@ -118,7 +130,7 @@ export async function PATCH(request, { params }) {
 
     const { data: updated, error: updateError } = await query.select().maybeSingle();
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json({ error: normalizeObjectivesError(updateError) }, { status: 500 });
     }
 
     if (!updated) {
@@ -127,7 +139,7 @@ export async function PATCH(request, { params }) {
 
     return NextResponse.json({ objective: updated });
   } catch (error) {
-    return NextResponse.json({ error: error.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
   }
 }
 
@@ -158,11 +170,11 @@ export async function DELETE(request, { params }) {
 
     const { error } = await supabase.from('mavf_objectives').delete().eq('id', id).eq('user_id', user.id);
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: error.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
   }
 }

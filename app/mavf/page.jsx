@@ -8,6 +8,7 @@ import WheelChart from '@/components/mavf/WheelChart';
 import MAVFPaywall from '@/components/mavf/MAVFPaywall';
 import MAVFTabs from '@/components/mavf/MAVFTabs';
 import ObjectivesList from '@/components/mavf/ObjectivesList';
+import MAVFAppShell from '@/components/mavf/MAVFAppShell';
 
 export default function MAVFPage() {
   const [activeTab, setActiveTab] = useState('mapa');
@@ -87,17 +88,27 @@ export default function MAVFPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] text-[#fff]">
-        <div className="text-center">
-          <div className="text-4xl mb-3">⏳</div>
-          <p className="text-[#888]">Carregando MAVF...</p>
+      <MAVFAppShell activeTab="mavf">
+        <div className="max-w-5xl mx-auto">
+          <div className="min-h-[50vh] flex items-center justify-center text-[#fff]">
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏳</div>
+              <p className="text-[#888]">Carregando MAVF...</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </MAVFAppShell>
     );
   }
 
   if (accessDenied) {
-    return <MAVFPaywall currentTier={currentTier} />;
+    return (
+      <MAVFAppShell activeTab="mavf">
+        <div className="max-w-5xl mx-auto">
+          <MAVFPaywall currentTier={currentTier} />
+        </div>
+      </MAVFAppShell>
+    );
   }
 
   const activeResponses = activeSession ? responsesBySession[activeSession.id] || [] : [];
@@ -198,8 +209,8 @@ export default function MAVFPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 md:p-8 text-[#fff]">
-      <div className="max-w-5xl mx-auto">
+    <MAVFAppShell activeTab="mavf">
+      <div className="max-w-5xl mx-auto text-[#fff]">
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{mapTitle}</h1>
           <p className="text-[#888]">
@@ -213,6 +224,6 @@ export default function MAVFPage() {
 
         {activeTab === 'mapa' ? mapContent : <ObjectivesList sessionId={activeSession?.id || lastCompletedSession?.id || null} />}
       </div>
-    </div>
+    </MAVFAppShell>
   );
 }

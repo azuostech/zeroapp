@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import WheelChart from '@/components/mavf/WheelChart';
 import MAVFPaywall from '@/components/mavf/MAVFPaywall';
+import MAVFAppShell from '@/components/mavf/MAVFAppShell';
 
 export default function MAVFHistoricoPage() {
   const [loading, setLoading] = useState(true);
@@ -76,19 +77,27 @@ export default function MAVFHistoricoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] text-[#fff] flex items-center justify-center">
-        <div className="text-[#888]">Carregando histórico...</div>
-      </div>
+      <MAVFAppShell activeTab="mavf">
+        <div className="max-w-6xl mx-auto min-h-[50vh] flex items-center justify-center">
+          <div className="text-[#888]">Carregando histórico...</div>
+        </div>
+      </MAVFAppShell>
     );
   }
 
   if (accessDenied) {
-    return <MAVFPaywall currentTier={currentTier} />;
+    return (
+      <MAVFAppShell activeTab="mavf">
+        <div className="max-w-6xl mx-auto">
+          <MAVFPaywall currentTier={currentTier} />
+        </div>
+      </MAVFAppShell>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-[#fff] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <MAVFAppShell activeTab="mavf">
+      <div className="max-w-6xl mx-auto text-[#fff]">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">MAVF Histórico</h1>
@@ -156,6 +165,6 @@ export default function MAVFHistoricoPage() {
           </div>
         ) : null}
       </div>
-    </div>
+    </MAVFAppShell>
   );
 }

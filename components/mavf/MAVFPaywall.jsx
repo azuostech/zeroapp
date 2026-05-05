@@ -3,7 +3,7 @@
 
 export default function MAVFPaywall({ currentTier = 'DESPERTAR' }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="w-full flex items-center justify-center py-6">
       <div className="max-w-lg w-full bg-[#1a1a1a] border-2 border-[#FFD700] 
         rounded-2xl p-8 text-center">
         
