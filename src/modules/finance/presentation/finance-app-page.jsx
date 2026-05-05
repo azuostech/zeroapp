@@ -105,7 +105,7 @@ async function apiRequest(path, options = {}) {
 }
 
 export default function FinanceAppPage() {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
 
@@ -116,11 +116,10 @@ export default function FinanceAppPage() {
   };
 
   useEffect(() => {
-    let nextTheme = 'dark';
+    let nextTheme = 'light';
     try {
       const saved = localStorage.getItem(THEME_KEY);
       if (saved === 'light' || saved === 'dark') nextTheme = saved;
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) nextTheme = 'light';
     } catch (_) {
       // no-op
     }

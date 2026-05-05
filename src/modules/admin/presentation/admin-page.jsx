@@ -40,14 +40,13 @@ async function apiRequest(path, options = {}) {
 }
 
 export default function AdminPage() {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    let nextTheme = 'dark';
+    let nextTheme = 'light';
     try {
       const saved = localStorage.getItem(THEME_KEY);
       if (saved === 'light' || saved === 'dark') nextTheme = saved;
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) nextTheme = 'light';
     } catch (_) {
       // no-op
     }
@@ -66,6 +65,39 @@ export default function AdminPage() {
   useEffect(() => {
     let allUsers = [];
     let modalUserFinData = [];
+    let tierModalUser = null;
+    let tierModalSelectedTier = 'DESPERTAR';
+    const TIER_OPTIONS = [
+      {
+        id: 'DESPERTAR',
+        label: 'Despertar',
+        icon: '🌑',
+        color: '#888888',
+        description: 'Acesso básico gratuito'
+      },
+      {
+        id: 'MOVIMENTO',
+        label: 'Movimento',
+        icon: '🌱',
+        color: '#00C853',
+        description: 'Workshop + MAVF'
+      },
+      {
+        id: 'ACELERACAO',
+        label: 'Aceleracao',
+        icon: '⚡',
+        color: '#FFD700',
+        description: 'Mentoria em Grupo'
+      },
+      {
+        id: 'AUTOGOVERNO',
+        label: 'Autogoverno',
+        icon: '👑',
+        color: '#9C27B0',
+        description: 'Mentoria Individual (All Access)'
+      }
+    ];
+    const tierLabel = (tierRaw) => TIER_OPTIONS.find((item) => item.id === String(tierRaw || '').toUpperCase())?.label || tierRaw || 'Despertar';
 
     const setText = (id, val) => {
       const el = document.getElementById(id);
@@ -80,6 +112,18 @@ export default function AdminPage() {
     const badgeHtml = (status) => {
       const labels = { pending: 'Aguardando', active: 'Ativo', disabled: 'Desativado' };
       return `<span class="badge ${status}"><span class="badge-dot"></span>${labels[status] || status}</span>`;
+    };
+
+    const tierBadgeHtml = (tierRaw) => {
+      const tier = String(tierRaw || 'DESPERTAR').toUpperCase();
+      const cfg = {
+        DESPERTAR: { cls: 'tier-despertar', icon: '🌑', label: 'Despertar' },
+        MOVIMENTO: { cls: 'tier-movimento', icon: '🌱', label: 'Movimento' },
+        ACELERACAO: { cls: 'tier-aceleracao', icon: '⚡', label: 'Aceleracao' },
+        AUTOGOVERNO: { cls: 'tier-autogoverno', icon: '👑', label: 'Autogoverno' }
+      }[tier] || { cls: 'tier-despertar', icon: '🌑', label: 'Despertar' };
+
+      return `<span class="tier-badge ${cfg.cls}"><span class="tier-icon">${cfg.icon}</span><span>${cfg.label}</span></span>`;
     };
 
     const showToast = (msg, type = '') => {
@@ -101,6 +145,7 @@ export default function AdminPage() {
               <th>Usuário</th>
               <th>Telefone</th>
               <th>Status</th>
+              <th>Tier</th>
               <th>Cadastro</th>
               <th>Ações</th>
             </tr>
@@ -120,12 +165,16 @@ export default function AdminPage() {
                   </td>
                   <td><div class="user-phone">${esc(u.phone || '—')}</div></td>
                   <td>${badgeHtml(u.status)}</td>
+                  <td>
+                    ${tierBadgeHtml(u.tier)}
+                  </td>
                   <td style="font-size:11px;color:var(--dim)">${fmtDate(u.created_at)}</td>
                   <td>
                     <div class="actions">
                       ${u.status === 'pending' ? `<button class="btn-action btn-approve" onclick="setStatus('${safeId}','active')">✓ Aprovar</button>` : ''}
                       ${u.status === 'active' ? `<button class="btn-action btn-disable" onclick="setStatus('${safeId}','disabled')">✗ Desativar</button>` : ''}
                       ${u.status === 'disabled' ? `<button class="btn-action btn-enable" onclick="setStatus('${safeId}','active')">↺ Reativar</button>` : ''}
+                      <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Alterar Tier</button>
                       <button class="btn-action btn-reset" onclick="resetPassword('${safeEmail}')">🔑 Senha</button>
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
                     </div>
@@ -237,6 +286,112 @@ export default function AdminPage() {
         await loadAll();
       } catch (_) {
         showToast('Erro ao atualizar', 'red');
+      }
+    };
+
+    const closeTierModal = (event) => {
+      const overlay = document.getElementById('tier-modal-overlay');
+      if (event && event.target !== overlay) return;
+      overlay?.classList.remove('open');
+      tierModalUser = null;
+      tierModalSelectedTier = 'DESPERTAR';
+    };
+
+    const renderTierOptions = () => {
+      const optionsEl = document.getElementById('tier-options');
+      if (!optionsEl) return;
+
+      optionsEl.innerHTML = TIER_OPTIONS.map((tier) => {
+        const selected = tierModalSelectedTier === tier.id ? ' selected' : '';
+        return `
+          <button type="button" class="tier-option${selected}" style="--tier-accent:${tier.color}" onclick="selectTierOption('${tier.id}')">
+            <div class="tier-option-head">
+              <span class="tier-option-icon">${tier.icon}</span>
+              <span class="tier-option-name">${tier.label}</span>
+            </div>
+            <div class="tier-option-desc">${tier.description}</div>
+          </button>
+        `;
+      }).join('');
+    };
+
+    const updateTierModalState = () => {
+      const alertEl = document.getElementById('tier-change-alert');
+      const alertTextEl = document.getElementById('tier-change-text');
+      const confirmBtn = document.getElementById('tier-confirm-btn');
+      if (!tierModalUser || !alertEl || !alertTextEl || !confirmBtn) return;
+
+      const currentTier = String(tierModalUser.tier || 'DESPERTAR').toUpperCase();
+      const changed = currentTier !== tierModalSelectedTier;
+      alertEl.style.display = changed ? 'flex' : 'none';
+      alertTextEl.textContent = `O usuário será atualizado de ${tierLabel(currentTier)} para ${tierLabel(tierModalSelectedTier)}.`;
+      confirmBtn.disabled = !changed;
+    };
+
+    const openTierModal = (userId) => {
+      const overlay = document.getElementById('tier-modal-overlay');
+      const currentBadge = document.getElementById('tier-current-badge');
+      if (!overlay || !currentBadge) return;
+
+      const user = allUsers.find((item) => item.id === userId);
+      if (!user) {
+        showToast('Usuário não encontrado', 'red');
+        return;
+      }
+
+      tierModalUser = user;
+      tierModalSelectedTier = String(user.tier || 'DESPERTAR').toUpperCase();
+      const displayName = user.full_name || 'Sem nome';
+      const initial = (displayName || user.email || '?').trim().charAt(0).toUpperCase();
+      setText('tier-user-initial', initial || '?');
+      setText('tier-user-name', displayName);
+      setText('tier-user-email', user.email || '—');
+      currentBadge.innerHTML = tierBadgeHtml(user.tier);
+
+      const confirmBtn = document.getElementById('tier-confirm-btn');
+      if (confirmBtn) {
+        confirmBtn.textContent = 'Confirmar Alteração';
+      }
+
+      renderTierOptions();
+      updateTierModalState();
+      overlay.classList.add('open');
+    };
+
+    const selectTierOption = (tier) => {
+      tierModalSelectedTier = String(tier || '').toUpperCase();
+      renderTierOptions();
+      updateTierModalState();
+    };
+
+    const confirmTierChange = async () => {
+      if (!tierModalUser) return;
+
+      const nextTier = tierModalSelectedTier;
+      const currentTier = String(tierModalUser.tier || 'DESPERTAR').toUpperCase();
+      if (!nextTier || nextTier === currentTier) return;
+
+      const confirmBtn = document.getElementById('tier-confirm-btn');
+      try {
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Salvando...';
+        }
+
+        await apiRequest(`/api/admin/users/${tierModalUser.id}/tier`, {
+          method: 'PATCH',
+          body: JSON.stringify({ tier: nextTier })
+        });
+
+        showToast(`Tier atualizado para ${nextTier}`, 'green');
+        closeTierModal();
+        await loadAll();
+      } catch (_) {
+        showToast('Erro ao atualizar tier', 'red');
+        if (confirmBtn) {
+          confirmBtn.textContent = 'Confirmar Alteração';
+        }
+        updateTierModalState();
       }
     };
 
@@ -429,6 +584,10 @@ export default function AdminPage() {
     window.showView = showView;
     window.filterUsers = filterUsers;
     window.setStatus = setStatus;
+    window.openTierModal = openTierModal;
+    window.closeTierModal = closeTierModal;
+    window.selectTierOption = selectTierOption;
+    window.confirmTierChange = confirmTierChange;
     window.resetPassword = resetPassword;
     window.openFinModal = openFinModal;
     window.showFinMonth = showFinMonth;
@@ -441,6 +600,10 @@ export default function AdminPage() {
       delete window.showView;
       delete window.filterUsers;
       delete window.setStatus;
+      delete window.openTierModal;
+      delete window.closeTierModal;
+      delete window.selectTierOption;
+      delete window.confirmTierChange;
       delete window.resetPassword;
       delete window.openFinModal;
       delete window.showFinMonth;
@@ -583,6 +746,55 @@ export default function AdminPage() {
           </div>
           <div className="fin-month-select" id="fin-months" />
           <div id="fin-content" />
+        </div>
+      </div>
+
+      <div className="modal-overlay" id="tier-modal-overlay" onClick={(event) => window.closeTierModal?.(event)}>
+        <div className="modal tier-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="tier-modal-header">
+            <div className="tier-modal-title">Alterar Tier de Acesso</div>
+            <button className="modal-close" onClick={() => window.closeTierModal?.()}>
+              ✕
+            </button>
+          </div>
+
+          <div className="tier-user-box">
+            <div className="tier-user-avatar" id="tier-user-initial">
+              ?
+            </div>
+            <div className="tier-user-meta">
+              <div className="tier-user-name" id="tier-user-name">
+                —
+              </div>
+              <div className="tier-user-email" id="tier-user-email">
+                —
+              </div>
+            </div>
+          </div>
+
+          <div className="tier-current-row">
+            <div className="tier-current-label">Tier Atual:</div>
+            <div id="tier-current-badge" />
+          </div>
+
+          <div className="tier-options-wrap">
+            <div className="tier-options-label">Selecione o novo tier:</div>
+            <div id="tier-options" className="tier-options-grid" />
+          </div>
+
+          <div className="tier-change-alert" id="tier-change-alert">
+            <div className="tier-alert-icon">⚠️</div>
+            <div className="tier-alert-text" id="tier-change-text" />
+          </div>
+
+          <div className="tier-modal-footer">
+            <button className="tier-btn tier-btn-cancel" onClick={() => window.closeTierModal?.()}>
+              Cancelar
+            </button>
+            <button className="tier-btn tier-btn-save" id="tier-confirm-btn" onClick={() => window.confirmTierChange?.()}>
+              Confirmar Alteração
+            </button>
+          </div>
         </div>
       </div>
 
@@ -960,6 +1172,49 @@ export default function AdminPage() {
           color: var(--dim);
         }
 
+        .tier-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          width: fit-content;
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          border: 1px solid transparent;
+          text-transform: uppercase;
+        }
+
+        .tier-icon {
+          font-size: 12px;
+          line-height: 1;
+        }
+
+        .tier-despertar {
+          background: rgba(136, 136, 136, 0.12);
+          border-color: rgba(136, 136, 136, 0.24);
+          color: #8b8b8b;
+        }
+
+        .tier-movimento {
+          background: rgba(0, 200, 83, 0.12);
+          border-color: rgba(0, 200, 83, 0.28);
+          color: var(--green);
+        }
+
+        .tier-aceleracao {
+          background: rgba(255, 215, 0, 0.12);
+          border-color: rgba(255, 215, 0, 0.3);
+          color: var(--gold);
+        }
+
+        .tier-autogoverno {
+          background: rgba(156, 39, 176, 0.15);
+          border-color: rgba(156, 39, 176, 0.33);
+          color: #bb67cf;
+        }
+
         .badge {
           display: inline-flex;
           align-items: center;
@@ -1059,6 +1314,17 @@ export default function AdminPage() {
           border-color: var(--btn-hover-border);
         }
 
+        .btn-tier {
+          background: rgba(0, 200, 83, 0.08);
+          color: var(--green);
+          border: 1px solid rgba(0, 200, 83, 0.2);
+        }
+
+        .btn-tier:hover {
+          background: var(--green);
+          color: #000;
+        }
+
         .btn-reset {
           background: rgba(255, 215, 0, 0.07);
           color: var(--gold);
@@ -1130,6 +1396,13 @@ export default function AdminPage() {
           transform: scale(1);
         }
 
+        .tier-modal {
+          max-width: 620px;
+          padding: 0;
+          overflow: hidden;
+          border-radius: 16px;
+        }
+
         .modal-header {
           display: flex;
           align-items: center;
@@ -1155,6 +1428,203 @@ export default function AdminPage() {
         .modal-close:hover {
           color: var(--text);
           background: var(--bg3);
+        }
+
+        .tier-modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .tier-modal-title {
+          font-family: 'Space Mono', monospace;
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .tier-user-box {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 18px 24px;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg3);
+        }
+
+        .tier-user-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Space Mono', monospace;
+          font-size: 16px;
+          font-weight: 700;
+          color: #000;
+          background: linear-gradient(135deg, var(--green), var(--gold));
+        }
+
+        .tier-user-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
+        }
+
+        .tier-user-email {
+          font-size: 12px;
+          color: var(--dim);
+          margin-top: 2px;
+        }
+
+        .tier-current-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px 24px;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .tier-current-label {
+          font-size: 12px;
+          color: var(--dim);
+          font-weight: 600;
+        }
+
+        .tier-options-wrap {
+          padding: 20px 24px;
+        }
+
+        .tier-options-label {
+          font-size: 13px;
+          color: var(--text);
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+
+        .tier-options-grid {
+          display: grid;
+          gap: 10px;
+        }
+
+        .tier-option {
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg);
+          text-align: left;
+          padding: 12px 14px;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+
+        .tier-option:hover {
+          border-color: var(--tier-accent);
+          background: var(--bg3);
+        }
+
+        .tier-option.selected {
+          border-color: var(--tier-accent);
+          background: color-mix(in srgb, var(--tier-accent) 11%, transparent);
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-accent) 22%, transparent);
+        }
+
+        .tier-option-head {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 6px;
+        }
+
+        .tier-option-icon {
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .tier-option-name {
+          font-family: 'Space Mono', monospace;
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text);
+        }
+
+        .tier-option.selected .tier-option-name {
+          color: var(--tier-accent);
+        }
+
+        .tier-option-desc {
+          font-size: 11px;
+          color: var(--dim);
+          padding-left: 28px;
+        }
+
+        .tier-change-alert {
+          margin: 0 24px 18px;
+          padding: 10px 12px;
+          border: 1px solid rgba(255, 215, 0, 0.35);
+          background: rgba(255, 215, 0, 0.12);
+          border-radius: 10px;
+          display: none;
+          gap: 10px;
+          align-items: flex-start;
+        }
+
+        .tier-alert-icon {
+          font-size: 16px;
+          line-height: 1;
+        }
+
+        .tier-alert-text {
+          font-size: 12px;
+          color: var(--dim);
+          line-height: 1.45;
+          font-weight: 500;
+        }
+
+        .tier-modal-footer {
+          display: flex;
+          gap: 10px;
+          padding: 18px 24px 24px;
+          border-top: 1px solid var(--border);
+        }
+
+        .tier-btn {
+          flex: 1;
+          border-radius: 9px;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 10px 14px;
+          cursor: pointer;
+          font-family: 'Sora', sans-serif;
+          transition: all 0.15s;
+        }
+
+        .tier-btn-cancel {
+          background: transparent;
+          color: var(--text);
+          border: 1px solid var(--border);
+        }
+
+        .tier-btn-cancel:hover {
+          background: var(--bg3);
+          border-color: var(--btn-hover-border);
+        }
+
+        .tier-btn-save {
+          background: var(--green);
+          color: #000;
+          border: 1px solid var(--green);
+        }
+
+        .tier-btn-save:hover:not(:disabled) {
+          filter: brightness(0.96);
+        }
+
+        .tier-btn-save:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
 
         .fin-month-select {

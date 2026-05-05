@@ -15,6 +15,17 @@ export async function updateUserStatus({ supabase, actingUserId, targetUserId, s
   if (error) throw new Error(error.message || 'Erro ao atualizar usuário');
 }
 
+const ALLOWED_TIERS = new Set(['DESPERTAR', 'MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
+
+export async function updateUserTier({ supabase, targetUserId, tier }) {
+  if (!ALLOWED_TIERS.has(tier)) {
+    throw new Error('invalid_tier');
+  }
+
+  const { error } = await supabase.from('profiles').update({ tier }).eq('id', targetUserId);
+  if (error) throw new Error(error.message || 'Erro ao atualizar tier');
+}
+
 export async function getUserFinancialHistory({ supabase, userId }) {
   const { data, error } = await supabase
     .from('financial_data')
