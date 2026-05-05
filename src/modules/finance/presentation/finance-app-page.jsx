@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 
 const THEME_KEY = 'zeroapp-theme';
+const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
 
 const DEFAULTS = {
   receitas: [
@@ -105,6 +106,14 @@ async function apiRequest(path, options = {}) {
 
 export default function FinanceAppPage() {
   const [theme, setTheme] = useState('dark');
+  const [canAccessMavf, setCanAccessMavf] = useState(false);
+  const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
+
+  const handleMavfClick = (event) => {
+    if (canAccessMavf) return;
+    event.preventDefault();
+    window.alert('O MAVF e exclusivo para membros da Mentoria em Grupo (tier MOVIMENTO ou superior).');
+  };
 
   useEffect(() => {
     let nextTheme = 'dark';
@@ -604,6 +613,25 @@ export default function FinanceAppPage() {
           return;
         }
 
+        const tier = payload.profile.tier || 'DESPERTAR';
+        const canAccess = ALLOWED_MAVF_TIERS.includes(tier);
+        let hasActiveSession = false;
+
+        if (canAccess) {
+          try {
+            const sessionsPayload = await apiRequest('/api/mavf/sessions');
+            const sessions = Array.isArray(sessionsPayload?.sessions) ? sessionsPayload.sessions : [];
+            hasActiveSession = sessions.some((session) => session?.status === 'active');
+          } catch (_) {
+            hasActiveSession = false;
+          }
+        }
+
+        if (mounted) {
+          setCanAccessMavf(canAccess);
+          setHasActiveMavfSession(hasActiveSession);
+        }
+
         currentUser = payload.user;
         setText('user-name-label', payload.profile.full_name || currentUser.email);
 
@@ -668,6 +696,10 @@ export default function FinanceAppPage() {
     };
   }, []);
 
+  const mavfLocked = !canAccessMavf;
+  const mavfHref = mavfLocked ? '#' : '/mavf';
+  const mavfHistoryHref = mavfLocked ? '#' : '/mavf/historico';
+
   return (
     <>
       <div className="loading-screen" id="loading-screen">
@@ -682,6 +714,23 @@ export default function FinanceAppPage() {
             <div className="brand-name">Jackson Souza</div>
             <div className="brand-sub">Finanças do Zero</div>
           </div>
+        </div>
+        <div className="header-nav">
+          <a className="top-nav-item active" href="/app">
+            <span className="icon">🏠</span>
+            Início
+          </a>
+          <a
+            className={`top-nav-item${mavfLocked ? ' locked' : ''}${hasActiveMavfSession ? ' has-notification' : ''}`}
+            href={mavfHref}
+            onClick={handleMavfClick}
+            aria-disabled={mavfLocked}
+          >
+            <span className="icon">📊</span>
+            Meu MAVF
+            {mavfLocked ? <span className="top-nav-lock">🔒</span> : null}
+            {hasActiveMavfSession ? <span className="top-nav-badge">Ativa</span> : null}
+          </a>
         </div>
         <div className="header-right">
           <div className="save-indicator">
@@ -972,6 +1021,26 @@ export default function FinanceAppPage() {
         </div>
       </main>
 
+      <nav className="bottom-nav">
+        <a className="bottom-nav-tab active" href="/app">
+          <span className="icon">🏠</span>
+          <span className="label">Início</span>
+        </a>
+        <a
+          className={`bottom-nav-tab${mavfLocked ? ' locked' : ''}${hasActiveMavfSession ? ' has-notification' : ''}`}
+          href={mavfHref}
+          onClick={handleMavfClick}
+          aria-disabled={mavfLocked}
+        >
+          <span className="icon">📊</span>
+          <span className="label">MAVF</span>
+        </a>
+        <a className={`bottom-nav-tab${mavfLocked ? ' locked' : ''}`} href={mavfHistoryHref} onClick={handleMavfClick} aria-disabled={mavfLocked}>
+          <span className="icon">🕘</span>
+          <span className="label">Histórico</span>
+        </a>
+      </nav>
+
       <div className="toast" id="toast" />
 
       <style jsx global>{`
@@ -1053,6 +1122,77 @@ export default function FinanceAppPage() {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        .header-nav {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 14px;
+          flex: 1;
+        }
+
+        .top-nav-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 11px;
+          border: 1px solid var(--border);
+          border-radius: 9px;
+          text-decoration: none;
+          font-size: 12px;
+          color: var(--dim);
+          background: transparent;
+          transition: all 0.15s;
+          position: relative;
+        }
+
+        .top-nav-item:hover {
+          color: var(--text);
+          background: var(--bg3);
+        }
+
+        .top-nav-item.active {
+          color: var(--green);
+          border-color: rgba(0, 200, 83, 0.35);
+          background: var(--green-dim);
+          font-weight: 600;
+        }
+
+        .top-nav-item .icon {
+          font-size: 14px;
+          line-height: 1;
+        }
+
+        .top-nav-item.locked {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .top-nav-lock {
+          margin-left: 2px;
+          font-size: 12px;
+        }
+
+        .top-nav-badge {
+          margin-left: 2px;
+          font-size: 10px;
+          font-weight: 700;
+          color: #06170d;
+          background: var(--green);
+          border-radius: 999px;
+          padding: 2px 6px;
+        }
+
+        .top-nav-item.has-notification::before {
+          content: '';
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 6px;
+          height: 6px;
+          background: var(--green);
+          border-radius: 50%;
         }
 
         .brand-dot {
@@ -1168,6 +1308,12 @@ export default function FinanceAppPage() {
           color: var(--red);
         }
 
+        @media (max-width: 1080px) {
+          .header-nav {
+            display: none;
+          }
+        }
+
         @media (max-width: 880px) {
           .header {
             padding: 0 10px;
@@ -1234,6 +1380,86 @@ export default function FinanceAppPage() {
           max-width: 780px;
           margin: 0 auto;
           padding: 24px 16px 80px;
+        }
+
+        .bottom-nav {
+          display: none;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 210;
+          background: var(--bg2);
+          border-top: 1px solid var(--border);
+          padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+          justify-content: space-around;
+          gap: 6px;
+        }
+
+        .bottom-nav-tab {
+          flex: 1;
+          max-width: 132px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          min-height: 48px;
+          text-decoration: none;
+          color: var(--dim);
+          border-radius: 10px;
+          transition: all 0.15s;
+          position: relative;
+        }
+
+        .bottom-nav-tab.active {
+          color: var(--green);
+          background: var(--green-dim);
+          font-weight: 600;
+        }
+
+        .bottom-nav-tab .icon {
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .bottom-nav-tab .label {
+          font-size: 10px;
+          letter-spacing: 0.2px;
+        }
+
+        .bottom-nav-tab.locked {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .bottom-nav-tab.locked::after {
+          content: '🔒';
+          position: absolute;
+          top: 4px;
+          right: 12px;
+          font-size: 10px;
+        }
+
+        .bottom-nav-tab.has-notification::before {
+          content: '';
+          position: absolute;
+          top: 6px;
+          right: 14px;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--green);
+        }
+
+        @media (max-width: 760px) {
+          .bottom-nav {
+            display: flex;
+          }
+
+          .main {
+            padding-bottom: 120px;
+          }
         }
 
         .intro {

@@ -159,6 +159,25 @@ export default function AdminPage() {
       }
     };
 
+    const updateMavfBadge = async () => {
+      const badge = document.getElementById('mavf-active-count');
+      if (!badge) return;
+      try {
+        const payload = await apiRequest('/api/mavf/sessions');
+        const sessions = Array.isArray(payload?.sessions) ? payload.sessions : [];
+        const activeSessions = sessions.filter((session) => session?.status === 'active').length;
+
+        if (activeSessions > 0) {
+          badge.textContent = String(activeSessions);
+          badge.style.display = '';
+          return;
+        }
+      } catch (_) {
+        // no-op
+      }
+      badge.style.display = 'none';
+    };
+
     const renderPending = () => {
       const users = allUsers.filter((u) => u.status === 'pending');
       const el = document.getElementById('table-pending');
@@ -401,6 +420,7 @@ export default function AdminPage() {
           return;
         }
         await loadAll();
+        await updateMavfBadge();
       } catch (_) {
         window.location.href = '/';
       }
@@ -471,6 +491,10 @@ export default function AdminPage() {
           <div className="nav-item" onClick={() => window.showView?.('users')} id="nav-users">
             <span className="nav-icon">👥</span> Usuários
           </div>
+          <a className="nav-item nav-item-link" href="/admin/mavf" id="nav-mavf">
+            <span className="nav-icon">📊</span> MAVF — Sessões
+            <span className="nav-badge" id="mavf-active-count" />
+          </a>
           <div className="nav-sep" />
           <div className="nav-item" onClick={() => window.showView?.('stats')} id="nav-stats">
             <span className="nav-icon">📊</span> Visão geral
@@ -751,6 +775,10 @@ export default function AdminPage() {
           user-select: none;
         }
 
+        .nav-item-link {
+          text-decoration: none;
+        }
+
         .nav-item:hover {
           background: var(--bg3);
           color: var(--text);
@@ -764,6 +792,19 @@ export default function AdminPage() {
         .nav-icon {
           font-size: 15px;
           width: 20px;
+          text-align: center;
+        }
+
+        .nav-badge {
+          display: none;
+          margin-left: auto;
+          background: var(--green);
+          color: #000;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 999px;
+          min-width: 18px;
           text-align: center;
         }
 
