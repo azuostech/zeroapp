@@ -1,8 +1,24 @@
 -- MAVF Objectives schema + RLS
 -- Run this in Supabase SQL editor before using /api/mavf/objectives
 
+create extension if not exists "pgcrypto";
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'is_admin'
+  ) then
+    alter table public.profiles add column is_admin boolean default false;
+  end if;
+end
+$$;
+
 create table if not exists public.mavf_objectives (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   session_id uuid references public.mavf_sessions(id) on delete set null,
   pillar text not null check (

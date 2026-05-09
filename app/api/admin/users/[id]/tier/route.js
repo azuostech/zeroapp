@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 import { updateUserTier } from '@/src/modules/admin/application/admin-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 export async function PATCH(request, { params }) {
   const { id } = params;
@@ -24,6 +25,15 @@ export async function PATCH(request, { params }) {
       supabase,
       targetUserId: id,
       tier
+    });
+    await recordAdminAudit({
+      supabase,
+      adminUserId: user.id,
+      targetUserId: id,
+      action: 'update',
+      resource: 'user_tier',
+      resourceId: id,
+      metadata: { tier }
     });
     return NextResponse.json({ ok: true, tier });
   } catch (error) {

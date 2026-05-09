@@ -1,6 +1,8 @@
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { MAVF_ALLOWED_TIERS, MAVF_PILLAR_IDS } from '@/lib/mavf-config';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -10,20 +12,8 @@ function isValidIsoDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-async function getAuthContext(supabase) {
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) return { user: null, profile: null };
-
-  const { data: profile } = await supabase.from('profiles').select('tier, is_admin').eq('id', user.id).single();
-  return { user, profile };
-}
-
 function canAccessObjectives(profile) {
-  return Boolean(profile?.is_admin) || MAVF_ALLOWED_TIERS.includes(profile?.tier);
+  return Boolean(profile?.is_admin || profile?.role === 'admin') || MAVF_ALLOWED_TIERS.includes(profile?.tier);
 }
 
 function normalizeObjectivesError(error) {
@@ -48,15 +38,18 @@ export async function PATCH(request, { params }) {
   try {
     const supabase = await createServerSupabase();
     const { id } = params;
-    const { user, profile } = await getAuthContext(supabase);
+    const context = await resolveImpersonationContext({
+      supabase,
+      requestedUserId: null
+    });
 
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canAccessObjectives(profile)) {
+    if (!context.ok) return NextResponse.json({ error: context.error }, { status: context.status });
+    if (!canAccessObjectives(context.profile)) {
       return NextResponse.json(
         {
           error: 'Recurso exclusivo para membros da Mentoria em Grupo',
           tier_required: 'MOVIMENTO',
-          current_tier: profile?.tier || 'DESPERTAR'
+          current_tier: context.profile?.tier || 'DESPERTAR'
         },
         { status: 403 }
       );
@@ -65,8 +58,8 @@ export async function PATCH(request, { params }) {
     const objective = await getObjectiveById(supabase, id);
     if (!objective) return NextResponse.json({ error: 'Objective not found' }, { status: 404 });
 
-    const isOwner = objective.user_id === user.id;
-    const isAdmin = Boolean(profile?.is_admin);
+    const isOwner = objective.user_id === context.user.id;
+    const isAdmin = Boolean(context.isAdmin);
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -109,14 +102,6 @@ export async function PATCH(request, { params }) {
       updates.progress = progress;
     }
 
-    if (!isOwner && isAdmin) {
-      const allowedForAdmin = new Set(['progress']);
-      const invalidAdminFields = Object.keys(updates).filter((field) => !allowedForAdmin.has(field));
-      if (invalidAdminFields.length) {
-        return NextResponse.json({ error: 'Admin can only update progress for other users' }, { status: 403 });
-      }
-    }
-
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
@@ -125,7 +110,7 @@ export async function PATCH(request, { params }) {
 
     let query = supabase.from('mavf_objectives').update(updates).eq('id', id);
     if (!isAdmin) {
-      query = query.eq('user_id', user.id);
+      query = query.eq('user_id', context.user.id);
     }
 
     const { data: updated, error: updateError } = await query.select().maybeSingle();
@@ -135,6 +120,18 @@ export async function PATCH(request, { params }) {
 
     if (!updated) {
       return NextResponse.json({ error: 'Objective not found' }, { status: 404 });
+    }
+
+    if (!isOwner && isAdmin) {
+      await recordAdminAudit({
+        supabase,
+        adminUserId: context.user.id,
+        targetUserId: objective.user_id,
+        action: 'update',
+        resource: 'mavf_objective',
+        resourceId: id,
+        metadata: updates
+      });
     }
 
     return NextResponse.json({ objective: updated });
@@ -147,15 +144,18 @@ export async function DELETE(request, { params }) {
   try {
     const supabase = await createServerSupabase();
     const { id } = params;
-    const { user, profile } = await getAuthContext(supabase);
+    const context = await resolveImpersonationContext({
+      supabase,
+      requestedUserId: null
+    });
 
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!canAccessObjectives(profile)) {
+    if (!context.ok) return NextResponse.json({ error: context.error }, { status: context.status });
+    if (!canAccessObjectives(context.profile)) {
       return NextResponse.json(
         {
           error: 'Recurso exclusivo para membros da Mentoria em Grupo',
           tier_required: 'MOVIMENTO',
-          current_tier: profile?.tier || 'DESPERTAR'
+          current_tier: context.profile?.tier || 'DESPERTAR'
         },
         { status: 403 }
       );
@@ -164,13 +164,34 @@ export async function DELETE(request, { params }) {
     const objective = await getObjectiveById(supabase, id);
     if (!objective) return NextResponse.json({ error: 'Objective not found' }, { status: 404 });
 
-    if (objective.user_id !== user.id) {
-      return NextResponse.json({ error: 'Only owner can delete objective' }, { status: 403 });
+    const isOwner = objective.user_id === context.user.id;
+    const isAdmin = Boolean(context.isAdmin);
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Only owner or admin can delete objective' }, { status: 403 });
     }
 
-    const { error } = await supabase.from('mavf_objectives').delete().eq('id', id).eq('user_id', user.id);
+    let query = supabase.from('mavf_objectives').delete().eq('id', id);
+    if (!isAdmin) {
+      query = query.eq('user_id', context.user.id);
+    }
+    const { error } = await query;
     if (error) {
       return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
+    }
+
+    if (!isOwner && isAdmin) {
+      await recordAdminAudit({
+        supabase,
+        adminUserId: context.user.id,
+        targetUserId: objective.user_id,
+        action: 'delete',
+        resource: 'mavf_objective',
+        resourceId: id,
+        metadata: {
+          pillar: objective.pillar,
+          session_id: objective.session_id || null
+        }
+      });
     }
 
     return NextResponse.json({ success: true });

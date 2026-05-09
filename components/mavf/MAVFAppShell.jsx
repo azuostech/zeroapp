@@ -3,14 +3,14 @@
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
 
-export default function MAVFAppShell({ children, activeTab = 'mavf' }) {
+export default function MAVFAppShell({ children, activeTab = 'mavf', hideNavigation = false }) {
   return (
     <div className="mavf-app-container">
-      <AppHeader />
+      {hideNavigation ? null : <AppHeader />}
 
       <main className="mavf-app-content">{children}</main>
 
-      <BottomNav activeTab={activeTab} />
+      {hideNavigation ? null : <BottomNav activeTab={activeTab} />}
 
       <style jsx>{`
         .mavf-app-container {

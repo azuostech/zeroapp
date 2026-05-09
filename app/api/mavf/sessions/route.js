@@ -4,61 +4,88 @@
 
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { MAVF_ALLOWED_TIERS } from '@/lib/mavf-config';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 export async function GET(request) {
   const supabase = await createServerSupabase();
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const requestedUserId = request.nextUrl.searchParams.get('user_id');
+
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId
+  });
+
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
 
-  // Buscar perfil para checar tier
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tier, is_admin')
-    .eq('id', user.id)
-    .single();
-
-  // Apenas tier MOVIMENTO+ pode acessar
-  const allowedTiers = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
-  if (!allowedTiers.includes(profile?.tier) && !profile?.is_admin) {
-    return NextResponse.json({ 
-      error: 'Recurso exclusivo para membros da Mentoria em Grupo',
-      tier_required: 'MOVIMENTO',
-      current_tier: profile?.tier || 'DESPERTAR'
-    }, { status: 403 });
+  if (!context.isAdmin && !MAVF_ALLOWED_TIERS.includes(context.profile?.tier)) {
+    return NextResponse.json(
+      {
+        error: 'Recurso exclusivo para membros da Mentoria em Grupo',
+        tier_required: 'MOVIMENTO',
+        current_tier: context.profile?.tier || 'DESPERTAR'
+      },
+      { status: 403 }
+    );
   }
 
-  // Listar sessões (ordenar por data, mais recentes primeiro)
+  if (context.isAdmin && !context.impersonating) {
+    const { data: sessions, error } = await supabase
+      .from('mavf_sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ sessions: sessions || [] });
+  }
+
+  const { data: participatedRows, error: participationError } = await supabase
+    .from('mavf_responses')
+    .select('session_id')
+    .eq('user_id', context.targetUserId);
+
+  if (participationError) {
+    return NextResponse.json({ error: participationError.message }, { status: 500 });
+  }
+
+  const sessionIds = [...new Set((participatedRows || []).map((row) => row.session_id).filter(Boolean))];
+
+  if (!sessionIds.length) {
+    return NextResponse.json({ sessions: [] });
+  }
+
   const { data: sessions, error } = await supabase
     .from('mavf_sessions')
     .select('*')
+    .in('id', sessionIds)
     .order('created_at', { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ sessions });
+  return NextResponse.json({ sessions: sessions || [] });
 }
 
 export async function POST(request) {
   const supabase = await createServerSupabase();
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId: null
+  });
+
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
 
-  // Checar se é admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.is_admin) {
+  if (!context.isAdmin) {
     return NextResponse.json({ error: 'Admin only' }, { status: 403 });
   }
 
@@ -66,22 +93,27 @@ export async function POST(request) {
   const { title, color_hex } = body;
 
   if (!title || !color_hex) {
-    return NextResponse.json({ 
-      error: 'Missing required fields: title, color_hex' 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Missing required fields: title, color_hex'
+      },
+      { status: 400 }
+    );
   }
 
-  // Validar formato de cor hex
   if (!/^#[0-9A-F]{6}$/i.test(color_hex)) {
-    return NextResponse.json({ 
-      error: 'Invalid color_hex format. Use #RRGGBB' 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Invalid color_hex format. Use #RRGGBB'
+      },
+      { status: 400 }
+    );
   }
 
   const { data: session, error } = await supabase
     .from('mavf_sessions')
     .insert({
-      created_by_admin_id: user.id,
+      created_by_admin_id: context.user.id,
       title,
       color_hex,
       status: 'draft'
@@ -92,6 +124,19 @@ export async function POST(request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await recordAdminAudit({
+    supabase,
+    adminUserId: context.user.id,
+    targetUserId: context.user.id,
+    action: 'create',
+    resource: 'mavf_session',
+    resourceId: session?.id || null,
+    metadata: {
+      title,
+      color_hex
+    }
+  });
 
   return NextResponse.json({ session }, { status: 201 });
 }

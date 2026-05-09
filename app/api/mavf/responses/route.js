@@ -4,44 +4,65 @@
 
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
+
+const VALID_PILLARS = [
+  'financeiro',
+  'profissional',
+  'emocional',
+  'espiritual',
+  'parentes',
+  'conjugal',
+  'filhos',
+  'social',
+  'saude',
+  'servir',
+  'intelectual'
+];
 
 export async function POST(request) {
   const supabase = await createServerSupabase();
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const body = await request.json();
   const { session_id, pillar, score } = body;
 
   if (!session_id || !pillar || score === undefined) {
-    return NextResponse.json({ 
-      error: 'Missing required fields: session_id, pillar, score' 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Missing required fields: session_id, pillar, score'
+      },
+      { status: 400 }
+    );
   }
 
   if (score < 0 || score > 10) {
-    return NextResponse.json({ 
-      error: 'Score must be between 0 and 10' 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Score must be between 0 and 10'
+      },
+      { status: 400 }
+    );
   }
 
-  // Validar pillar
-  const validPillars = [
-    'financeiro', 'profissional', 'emocional', 'espiritual',
-    'parentes', 'conjugal', 'filhos', 'social',
-    'saude', 'servir', 'intelectual'
-  ];
-
-  if (!validPillars.includes(pillar)) {
-    return NextResponse.json({ 
-      error: `Invalid pillar. Must be one of: ${validPillars.join(', ')}` 
-    }, { status: 400 });
+  if (!VALID_PILLARS.includes(pillar)) {
+    return NextResponse.json(
+      {
+        error: `Invalid pillar. Must be one of: ${VALID_PILLARS.join(', ')}`
+      },
+      { status: 400 }
+    );
   }
 
-  // Checar se a sessão está ativa
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId: body?.user_id
+  });
+
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
+  }
+
   const { data: session } = await supabase
     .from('mavf_sessions')
     .select('status, current_pillar, title')
@@ -49,16 +70,22 @@ export async function POST(request) {
     .single();
 
   if (!session) {
-    return NextResponse.json({ 
-      error: 'Session not found' 
-    }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: 'Session not found'
+      },
+      { status: 404 }
+    );
   }
 
   if (session.status !== 'active') {
-    return NextResponse.json({ 
-      error: 'Session is not active',
-      session_status: session.status
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Session is not active',
+        session_status: session.status
+      },
+      { status: 400 }
+    );
   }
 
   if (session.current_pillar && pillar !== session.current_pillar) {
@@ -71,17 +98,19 @@ export async function POST(request) {
     );
   }
 
-  // Upsert (inserir ou atualizar se já existe)
   const { data: response, error } = await supabase
     .from('mavf_responses')
-    .upsert({
-      session_id,
-      user_id: user.id,
-      pillar,
-      score
-    }, {
-      onConflict: 'session_id,user_id,pillar'
-    })
+    .upsert(
+      {
+        session_id,
+        user_id: context.targetUserId,
+        pillar,
+        score
+      },
+      {
+        onConflict: 'session_id,user_id,pillar'
+      }
+    )
     .select()
     .single();
 
@@ -89,33 +118,31 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Checar quantos pilares o usuário já completou nesta sessão
   const { count } = await supabase
     .from('mavf_responses')
     .select('*', { count: 'exact', head: true })
     .eq('session_id', session_id)
-    .eq('user_id', user.id);
+    .eq('user_id', context.targetUserId);
 
   const allCompleted = count === 11;
 
-  // 🎯 HOOK PARA GAMIFICAÇÃO FUTURA
-  // Quando você adicionar coins, descomente isto:
-  /*
-  if (allCompleted) {
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/coins/award`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user.id,
-        action_type: 'mavf_completed',
-        amount: 50,
-        description: `Completou MAVF: ${session.title}`
-      })
+  if (context.impersonating) {
+    await recordAdminAudit({
+      supabase,
+      adminUserId: context.user.id,
+      targetUserId: context.targetUserId,
+      action: 'upsert',
+      resource: 'mavf_response',
+      resourceId: response?.id || `${session_id}:${context.targetUserId}:${pillar}`,
+      metadata: {
+        session_id,
+        pillar,
+        score
+      }
     });
   }
-  */
 
-  return NextResponse.json({ 
+  return NextResponse.json({
     response,
     progress: {
       completed: count,
@@ -130,47 +157,35 @@ export async function GET(request) {
   const supabase = await createServerSupabase();
   const { searchParams } = new URL(request.url);
   const session_id = searchParams.get('session_id');
-  const user_id = searchParams.get('user_id');
+  const requestedUserId = searchParams.get('user_id');
   const includeAll = searchParams.get('all') === '1';
 
   if (!session_id) {
-    return NextResponse.json({ 
-      error: 'Missing session_id parameter' 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Missing session_id parameter'
+      },
+      { status: 400 }
+    );
   }
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId
+  });
+
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
 
-  // Se user_id não foi passado, buscar do usuário logado
-  const target_user_id = user_id || user.id;
-
-  // Apenas o próprio usuário ou admin pode ver respostas
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-  const isAdmin = Boolean(profile?.is_admin);
-
-  if (includeAll && !isAdmin) {
+  if (includeAll && (!context.isAdmin || context.impersonating)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (target_user_id !== user.id && !isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  let query = supabase
-    .from('mavf_responses')
-    .select('*')
-    .eq('session_id', session_id)
-    .order('created_at', { ascending: true });
+  let query = supabase.from('mavf_responses').select('*').eq('session_id', session_id).order('created_at', { ascending: true });
 
   if (!includeAll) {
-    query = query.eq('user_id', target_user_id);
+    query = query.eq('user_id', context.targetUserId);
   }
 
   const { data: responses, error } = await query;

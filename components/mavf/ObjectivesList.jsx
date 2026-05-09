@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import ObjectiveCard from '@/components/mavf/ObjectiveCard';
 import CreateObjectiveModal from '@/components/mavf/CreateObjectiveModal';
 
-export default function ObjectivesList({ sessionId = null }) {
+function withUserQuery(path, userId) {
+  if (!userId) return path;
+  const joiner = path.includes('?') ? '&' : '?';
+  return `${path}${joiner}user_id=${encodeURIComponent(userId)}`;
+}
+
+export default function ObjectivesList({ sessionId = null, targetUserId = null, adminMode = false }) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [objectives, setObjectives] = useState([]);
@@ -13,7 +19,7 @@ export default function ObjectivesList({ sessionId = null }) {
 
   useEffect(() => {
     loadObjectives();
-  }, []);
+  }, [targetUserId]);
 
   const doneCount = useMemo(() => objectives.filter((objective) => Number(objective.progress) === 100).length, [objectives]);
 
@@ -21,7 +27,7 @@ export default function ObjectivesList({ sessionId = null }) {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/mavf/objectives', { cache: 'no-store' });
+      const response = await fetch(withUserQuery('/api/mavf/objectives', targetUserId), { cache: 'no-store' });
       const payload = await response.json();
       if (!response.ok) {
         setError(payload?.error || 'Erro ao carregar objetivos.');
@@ -96,6 +102,8 @@ export default function ObjectivesList({ sessionId = null }) {
         </button>
       </div>
 
+      {adminMode ? <div className="feedback info">Modo administrador: editando objetivos do cliente.</div> : null}
+
       {feedback ? <div className="feedback success">{feedback}</div> : null}
       {error ? <div className="feedback error">{error}</div> : null}
 
@@ -118,7 +126,13 @@ export default function ObjectivesList({ sessionId = null }) {
         </div>
       )}
 
-      <CreateObjectiveModal isOpen={creating} onClose={() => setCreating(false)} onCreated={handleCreated} sessionId={sessionId} />
+      <CreateObjectiveModal
+        isOpen={creating}
+        onClose={() => setCreating(false)}
+        onCreated={handleCreated}
+        sessionId={sessionId}
+        targetUserId={targetUserId}
+      />
 
       <style jsx>{`
         .objectives-wrap {
@@ -210,6 +224,12 @@ export default function ObjectivesList({ sessionId = null }) {
           border: 1px solid rgba(255, 82, 82, 0.4);
           background: rgba(255, 82, 82, 0.1);
           color: #ff8f8f;
+        }
+
+        .feedback.info {
+          border: 1px solid rgba(68, 136, 255, 0.35);
+          background: rgba(68, 136, 255, 0.1);
+          color: #9ec2ff;
         }
 
         .loading-state,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 import { updateUserStatus } from '@/src/modules/admin/application/admin-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 const ALLOWED_STATUS = new Set(['active', 'disabled', 'pending']);
 
@@ -27,6 +28,15 @@ export async function PATCH(request, { params }) {
       actingUserId: user.id,
       targetUserId: id,
       status
+    });
+    await recordAdminAudit({
+      supabase,
+      adminUserId: user.id,
+      targetUserId: id,
+      action: 'update',
+      resource: 'user_status',
+      resourceId: id,
+      metadata: { status }
     });
     return NextResponse.json({ ok: true });
   } catch (error) {

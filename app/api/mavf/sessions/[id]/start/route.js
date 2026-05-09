@@ -3,24 +3,22 @@
 
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 export async function POST(request, { params }) {
   const supabase = await createServerSupabase();
   const { id } = params;
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId: null
+  });
+
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
 
-  // Checar se é admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile?.is_admin) {
+  if (!context.isAdmin) {
     return NextResponse.json({ error: 'Admin only' }, { status: 403 });
   }
 
@@ -73,6 +71,19 @@ export async function POST(request, { params }) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await recordAdminAudit({
+    supabase,
+    adminUserId: context.user.id,
+    targetUserId: context.user.id,
+    action: 'update',
+    resource: 'mavf_session',
+    resourceId: id,
+    metadata: {
+      action: 'start_pillar',
+      pillar
+    }
+  });
 
   // TODO: Enviar push notification para todos tier MOVIMENTO+
   // Quando implementar PWA, adicionar aqui

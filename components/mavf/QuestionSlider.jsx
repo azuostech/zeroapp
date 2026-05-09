@@ -8,7 +8,8 @@ export default function QuestionSlider({
   sessionId, 
   initialScore = 5,
   onSubmit,
-  disabled = false
+  disabled = false,
+  targetUserId = null
 }) {
   const [score, setScore] = useState(initialScore);
   const [loading, setLoading] = useState(false);
@@ -25,7 +26,8 @@ export default function QuestionSlider({
         body: JSON.stringify({
           session_id: sessionId,
           pillar: pillar.id,
-          score
+          score,
+          user_id: targetUserId || null
         })
       });
 

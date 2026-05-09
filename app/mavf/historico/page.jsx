@@ -6,17 +6,26 @@ import WheelChart from '@/components/mavf/WheelChart';
 import MAVFPaywall from '@/components/mavf/MAVFPaywall';
 import MAVFAppShell from '@/components/mavf/MAVFAppShell';
 
-export default function MAVFHistoricoPage() {
+function withUserQuery(path, userId) {
+  if (!userId) return path;
+  const joiner = path.includes('?') ? '&' : '?';
+  return `${path}${joiner}user_id=${encodeURIComponent(userId)}`;
+}
+
+export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientLabel = '' }) {
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [currentTier, setCurrentTier] = useState('DESPERTAR');
   const [sessions, setSessions] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [responsesMap, setResponsesMap] = useState({});
+  const adminMode = Boolean(adminViewUserId);
+  const targetUserId = adminMode ? adminViewUserId : null;
+  const backHref = adminMode ? `/admin/users/${encodeURIComponent(adminViewUserId)}/mavf` : '/mavf';
 
   useEffect(() => {
     bootstrap();
-  }, []);
+  }, [adminViewUserId]);
 
   const selectedSessions = useMemo(
     () => sessions.filter((session) => selectedIds.includes(session.id)),
@@ -25,7 +34,7 @@ export default function MAVFHistoricoPage() {
 
   const bootstrap = async () => {
     try {
-      const res = await fetch('/api/mavf/sessions', { cache: 'no-store' });
+      const res = await fetch(withUserQuery('/api/mavf/sessions', targetUserId), { cache: 'no-store' });
       const data = await res.json();
 
       if (res.status === 403) {
@@ -52,7 +61,9 @@ export default function MAVFHistoricoPage() {
   const loadResponses = async (sessionIds) => {
     const entries = await Promise.all(
       sessionIds.map(async (sessionId) => {
-        const res = await fetch(`/api/mavf/responses?session_id=${sessionId}`, { cache: 'no-store' });
+        const res = await fetch(withUserQuery(`/api/mavf/responses?session_id=${sessionId}`, targetUserId), {
+          cache: 'no-store'
+        });
         const data = await res.json();
         return [sessionId, data.responses || []];
       })
@@ -77,7 +88,7 @@ export default function MAVFHistoricoPage() {
 
   if (loading) {
     return (
-      <MAVFAppShell activeTab="mavf">
+      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-6xl mx-auto min-h-[50vh] flex items-center justify-center">
           <div className="text-[#888]">Carregando histórico...</div>
         </div>
@@ -87,7 +98,7 @@ export default function MAVFHistoricoPage() {
 
   if (accessDenied) {
     return (
-      <MAVFAppShell activeTab="mavf">
+      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-6xl mx-auto">
           <MAVFPaywall currentTier={currentTier} />
         </div>
@@ -96,14 +107,23 @@ export default function MAVFHistoricoPage() {
   }
 
   return (
-    <MAVFAppShell activeTab="mavf">
+    <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
       <div className="max-w-6xl mx-auto text-[#fff]">
+        {adminMode ? (
+          <div className="mb-4 rounded-[10px] border border-[rgba(68,136,255,0.35)] bg-[rgba(68,136,255,0.1)] px-4 py-3 text-sm">
+            <span className="font-semibold text-[#64b4ff]">Modo admin:</span>{' '}
+            {adminClientLabel || 'histórico MAVF do cliente'}.
+            <Link href="/admin" className="ml-3 underline text-[#9ec2ff]">
+              Voltar ao painel
+            </Link>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">MAVF Histórico</h1>
             <p className="text-[#888]">Selecione até 3 sessões finalizadas para comparar sua evolução.</p>
           </div>
-          <Link href="/mavf" className="px-4 py-2 border border-[#333333] rounded-[8px] text-sm text-[#aaa]">
+          <Link href={backHref} className="px-4 py-2 border border-[#333333] rounded-[8px] text-sm text-[#aaa]">
             Voltar
           </Link>
         </div>

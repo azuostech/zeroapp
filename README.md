@@ -50,6 +50,32 @@ npm run build
 npm run start
 ```
 
+## Backup diário do banco
+
+Script de backup (dump completo com `--clean --if-exists`):
+
+```bash
+./scripts/backup-zeroapp.sh
+```
+
+Instalar rotina diária no `cron` (padrão: todos os dias às 02:00):
+
+```bash
+./scripts/install-daily-backup-cron.sh
+```
+
+Opcional: customizar horário do cron na instalação:
+
+```bash
+CRON_SCHEDULE="30 1 * * *" ./scripts/install-daily-backup-cron.sh
+```
+
+Arquivos gerados:
+
+- `backup_zeroapp.sql` (último backup)
+- `backups/backup_zeroapp_YYYYMMDD_HHMMSS.sql` (histórico)
+- `backups/backup-cron.log` (log da rotina)
+
 ## Deploy (Vercel)
 
 - O deploy via GitHub funciona automaticamente (sem `vercel.json` legado).

@@ -1,17 +1,33 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
-import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 
-export async function GET() {
+export async function GET(request) {
   const supabase = await createServerSupabase();
-  const { user, profile } = await getCurrentProfile(supabase);
+  const requestedUserId = request.nextUrl.searchParams.get('user_id');
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId
+  });
 
-  if (!user || !profile) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
 
+  const { user, profile, targetUserId, targetProfile, impersonating } = context;
+  const resolvedProfile = impersonating ? targetProfile : profile;
+
   return NextResponse.json({
-    user: { id: user.id, email: user.email },
-    profile
+    user: {
+      id: targetUserId,
+      email: resolvedProfile?.email || user.email
+    },
+    profile: resolvedProfile,
+    acting_user: { id: user.id, email: user.email },
+    acting_profile: profile,
+    impersonation: {
+      active: impersonating,
+      target_user_id: targetUserId
+    }
   });
 }

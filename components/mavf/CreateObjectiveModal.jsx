@@ -5,7 +5,7 @@ import { MAVF_PILLARS } from '@/lib/mavf-config';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessionId = null }) {
+export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessionId = null, targetUserId = null }) {
   const [pillar, setPillar] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState(TODAY);
@@ -53,7 +53,8 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
           pillar,
           description: trimmedDescription,
           deadline,
-          session_id: sessionId || null
+          session_id: sessionId || null,
+          user_id: targetUserId || null
         })
       });
 

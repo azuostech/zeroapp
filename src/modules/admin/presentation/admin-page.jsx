@@ -156,6 +156,7 @@ export default function AdminPage() {
                 const safeId = jsEsc(u.id);
                 const safeEmail = jsEsc(u.email);
                 const safeName = jsEsc(u.full_name || u.email);
+                const safePathId = encodeURIComponent(String(u.id || ''));
 
                 return `
                 <tr>
@@ -177,6 +178,8 @@ export default function AdminPage() {
                       <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Alterar Tier</button>
                       <button class="btn-action btn-reset" onclick="resetPassword('${safeEmail}')">🔑 Senha</button>
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
+                      <a class="btn-action btn-open" href="/admin/users/${safePathId}/dashboard">↗ Dashboard</a>
+                      <a class="btn-action btn-mavf" href="/admin/users/${safePathId}/mavf">🎯 MAVF</a>
                     </div>
                   </td>
                 </tr>`;
@@ -1268,6 +1271,10 @@ export default function AdminPage() {
           font-family: 'Sora', sans-serif;
           transition: all 0.15s;
           white-space: nowrap;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .btn-approve {
@@ -1333,6 +1340,28 @@ export default function AdminPage() {
 
         .btn-reset:hover {
           background: var(--gold);
+          color: #000;
+        }
+
+        .btn-open {
+          background: rgba(68, 136, 255, 0.08);
+          color: var(--blue);
+          border: 1px solid rgba(68, 136, 255, 0.22);
+        }
+
+        .btn-open:hover {
+          background: var(--blue);
+          color: #fff;
+        }
+
+        .btn-mavf {
+          background: rgba(0, 200, 83, 0.07);
+          color: var(--green);
+          border: 1px solid rgba(0, 200, 83, 0.22);
+        }
+
+        .btn-mavf:hover {
+          background: var(--green);
           color: #000;
         }
 

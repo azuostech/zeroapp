@@ -1,6 +1,8 @@
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { MAVF_ALLOWED_TIERS, MAVF_PILLAR_IDS } from '@/lib/mavf-config';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -10,20 +12,8 @@ function isValidIsoDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-async function getAuthContext(supabase) {
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) return { user: null, profile: null };
-
-  const { data: profile } = await supabase.from('profiles').select('tier, is_admin').eq('id', user.id).single();
-  return { user, profile };
-}
-
 function canAccessObjectives(profile) {
-  return Boolean(profile?.is_admin) || MAVF_ALLOWED_TIERS.includes(profile?.tier);
+  return Boolean(profile?.is_admin || profile?.role === 'admin') || MAVF_ALLOWED_TIERS.includes(profile?.tier);
 }
 
 function normalizeObjectivesError(error) {
@@ -39,25 +29,29 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const requestedUserId = searchParams.get('user_id');
 
-  const { user, profile } = await getAuthContext(supabase);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId
+  });
 
-  if (!canAccessObjectives(profile)) {
+  if (!context.ok) return NextResponse.json({ error: context.error }, { status: context.status });
+  const tierProfile = context.impersonating ? context.targetProfile : context.profile;
+
+  if (!context.isAdmin && !canAccessObjectives(tierProfile)) {
     return NextResponse.json(
       {
         error: 'Recurso exclusivo para membros da Mentoria em Grupo',
         tier_required: 'MOVIMENTO',
-        current_tier: profile?.tier || 'DESPERTAR'
+        current_tier: tierProfile?.tier || 'DESPERTAR'
       },
       { status: 403 }
     );
   }
 
-  const targetUserId = profile?.is_admin && requestedUserId ? requestedUserId : user.id;
   const { data: objectives, error } = await supabase
     .from('mavf_objectives')
     .select('*')
-    .eq('user_id', targetUserId)
+    .eq('user_id', context.targetUserId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -69,22 +63,26 @@ export async function GET(request) {
 
 export async function POST(request) {
   const supabase = await createServerSupabase();
-  const { user, profile } = await getAuthContext(supabase);
+  const body = await request.json();
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId: body?.user_id
+  });
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!context.ok) return NextResponse.json({ error: context.error }, { status: context.status });
+  const tierProfile = context.impersonating ? context.targetProfile : context.profile;
 
-  if (!canAccessObjectives(profile)) {
+  if (!context.isAdmin && !canAccessObjectives(tierProfile)) {
     return NextResponse.json(
       {
         error: 'Recurso exclusivo para membros da Mentoria em Grupo',
         tier_required: 'MOVIMENTO',
-        current_tier: profile?.tier || 'DESPERTAR'
+        current_tier: tierProfile?.tier || 'DESPERTAR'
       },
       { status: 403 }
     );
   }
 
-  const body = await request.json();
   const pillar = String(body?.pillar || '').toLowerCase();
   const description = String(body?.description || '').trim();
   const deadline = String(body?.deadline || '');
@@ -113,7 +111,7 @@ export async function POST(request) {
   const { data: objective, error } = await supabase
     .from('mavf_objectives')
     .insert({
-      user_id: user.id,
+      user_id: context.targetUserId,
       session_id,
       pillar,
       description,
@@ -125,6 +123,22 @@ export async function POST(request) {
 
   if (error) {
     return NextResponse.json({ error: normalizeObjectivesError(error) }, { status: 500 });
+  }
+
+  if (context.impersonating) {
+    await recordAdminAudit({
+      supabase,
+      adminUserId: context.user.id,
+      targetUserId: context.targetUserId,
+      action: 'create',
+      resource: 'mavf_objective',
+      resourceId: objective?.id || null,
+      metadata: {
+        pillar,
+        deadline,
+        session_id: session_id || null
+      }
+    });
   }
 
   return NextResponse.json({ objective }, { status: 201 });

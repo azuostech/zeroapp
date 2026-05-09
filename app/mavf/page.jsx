@@ -10,7 +10,13 @@ import MAVFTabs from '@/components/mavf/MAVFTabs';
 import ObjectivesList from '@/components/mavf/ObjectivesList';
 import MAVFAppShell from '@/components/mavf/MAVFAppShell';
 
-export default function MAVFPage() {
+function withUserQuery(path, userId) {
+  if (!userId) return path;
+  const joiner = path.includes('?') ? '&' : '?';
+  return `${path}${joiner}user_id=${encodeURIComponent(userId)}`;
+}
+
+export default function MAVFPage({ adminViewUserId = null, adminClientLabel = '' }) {
   const [activeTab, setActiveTab] = useState('mapa');
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -19,10 +25,15 @@ export default function MAVFPage() {
   const [lastCompletedSession, setLastCompletedSession] = useState(null);
   const [responsesBySession, setResponsesBySession] = useState({});
   const [progress, setProgress] = useState({ completed: 0, total: 11, percentage: 0, all_completed: false });
+  const adminMode = Boolean(adminViewUserId);
+  const targetUserId = adminMode ? adminViewUserId : null;
+  const mavfHistoryHref = adminMode
+    ? `/admin/users/${encodeURIComponent(adminViewUserId)}/mavf/historico`
+    : '/mavf/historico';
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [adminViewUserId]);
 
   const currentPillar = useMemo(() => {
     if (!activeSession?.current_pillar) return null;
@@ -31,7 +42,7 @@ export default function MAVFPage() {
 
   const fetchData = async () => {
     try {
-      const resSessions = await fetch('/api/mavf/sessions', { cache: 'no-store' });
+      const resSessions = await fetch(withUserQuery('/api/mavf/sessions', targetUserId), { cache: 'no-store' });
       const dataSessions = await resSessions.json();
 
       if (resSessions.status === 403) {
@@ -52,7 +63,9 @@ export default function MAVFPage() {
       const nextResponsesMap = {};
 
       if (active) {
-        const resResponses = await fetch(`/api/mavf/responses?session_id=${active.id}`, { cache: 'no-store' });
+        const resResponses = await fetch(withUserQuery(`/api/mavf/responses?session_id=${active.id}`, targetUserId), {
+          cache: 'no-store'
+        });
         const dataResponses = await resResponses.json();
         const responses = dataResponses.responses || [];
         nextResponsesMap[active.id] = responses;
@@ -65,7 +78,9 @@ export default function MAVFPage() {
           all_completed: completedCount === 11
         });
       } else if (completed) {
-        const resResponses = await fetch(`/api/mavf/responses?session_id=${completed.id}`, { cache: 'no-store' });
+        const resResponses = await fetch(withUserQuery(`/api/mavf/responses?session_id=${completed.id}`, targetUserId), {
+          cache: 'no-store'
+        });
         const dataResponses = await resResponses.json();
         nextResponsesMap[completed.id] = dataResponses.responses || [];
         setProgress({ completed: 0, total: 11, percentage: 0, all_completed: false });
@@ -88,7 +103,7 @@ export default function MAVFPage() {
 
   if (loading) {
     return (
-      <MAVFAppShell activeTab="mavf">
+      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-5xl mx-auto">
           <div className="min-h-[50vh] flex items-center justify-center text-[#fff]">
             <div className="text-center">
@@ -103,7 +118,7 @@ export default function MAVFPage() {
 
   if (accessDenied) {
     return (
-      <MAVFAppShell activeTab="mavf">
+      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-5xl mx-auto">
           <MAVFPaywall currentTier={currentTier} />
         </div>
@@ -135,7 +150,7 @@ export default function MAVFPage() {
           <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
         </div>
         <div className="text-center">
-          <Link href="/mavf/historico" className="inline-flex bg-[#00C853] text-[#000] font-bold px-5 py-3 rounded-[8px]">
+          <Link href={mavfHistoryHref} className="inline-flex bg-[#00C853] text-[#000] font-bold px-5 py-3 rounded-[8px]">
             Comparar sessões anteriores
           </Link>
         </div>
@@ -164,6 +179,7 @@ export default function MAVFPage() {
               sessionId={activeSession.id}
               initialScore={activeResponses.find((item) => item.pillar === currentPillar.id)?.score || 5}
               onSubmit={handleResponseSubmit}
+              targetUserId={targetUserId}
             />
           </div>
         ) : null}
@@ -209,8 +225,17 @@ export default function MAVFPage() {
   }
 
   return (
-    <MAVFAppShell activeTab="mavf">
+    <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
       <div className="max-w-5xl mx-auto text-[#fff]">
+        {adminMode ? (
+          <div className="mb-4 rounded-[10px] border border-[rgba(68,136,255,0.35)] bg-[rgba(68,136,255,0.1)] px-4 py-3 text-sm">
+            <span className="font-semibold text-[#64b4ff]">Modo admin:</span>{' '}
+            {adminClientLabel || 'visualizando MAVF do cliente'}.
+            <Link href="/admin" className="ml-3 underline text-[#9ec2ff]">
+              Voltar ao painel
+            </Link>
+          </div>
+        ) : null}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">{mapTitle}</h1>
           <p className="text-[#888]">
@@ -222,7 +247,15 @@ export default function MAVFPage() {
 
         <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />
 
-        {activeTab === 'mapa' ? mapContent : <ObjectivesList sessionId={activeSession?.id || lastCompletedSession?.id || null} />}
+        {activeTab === 'mapa' ? (
+          mapContent
+        ) : (
+          <ObjectivesList
+            sessionId={activeSession?.id || lastCompletedSession?.id || null}
+            targetUserId={targetUserId}
+            adminMode={adminMode}
+          />
+        )}
       </div>
     </MAVFAppShell>
   );

@@ -104,10 +104,23 @@ async function apiRequest(path, options = {}) {
   return payload;
 }
 
-export default function FinanceAppPage() {
+function withUserQuery(path, userId) {
+  if (!userId) return path;
+  const joiner = path.includes('?') ? '&' : '?';
+  return `${path}${joiner}user_id=${encodeURIComponent(userId)}`;
+}
+
+function withUserBody(body, userId) {
+  if (!userId) return body;
+  return { ...(body || {}), user_id: userId };
+}
+
+export default function FinanceAppPage({ adminViewUserId = null }) {
   const [theme, setTheme] = useState('light');
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
+  const [impersonationLabel, setImpersonationLabel] = useState('');
+  const adminMode = Boolean(adminViewUserId);
 
   const handleMavfClick = (event) => {
     if (canAccessMavf) return;
@@ -140,6 +153,9 @@ export default function FinanceAppPage() {
     let currentUser = null;
     let saveTimer = null;
     let mounted = true;
+    const targetUserId = adminMode ? adminViewUserId : null;
+    const targetFinancePath = (path) => withUserQuery(path, targetUserId);
+    const targetPayload = (body) => withUserBody(body, targetUserId);
 
     const setText = (id, value) => {
       const el = document.getElementById(id);
@@ -168,11 +184,13 @@ export default function FinanceAppPage() {
       try {
         await apiRequest('/api/finance/structure', {
           method: 'POST',
-          body: JSON.stringify({
-            month: period.month,
-            year: period.year,
-            operation
-          })
+          body: JSON.stringify(
+            targetPayload({
+              month: period.month,
+              year: period.year,
+              operation
+            })
+          )
         });
         if (successMsg) toast(successMsg);
       } catch (_) {
@@ -204,11 +222,13 @@ export default function FinanceAppPage() {
 
         await apiRequest('/api/finance/month', {
           method: 'POST',
-          body: JSON.stringify({
-            month: mes,
-            year: ano,
-            data: dados
-          })
+          body: JSON.stringify(
+            targetPayload({
+              month: mes,
+              year: ano,
+              data: dados
+            })
+          )
         });
 
         const dot = document.getElementById('save-dot');
@@ -346,7 +366,7 @@ export default function FinanceAppPage() {
       const ano = document.getElementById('anoSelect')?.value;
       if (!mes || !ano) return;
 
-      const payload = await apiRequest(`/api/finance/month?month=${mes}&year=${ano}`);
+      const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${mes}&year=${ano}`));
       dados = payload?.data && Object.keys(payload.data).length > 0 ? payload.data : clone(DEFAULTS);
       renderTudo();
     };
@@ -599,26 +619,36 @@ export default function FinanceAppPage() {
 
     const init = async () => {
       try {
-        const payload = await apiRequest('/api/profile/me');
+        const payload = await apiRequest(targetFinancePath('/api/profile/me'));
         if (!mounted) return;
 
-        if (!payload?.profile || payload.profile.status !== 'active') {
+        if (!payload?.profile) {
+          window.location.href = adminMode ? '/admin' : '/';
+          return;
+        }
+
+        if (!adminMode && payload.profile.status !== 'active') {
           await logout();
           return;
         }
 
-        if (payload.profile.role === 'admin') {
+        if (!adminMode && payload.profile.role === 'admin') {
+          window.location.href = '/admin';
+          return;
+        }
+
+        if (adminMode && !payload?.impersonation?.active) {
           window.location.href = '/admin';
           return;
         }
 
         const tier = payload.profile.tier || 'DESPERTAR';
-        const canAccess = ALLOWED_MAVF_TIERS.includes(tier);
+        const canAccess = adminMode ? true : ALLOWED_MAVF_TIERS.includes(tier);
         let hasActiveSession = false;
 
         if (canAccess) {
           try {
-            const sessionsPayload = await apiRequest('/api/mavf/sessions');
+            const sessionsPayload = await apiRequest(targetFinancePath('/api/mavf/sessions'));
             const sessions = Array.isArray(sessionsPayload?.sessions) ? sessionsPayload.sessions : [];
             hasActiveSession = sessions.some((session) => session?.status === 'active');
           } catch (_) {
@@ -629,6 +659,9 @@ export default function FinanceAppPage() {
         if (mounted) {
           setCanAccessMavf(canAccess);
           setHasActiveMavfSession(hasActiveSession);
+          setImpersonationLabel(
+            adminMode ? `Atendendo: ${payload.profile.full_name || payload.profile.email || 'Cliente'}` : ''
+          );
         }
 
         currentUser = payload.user;
@@ -650,7 +683,7 @@ export default function FinanceAppPage() {
         if (header) header.style.display = '';
         if (main) main.style.display = '';
       } catch (_) {
-        window.location.href = '/';
+        window.location.href = adminMode ? '/admin' : '/';
       }
     };
 
@@ -693,11 +726,15 @@ export default function FinanceAppPage() {
       delete window.exportarTexto;
       delete window.logout;
     };
-  }, []);
+  }, [adminMode, adminViewUserId]);
 
   const mavfLocked = !canAccessMavf;
-  const mavfHref = mavfLocked ? '#' : '/mavf';
-  const mavfHistoryHref = mavfLocked ? '#' : '/mavf/historico';
+  const encodedTargetId = adminViewUserId ? encodeURIComponent(adminViewUserId) : null;
+  const homeHref = encodedTargetId ? `/admin/users/${encodedTargetId}/dashboard` : '/app';
+  const adminMavfHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf` : '/mavf';
+  const adminMavfHistoryHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf/historico` : '/mavf/historico';
+  const mavfHref = mavfLocked ? '#' : adminMavfHref;
+  const mavfHistoryHref = mavfLocked ? '#' : adminMavfHistoryHref;
 
   return (
     <>
@@ -715,7 +752,7 @@ export default function FinanceAppPage() {
           </div>
         </div>
         <div className="header-nav">
-          <a className="top-nav-item active" href="/app">
+          <a className="top-nav-item active" href={homeHref}>
             <span className="icon">🏠</span>
             Início
           </a>
@@ -732,6 +769,11 @@ export default function FinanceAppPage() {
           </a>
         </div>
         <div className="header-right">
+          {adminMode ? (
+            <a className="btn-back-admin" href="/admin">
+              ← Painel admin
+            </a>
+          ) : null}
           <div className="save-indicator">
             <div className="save-dot" id="save-dot" />
             <span id="save-label" />
@@ -775,6 +817,12 @@ export default function FinanceAppPage() {
       </header>
 
       <main className="main" style={{ display: 'none' }} id="app-main">
+        {adminMode ? (
+          <div className="admin-view-banner">
+            <span className="admin-view-pill">Admin</span>
+            <strong>{impersonationLabel || 'Atendendo cliente'}</strong>
+          </div>
+        ) : null}
         <div className="intro">
           <div className="intro-title">Sequência do Método</div>
           <div className="intro-steps">
@@ -1021,7 +1069,7 @@ export default function FinanceAppPage() {
       </main>
 
       <nav className="bottom-nav">
-        <a className="bottom-nav-tab active" href="/app">
+        <a className="bottom-nav-tab active" href={homeHref}>
           <span className="icon">🏠</span>
           <span className="label">Início</span>
         </a>
@@ -1307,6 +1355,23 @@ export default function FinanceAppPage() {
           color: var(--red);
         }
 
+        .btn-back-admin {
+          text-decoration: none;
+          border: 1px solid rgba(68, 136, 255, 0.35);
+          color: var(--blue);
+          background: rgba(68, 136, 255, 0.1);
+          border-radius: 8px;
+          font-size: 11px;
+          padding: 6px 10px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .btn-back-admin:hover {
+          background: var(--blue);
+          color: #fff;
+        }
+
         @media (max-width: 1080px) {
           .header-nav {
             display: none;
@@ -1341,6 +1406,10 @@ export default function FinanceAppPage() {
           }
           .btn-logout {
             padding: 6px 9px;
+          }
+          .btn-back-admin {
+            padding: 6px 8px;
+            font-size: 10px;
           }
         }
 
@@ -1379,6 +1448,29 @@ export default function FinanceAppPage() {
           max-width: 780px;
           margin: 0 auto;
           padding: 24px 16px 80px;
+        }
+
+        .admin-view-banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid rgba(68, 136, 255, 0.32);
+          background: rgba(68, 136, 255, 0.1);
+          border-radius: 10px;
+          padding: 10px 12px;
+          margin-bottom: 14px;
+          font-size: 12px;
+        }
+
+        .admin-view-pill {
+          border-radius: 999px;
+          padding: 3px 8px;
+          border: 1px solid rgba(68, 136, 255, 0.45);
+          color: var(--blue);
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.7px;
+          font-weight: 800;
         }
 
         .bottom-nav {

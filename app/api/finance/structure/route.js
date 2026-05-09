@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
-import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 import { validateMonthYear } from '@/src/modules/finance/application/finance-service';
 import {
   parseStructureOperation,
   replicateStructureOperation
 } from '@/src/modules/finance/application/structure-sync-service';
+import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
+import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
 export async function POST(request) {
   const body = await request.json();
   const currentMonth = body?.month;
   const currentYear = body?.year;
   const operation = body?.operation;
+  const requestedUserId = body?.user_id;
 
   if (!validateMonthYear(currentMonth, currentYear)) {
     return NextResponse.json({ error: 'invalid_month_or_year' }, { status: 400 });
@@ -23,24 +25,43 @@ export async function POST(request) {
   }
 
   const supabase = await createServerSupabase();
-  const { user, profile } = await getCurrentProfile(supabase);
+  const context = await resolveImpersonationContext({
+    supabase,
+    requestedUserId
+  });
 
-  if (!user || !profile) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!context.ok) {
+    return NextResponse.json({ error: context.error }, { status: context.status });
   }
-
-  if (profile.status !== 'active') {
+  if (!context.isAdmin && context.profile.status !== 'active') {
     return NextResponse.json({ error: 'inactive_account' }, { status: 403 });
   }
 
   try {
     const result = await replicateStructureOperation({
       supabase,
-      userId: user.id,
+      userId: context.targetUserId,
       currentMonth,
       currentYear,
       operation: parsed.value
     });
+
+    if (context.impersonating) {
+      await recordAdminAudit({
+        supabase,
+        adminUserId: context.user.id,
+        targetUserId: context.targetUserId,
+        action: 'update',
+        resource: 'financial_structure',
+        resourceId: `${currentYear}-${currentMonth}`,
+        metadata: {
+          month: currentMonth,
+          year: currentYear,
+          operation: parsed.value,
+          affectedMonths: result.affectedMonths
+        }
+      });
+    }
 
     return NextResponse.json({
       ok: true,
