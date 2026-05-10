@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 function getAvatarInitial(profile) {
@@ -54,7 +55,8 @@ export default function AppHeader() {
     <header className="app-header">
       <div className="header-content">
         <Link href="/app" className="header-logo" aria-label="Ir para início do app">
-          ZERO
+          <Image src="/logo-zeroapp-heart.png" alt="Logo ZeroApp" width={36} height={36} priority className="header-logo-img" />
+          <span className="header-logo-text">ZEROAPP</span>
         </Link>
 
         <div className="header-actions">
@@ -90,12 +92,22 @@ export default function AppHeader() {
         }
 
         .header-logo {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+        }
+
+        .header-logo-img {
+          border-radius: 10px;
+        }
+
+        .header-logo-text {
           font-family: 'Space Mono', monospace;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           letter-spacing: 2px;
           color: #00c853;
-          text-decoration: none;
         }
 
         .header-actions {

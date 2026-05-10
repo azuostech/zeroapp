@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 
@@ -745,7 +746,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
       <header className="header" style={{ display: 'none' }} id="app-header">
         <div className="header-brand">
-          <div className="brand-dot" />
+          <Image className="brand-logo" src="/logo-zeroapp-heart.png" alt="Logo ZeroApp" width={28} height={28} />
           <div>
             <div className="brand-name">Jackson Souza</div>
             <div className="brand-sub">Finanças do Zero</div>
@@ -1242,23 +1243,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           border-radius: 50%;
         }
 
-        .brand-dot {
-          width: 9px;
-          height: 9px;
-          background: var(--green);
-          border-radius: 50%;
-          box-shadow: 0 0 8px var(--green-glow);
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.35;
-          }
+        .brand-logo {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          object-fit: cover;
+          box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.28), 0 6px 20px rgba(0, 200, 83, 0.25);
         }
 
         .brand-name {
