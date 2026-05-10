@@ -1,9 +1,10 @@
 import './globals.css';
+import ThemeAssetSync from '@/components/layout/ThemeAssetSync';
 
-const ICON_VERSION = '20260510';
-const ICON_192 = `/icons/manifest-icon-192.maskable.png?v=${ICON_VERSION}`;
-const ICON_512 = `/icons/manifest-icon-512.maskable.png?v=${ICON_VERSION}`;
-const ICON_APPLE = `/icons/apple-icon-180.png?v=${ICON_VERSION}`;
+const ICON_VERSION = '20260510d';
+const ICON_192_LIGHT = `/icons/manifest-icon-192-light.maskable.png?v=${ICON_VERSION}`;
+const ICON_512_LIGHT = `/icons/manifest-icon-512-light.maskable.png?v=${ICON_VERSION}`;
+const ICON_APPLE_LIGHT = `/icons/apple-icon-180-light.png?v=${ICON_VERSION}`;
 
 const IOS_SPLASH_SCREENS = [
   { file: 'apple-splash-2048-2732.jpg', media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
@@ -54,8 +55,8 @@ export const metadata = {
   applicationName: 'ZeroApp',
   manifest: `/manifest.json?v=${ICON_VERSION}`,
   icons: {
-    icon: [{ url: ICON_192, sizes: '192x192', type: 'image/png' }, { url: ICON_512, sizes: '512x512', type: 'image/png' }],
-    apple: [{ url: ICON_APPLE, sizes: '180x180', type: 'image/png' }]
+    icon: [{ url: ICON_192_LIGHT, sizes: '192x192', type: 'image/png' }, { url: ICON_512_LIGHT, sizes: '512x512', type: 'image/png' }],
+    apple: [{ url: ICON_APPLE_LIGHT, sizes: '180x180', type: 'image/png' }]
   },
   appleWebApp: {
     capable: true,
@@ -88,14 +89,18 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="ZeroApp" />
         <meta name="msapplication-TileColor" content="#00C853" />
-        <meta name="msapplication-TileImage" content={ICON_512} />
-        <link rel="icon" href={ICON_192} sizes="192x192" type="image/png" />
-        <link rel="shortcut icon" href={ICON_192} type="image/png" />
+        <meta name="msapplication-TileImage" content={ICON_512_LIGHT} id="theme-ms-tile" />
+        <link rel="icon" href={ICON_192_LIGHT} sizes="192x192" type="image/png" id="theme-favicon" />
+        <link rel="shortcut icon" href={ICON_192_LIGHT} type="image/png" id="theme-favicon-shortcut" />
+        <link rel="apple-touch-icon" href={ICON_APPLE_LIGHT} sizes="180x180" id="theme-apple-icon" />
         {IOS_SPLASH_SCREENS.map((screen) => (
           <link key={screen.file} rel="apple-touch-startup-image" href={`/icons/${screen.file}`} media={screen.media} />
         ))}
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeAssetSync />
+        {children}
+      </body>
     </html>
   );
 }

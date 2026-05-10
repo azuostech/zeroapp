@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
+const THEME_KEY = 'zeroapp-theme';
+
 function getAvatarInitial(profile) {
   const base = profile?.full_name || profile?.email || '';
   return base.trim().charAt(0).toUpperCase() || 'U';
@@ -12,6 +14,32 @@ function getAvatarInitial(profile) {
 export default function AppHeader() {
   const [profile, setProfile] = useState(null);
   const [coins, setCoins] = useState(0);
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    const readTheme = () => {
+      try {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === 'light' || saved === 'dark') return saved;
+      } catch (_) {
+        // no-op
+      }
+
+      return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    };
+
+    const syncTheme = () => setTheme(readTheme());
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.addEventListener('storage', syncTheme);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('storage', syncTheme);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -50,12 +78,13 @@ export default function AppHeader() {
   const avatarInitial = useMemo(() => getAvatarInitial(profile), [profile]);
   const displayName = profile?.full_name || profile?.email || 'Usuário';
   const formattedCoins = useMemo(() => new Intl.NumberFormat('pt-BR').format(coins), [coins]);
+  const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
   return (
     <header className="app-header">
       <div className="header-content">
         <Link href="/app" className="header-logo" aria-label="Ir para início do app">
-          <Image src="/logo-zeroapp-heart.png" alt="Logo ZeroApp" width={36} height={36} priority className="header-logo-img" />
+          <Image src={logoSrc} alt="Logo ZeroApp" width={36} height={36} priority className="header-logo-img" />
           <span className="header-logo-text">ZEROAPP</span>
         </Link>
 

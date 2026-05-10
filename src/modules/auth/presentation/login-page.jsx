@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
@@ -254,6 +255,8 @@ export default function LoginPage() {
     }
   };
 
+  const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
+
   return (
     <div className="login-shell">
       <div className="bg-glow" />
@@ -271,9 +274,7 @@ export default function LoginPage() {
         </div>
 
         <div className="brand">
-          <div className="brand-mark">💚</div>
-          <div className="brand-name">Jackson Souza</div>
-          <div className="brand-sub">Finanças do Zero</div>
+          <Image className="brand-logo" src={logoSrc} alt="Logo ZeroApp" width={124} height={124} priority />
         </div>
 
         <div className="form-box">
@@ -562,33 +563,10 @@ export default function LoginPage() {
           margin-bottom: 36px;
         }
 
-        .brand-mark {
+        .brand-logo {
           display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
-          background: var(--green-dim);
-          border: 1px solid rgba(0, 200, 83, 0.25);
-          margin-bottom: 16px;
-          font-size: 24px;
-        }
-
-        .brand-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 22px;
-          font-weight: 700;
-          color: var(--text);
-          letter-spacing: -0.3px;
-        }
-
-        .brand-sub {
-          font-size: 11px;
-          color: var(--muted);
-          letter-spacing: 2.5px;
-          text-transform: uppercase;
-          margin-top: 4px;
+          border-radius: 28px;
+          box-shadow: 0 8px 30px rgba(0, 200, 83, 0.2);
         }
 
         .form-box {

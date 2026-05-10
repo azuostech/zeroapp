@@ -736,6 +736,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
   const adminMavfHistoryHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf/historico` : '/mavf/historico';
   const mavfHref = mavfLocked ? '#' : adminMavfHref;
   const mavfHistoryHref = mavfLocked ? '#' : adminMavfHistoryHref;
+  const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
   return (
     <>
@@ -746,7 +747,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
       <header className="header" style={{ display: 'none' }} id="app-header">
         <div className="header-brand">
-          <Image className="brand-logo" src="/logo-zeroapp-heart.png" alt="Logo ZeroApp" width={28} height={28} />
+          <Image className="brand-logo" src={logoSrc} alt="Logo ZeroApp" width={28} height={28} />
           <div>
             <div className="brand-name">Jackson Souza</div>
             <div className="brand-sub">Finanças do Zero</div>
