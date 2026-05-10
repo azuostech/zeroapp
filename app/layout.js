@@ -1,5 +1,10 @@
 import './globals.css';
 
+const ICON_VERSION = '20260510';
+const ICON_192 = `/icons/manifest-icon-192.maskable.png?v=${ICON_VERSION}`;
+const ICON_512 = `/icons/manifest-icon-512.maskable.png?v=${ICON_VERSION}`;
+const ICON_APPLE = `/icons/apple-icon-180.png?v=${ICON_VERSION}`;
+
 const IOS_SPLASH_SCREENS = [
   { file: 'apple-splash-2048-2732.jpg', media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)' },
   { file: 'apple-splash-2732-2048.jpg', media: '(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)' },
@@ -47,13 +52,10 @@ export const metadata = {
   title: 'ZeroApp - Finanças do Zero',
   description: 'Organize suas finanças com gamificação e método prático dos 6 blocos',
   applicationName: 'ZeroApp',
-  manifest: '/manifest.json',
+  manifest: `/manifest.json?v=${ICON_VERSION}`,
   icons: {
-    icon: [
-      { url: '/icons/manifest-icon-192.maskable.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/manifest-icon-512.maskable.png', sizes: '512x512', type: 'image/png' }
-    ],
-    apple: [{ url: '/icons/apple-icon-180.png', sizes: '180x180', type: 'image/png' }]
+    icon: [{ url: ICON_192, sizes: '192x192', type: 'image/png' }, { url: ICON_512, sizes: '512x512', type: 'image/png' }],
+    apple: [{ url: ICON_APPLE, sizes: '180x180', type: 'image/png' }]
   },
   appleWebApp: {
     capable: true,
@@ -86,7 +88,9 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="ZeroApp" />
         <meta name="msapplication-TileColor" content="#00C853" />
-        <meta name="msapplication-TileImage" content="/icons/manifest-icon-512.maskable.png" />
+        <meta name="msapplication-TileImage" content={ICON_512} />
+        <link rel="icon" href={ICON_192} sizes="192x192" type="image/png" />
+        <link rel="shortcut icon" href={ICON_192} type="image/png" />
         {IOS_SPLASH_SCREENS.map((screen) => (
           <link key={screen.file} rel="apple-touch-startup-image" href={`/icons/${screen.file}`} media={screen.media} />
         ))}
