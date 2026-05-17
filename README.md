@@ -52,13 +52,28 @@ npm run start
 
 ## Backup diário do banco
 
+Defina a connection string do Postgres em `.env.local` ou `.env` (copie em `Connect` no dashboard do Supabase):
+
+```bash
+DATABASE_URL='postgresql://usuario:senha@host:porta/postgres'
+```
+
+O script também aceita override direto pelo terminal:
+
+```bash
+export DATABASE_URL='postgresql://usuario:senha@host:porta/postgres'
+```
+
+Se a senha tiver caracteres especiais, use URL encoding (`@` -> `%40`, `#` -> `%23`).
+Se der erro de resolução de host no `db.<project-ref>.supabase.co`, use a connection string de **Session pooler** no botão `Connect` (IPv4 compatível).
+
 Script de backup (dump completo com `--clean --if-exists`):
 
 ```bash
 ./scripts/backup-zeroapp.sh
 ```
 
-Instalar rotina diária no `cron` (padrão: todos os dias às 02:00):
+Instalar rotina diária no `cron` (padrão: todos os dias às 12:00):
 
 ```bash
 ./scripts/install-daily-backup-cron.sh
@@ -68,6 +83,12 @@ Opcional: customizar horário do cron na instalação:
 
 ```bash
 CRON_SCHEDULE="30 1 * * *" ./scripts/install-daily-backup-cron.sh
+```
+
+Opcional: instalar cron já com `DATABASE_URL` no mesmo comando:
+
+```bash
+DATABASE_URL='postgresql://usuario:senha@host:porta/postgres' ./scripts/install-daily-backup-cron.sh
 ```
 
 Arquivos gerados:

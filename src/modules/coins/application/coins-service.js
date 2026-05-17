@@ -1,4 +1,4 @@
-const VALID_COINS_ACTIONS = [
+export const VALID_COINS_ACTIONS = [
   'signup',
   'first_launch_month',
   'month_complete',
@@ -11,7 +11,7 @@ const VALID_COINS_ACTIONS = [
   'admin_adjustment'
 ];
 
-const DEFAULT_DESCRIPTIONS = {
+export const DEFAULT_COINS_DESCRIPTIONS = {
   signup: 'Boas-vindas ao ZERO App',
   first_launch_month: 'Primeiro lançamento do mês',
   month_complete: 'Mês completo - todos os 6 blocos',
@@ -22,6 +22,18 @@ const DEFAULT_DESCRIPTIONS = {
   tier_upgrade_aceleracao: 'Bônus mensal tier Aceleração',
   tier_upgrade_autogoverno: 'Bônus mensal tier Autogoverno',
   admin_adjustment: 'Ajuste administrativo'
+};
+
+export const DEFAULT_COINS_ACTION_AMOUNTS = {
+  signup: 50,
+  first_launch_month: 10,
+  month_complete: 100,
+  goal_reached: 150,
+  debt_cleared: 200,
+  referral: 80,
+  workshop_code: 500,
+  tier_upgrade_aceleracao: 300,
+  tier_upgrade_autogoverno: 600
 };
 
 /**
@@ -113,7 +125,7 @@ export function calculatePhase(coins_total) {
 export function validateCoinsAward(amount, action_type) {
   if (typeof amount !== 'number' || Number.isNaN(amount) || amount === 0) return false;
   if (typeof action_type !== 'string' || action_type.length === 0) return false;
-  return VALID_COINS_ACTIONS.includes(action_type);
+  return isValidCoinsAction(action_type);
 }
 
 /**
@@ -147,6 +159,14 @@ export async function hasReceivedCoinsThisMonth({ supabase, userId, action_type,
   return Array.isArray(data) && data.length > 0;
 }
 
+export function isValidCoinsAction(action_type) {
+  return VALID_COINS_ACTIONS.includes(action_type);
+}
+
+export function getDefaultCoinsDescription(action_type) {
+  return DEFAULT_COINS_DESCRIPTIONS[action_type] || 'ZeroCoins';
+}
+
 function getDefaultDescription(action_type) {
-  return DEFAULT_DESCRIPTIONS[action_type] || 'ZeroCoins';
+  return getDefaultCoinsDescription(action_type);
 }

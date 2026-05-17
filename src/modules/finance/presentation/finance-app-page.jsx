@@ -3,6 +3,9 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
+import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
+import { TierDisplay } from '@/components/gamification/TierDisplay';
+import { useMonthCompletion } from '@/hooks/useMonthCompletion';
 
 const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
@@ -121,6 +124,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
   const [impersonationLabel, setImpersonationLabel] = useState('');
+  const { checkAndAward } = useMonthCompletion();
   const adminMode = Boolean(adminViewUserId);
 
   const handleMavfClick = (event) => {
@@ -231,6 +235,18 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             })
           )
         });
+
+        if (!adminMode) {
+          const monthNum = Number.parseInt(mes, 10);
+          const yearNum = Number.parseInt(ano, 10);
+          if (Number.isInteger(monthNum) && Number.isInteger(yearNum)) {
+            await checkAndAward({
+              data: dados,
+              month: monthNum,
+              year: yearNum
+            });
+          }
+        }
 
         const dot = document.getElementById('save-dot');
         const lbl = document.getElementById('save-label');
@@ -727,7 +743,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       delete window.exportarTexto;
       delete window.logout;
     };
-  }, [adminMode, adminViewUserId]);
+  }, [adminMode, adminViewUserId, checkAndAward]);
 
   const mavfLocked = !canAccessMavf;
   const encodedTargetId = adminViewUserId ? encodeURIComponent(adminViewUserId) : null;
@@ -780,6 +796,8 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             <div className="save-dot" id="save-dot" />
             <span id="save-label" />
           </div>
+          <TierDisplay size="sm" showName={false} userId={adminMode ? adminViewUserId : null} />
+          <CoinsDisplay size="sm" />
           <div className="user-name" id="user-name-label" />
           <div className="header-month">
             <select className="month-select" id="mesSelect" onChange={() => window.trocarMes?.()}>

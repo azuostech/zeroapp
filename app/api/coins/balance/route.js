@@ -16,13 +16,35 @@ export async function GET() {
   }
 
   try {
-    const balance = await getCoinsBalance({ supabase, userId: user.id });
-    const phase = calculatePhase(balance.coins_total);
+    let balance = null;
+    let phase = null;
+
+    // Preferimos a view consolidada quando existir.
+    const { data: viewData, error: viewError } = await supabase
+      .from('user_gamification')
+      .select('coins, coins_total, phase')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!viewError && viewData) {
+      balance = {
+        coins: Number(viewData.coins || 0),
+        coins_total: Number(viewData.coins_total || 0)
+      };
+      phase = calculatePhase(balance.coins_total);
+    } else {
+      balance = await getCoinsBalance({ supabase, userId: user.id });
+      phase = calculatePhase(balance.coins_total);
+    }
 
     return NextResponse.json({
+      coins: balance.coins,
+      coins_total: balance.coins_total,
+      phase: phase.phase,
       data: {
         ...balance,
-        phase
+        phase,
+        phase_label: phase.phase
       }
     });
   } catch (error) {

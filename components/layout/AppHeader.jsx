@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
+import { TierDisplay } from '@/components/gamification/TierDisplay';
 
 const THEME_KEY = 'zeroapp-theme';
 
@@ -13,7 +15,6 @@ function getAvatarInitial(profile) {
 
 export default function AppHeader() {
   const [profile, setProfile] = useState(null);
-  const [coins, setCoins] = useState(0);
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
@@ -46,22 +47,12 @@ export default function AppHeader() {
 
     const loadHeaderData = async () => {
       try {
-        const [profileRes, coinsRes] = await Promise.all([
-          fetch('/api/profile/me', { cache: 'no-store' }),
-          fetch('/api/coins/balance', { cache: 'no-store' })
-        ]);
+        const profileRes = await fetch('/api/profile/me', { cache: 'no-store' });
 
         if (profileRes.ok) {
           const profilePayload = await profileRes.json();
           if (active) {
             setProfile(profilePayload?.profile || null);
-          }
-        }
-
-        if (coinsRes.ok) {
-          const coinsPayload = await coinsRes.json();
-          if (active) {
-            setCoins(Number(coinsPayload?.data?.coins || 0));
           }
         }
       } catch (_) {
@@ -77,7 +68,6 @@ export default function AppHeader() {
 
   const avatarInitial = useMemo(() => getAvatarInitial(profile), [profile]);
   const displayName = profile?.full_name || profile?.email || 'Usuário';
-  const formattedCoins = useMemo(() => new Intl.NumberFormat('pt-BR').format(coins), [coins]);
   const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
   return (
@@ -89,9 +79,8 @@ export default function AppHeader() {
         </Link>
 
         <div className="header-actions">
-          <div className="coins-display" title="Saldo atual de coins">
-            🪙 {formattedCoins}
-          </div>
+          <TierDisplay size="sm" showName={false} />
+          <CoinsDisplay size="sm" className="header-coins" />
 
           <div className="user-avatar" title={displayName} aria-label={`Avatar de ${displayName}`}>
             {avatarInitial}
@@ -145,10 +134,8 @@ export default function AppHeader() {
           gap: 14px;
         }
 
-        .coins-display {
-          font-size: 13px;
-          color: #b2b2b2;
-          font-weight: 600;
+        .header-coins {
+          flex-shrink: 0;
         }
 
         .user-avatar {
