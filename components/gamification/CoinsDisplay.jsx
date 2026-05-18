@@ -5,7 +5,7 @@ import { useCoins } from '@/hooks/useCoins';
 import { CoinAnimation } from '@/components/gamification/CoinAnimation';
 import { FirstLaunchDetector } from '@/components/gamification/FirstLaunchDetector';
 
-export function CoinsDisplay({ size = 'md', showTotal = false, className = '', enableFirstLaunchDetector = true }) {
+export function CoinsDisplay({ size = 'md', showTotal = false, className = '', enableFirstLaunchDetector = false }) {
   const { coins, coinsTotal, loading, showAnimation, lastAwardAmount, clearAnimation, awardCoins } = useCoins();
   const safeSize = size === 'sm' || size === 'lg' ? size : 'md';
 

@@ -1,6 +1,7 @@
 import './globals.css';
 import ThemeAssetSync from '@/components/layout/ThemeAssetSync';
 import { ToastProvider } from '@/components/providers/ToastProvider';
+import StyledJsxRegistry from './registry';
 
 const ICON_VERSION = '20260510d';
 const ICON_192_LIGHT = `/icons/manifest-icon-192-light.maskable.png?v=${ICON_VERSION}`;
@@ -99,9 +100,11 @@ export default function RootLayout({ children }) {
         ))}
       </head>
       <body>
-        <ThemeAssetSync />
-        {children}
-        <ToastProvider />
+        <StyledJsxRegistry>
+          <ThemeAssetSync />
+          {children}
+          <ToastProvider />
+        </StyledJsxRegistry>
       </body>
     </html>
   );

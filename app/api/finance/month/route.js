@@ -9,6 +9,8 @@ import {
 import { normalizeFinancialData } from '@/src/modules/finance/domain/defaults';
 import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
+import { getServiceSupabase } from '@/src/lib/supabase/service';
+import { evaluateCoinsAfterToggle } from '@/src/modules/coins/application/coins-evaluator';
 
 const SIMPLE_BLOCKS = new Set(['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute']);
 
@@ -102,6 +104,16 @@ function applyToggleRealized(sourceData, togglePayload) {
   return data;
 }
 
+function getToggleTarget(sourceData, togglePayload) {
+  const data = normalizeFinancialData(sourceData);
+
+  if (togglePayload.bloco === 'contas') {
+    return data?.contas?.[togglePayload.grupoIndex]?.subcats?.[togglePayload.subcatIndex] || null;
+  }
+
+  return data?.[togglePayload.bloco]?.[togglePayload.itemIndex] || null;
+}
+
 export async function GET(request) {
   const month = request.nextUrl.searchParams.get('month');
   const year = request.nextUrl.searchParams.get('year');
@@ -165,12 +177,28 @@ export async function POST(request) {
         return NextResponse.json({ error: parsedToggle.error }, { status: 400 });
       }
 
-      const currentData = await loadFinancialMonth({
-        supabase,
-        userId: context.targetUserId,
-        month,
-        year
-      });
+      const rawData = body?.data;
+      const hasInlineData = rawData && typeof rawData === 'object' && !Array.isArray(rawData);
+
+      let currentData;
+      if (hasInlineData) {
+        currentData = normalizeFinancialData(rawData);
+        const validationError = validateFinancialDataPayload(currentData);
+        if (validationError) {
+          return NextResponse.json({ error: 'invalid_toggle_source_data', details: validationError }, { status: 400 });
+        }
+      } else {
+        currentData = await loadFinancialMonth({
+          supabase,
+          userId: context.targetUserId,
+          month,
+          year
+        });
+      }
+
+      const targetBefore = getToggleTarget(currentData, parsedToggle.value);
+      const wasRealized = Boolean(targetBefore?.realized);
+      const isNowRealized = Boolean(parsedToggle.value.realized);
 
       const toggledData = applyToggleRealized(currentData, parsedToggle.value);
       if (!toggledData) {
@@ -184,6 +212,35 @@ export async function POST(request) {
         year,
         data: toggledData
       });
+
+      let coinsAwarded = [];
+      let coinsBalance = null;
+      let coinsWarning = null;
+
+      if (!context.isAdmin && !context.impersonating) {
+        try {
+          const serviceSupabase = getServiceSupabase();
+          const coinsResult = await evaluateCoinsAfterToggle({
+            supabase: serviceSupabase,
+            userId: context.targetUserId,
+            month,
+            year,
+            data: toggledData,
+            toggleContext: parsedToggle.value,
+            wasRealized,
+            isNowRealized
+          });
+
+          coinsAwarded = (coinsResult?.awards || []).map((award) => ({
+            action_type: award.action_type,
+            amount: award.amount,
+            description: award.description
+          }));
+          coinsBalance = coinsResult?.balance || null;
+        } catch (coinsError) {
+          coinsWarning = coinsError.message || 'coins_evaluation_failed';
+        }
+      }
 
       if (context.impersonating) {
         await recordAdminAudit({
@@ -205,7 +262,14 @@ export async function POST(request) {
         });
       }
 
-      return NextResponse.json({ ok: true, data: toggledData });
+      return NextResponse.json({
+        success: true,
+        ok: true,
+        data: toggledData,
+        coins_awarded: coinsAwarded,
+        coins_balance: coinsBalance,
+        coins_warning: coinsWarning
+      });
     }
 
     if (action) {

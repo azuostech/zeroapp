@@ -16,6 +16,7 @@ function getAvatarInitial(profile) {
 export default function AppHeader() {
   const [profile, setProfile] = useState(null);
   const [theme, setTheme] = useState('light');
+  const [faseProgress, setFaseProgress] = useState(null);
 
   useEffect(() => {
     const readTheme = () => {
@@ -29,7 +30,15 @@ export default function AppHeader() {
       return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     };
 
-    const syncTheme = () => setTheme(readTheme());
+    const syncTheme = () => {
+      const nextTheme = readTheme();
+      setTheme((prevTheme) => (prevTheme === nextTheme ? prevTheme : nextTheme));
+
+      // Evita loop com MutationObserver ao reescrever o mesmo valor.
+      if (document.documentElement.getAttribute('data-theme') !== nextTheme) {
+        document.documentElement.setAttribute('data-theme', nextTheme);
+      }
+    };
     syncTheme();
 
     const observer = new MutationObserver(syncTheme);
@@ -47,12 +56,29 @@ export default function AppHeader() {
 
     const loadHeaderData = async () => {
       try {
-        const profileRes = await fetch('/api/profile/me', { cache: 'no-store' });
+        const [profileRes, historyRes] = await Promise.all([
+          fetch('/api/profile/me', { cache: 'no-store' }),
+          fetch('/api/coins/history?limit=1', { cache: 'no-store' })
+        ]);
 
         if (profileRes.ok) {
-          const profilePayload = await profileRes.json();
+          const profilePayload = await profileRes.json().catch(() => ({}));
+          if (active) setProfile(profilePayload?.profile || null);
+        }
+
+        if (historyRes.ok) {
+          const historyPayload = await historyRes.json().catch(() => ({}));
           if (active) {
-            setProfile(profilePayload?.profile || null);
+            const fase = historyPayload?.fase_atual;
+            const proxima = historyPayload?.proxima_fase;
+            if (fase) {
+              setFaseProgress({
+                emoji: fase.emoji || '🔥',
+                progressoPct: Number(fase.progresso_pct || 0),
+                coinsParaProxima: Number(fase.coins_para_proxima || 0),
+                nextName: proxima?.nome || null
+              });
+            }
           }
         }
       } catch (_) {
@@ -61,8 +87,15 @@ export default function AppHeader() {
     };
 
     loadHeaderData();
+
+    const handleCoinsUpdated = () => {
+      loadHeaderData();
+    };
+    window.addEventListener('zero:coins-updated', handleCoinsUpdated);
+
     return () => {
       active = false;
+      window.removeEventListener('zero:coins-updated', handleCoinsUpdated);
     };
   }, []);
 
@@ -88,14 +121,45 @@ export default function AppHeader() {
         </div>
       </div>
 
+      {faseProgress ? (
+        <div className="fase-progress-mobile">
+          <span className="fase-progress-emoji">{faseProgress.emoji}</span>
+          <div className="fase-progress-track">
+            <div className="fase-progress-fill" style={{ width: `${Math.max(0, Math.min(100, faseProgress.progressoPct))}%` }} />
+          </div>
+          <span className="fase-progress-label">
+            {faseProgress.coinsParaProxima > 0 && faseProgress.nextName
+              ? `${faseProgress.coinsParaProxima} 🪙 para ${faseProgress.nextName}`
+              : 'Fase máxima'}
+          </span>
+        </div>
+      ) : null}
+
       <style jsx>{`
+        :global(html[data-theme='dark']) {
+          --app-header-bg: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+          --app-header-border: #2d2d2d;
+          --app-header-shadow: 0 8px 30px rgba(0, 200, 83, 0.08);
+          --app-header-logo: #00c853;
+          --app-header-avatar-text: #07130c;
+        }
+
+        :global(html[data-theme='light']) {
+          --app-header-bg: linear-gradient(135deg, #f8fafb 0%, #eef2f4 100%);
+          --app-header-border: #d5dde2;
+          --app-header-shadow: 0 8px 26px rgba(5, 18, 35, 0.08);
+          --app-header-logo: #0b8a46;
+          --app-header-avatar-text: #ffffff;
+        }
+
         .app-header {
           position: sticky;
           top: 0;
           z-index: 140;
-          background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
-          border-bottom: 1px solid #2d2d2d;
-          box-shadow: 0 8px 30px rgba(0, 200, 83, 0.08);
+          background: var(--app-header-bg, linear-gradient(135deg, #121212 0%, #1a1a1a 100%));
+          border-bottom: 1px solid var(--app-header-border, #2d2d2d);
+          box-shadow: var(--app-header-shadow, 0 8px 30px rgba(0, 200, 83, 0.08));
+          backdrop-filter: blur(8px);
         }
 
         .header-content {
@@ -109,14 +173,14 @@ export default function AppHeader() {
           gap: 12px;
         }
 
-        .header-logo {
+        :global(.header-logo) {
           display: inline-flex;
           align-items: center;
           gap: 10px;
           text-decoration: none;
         }
 
-        .header-logo-img {
+        :global(.header-logo-img) {
           border-radius: 10px;
         }
 
@@ -125,7 +189,7 @@ export default function AppHeader() {
           font-size: 18px;
           font-weight: 700;
           letter-spacing: 2px;
-          color: #00c853;
+          color: var(--app-header-logo, #00c853);
         }
 
         .header-actions {
@@ -134,7 +198,7 @@ export default function AppHeader() {
           gap: 14px;
         }
 
-        .header-coins {
+        :global(.header-coins) {
           flex-shrink: 0;
         }
 
@@ -148,8 +212,45 @@ export default function AppHeader() {
           justify-content: center;
           font-size: 13px;
           font-weight: 700;
-          color: #07130c;
+          color: var(--app-header-avatar-text, #07130c);
           text-transform: uppercase;
+        }
+
+        .fase-progress-mobile {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .fase-progress-mobile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px 10px;
+          }
+
+          .fase-progress-emoji {
+            font-size: 14px;
+            line-height: 1;
+          }
+
+          .fase-progress-track {
+            flex: 1;
+            height: 6px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.12);
+          }
+
+          .fase-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #00c853);
+          }
+
+          .fase-progress-label {
+            font-size: 10px;
+            color: #a8b1aa;
+            white-space: nowrap;
+          }
         }
       `}</style>
     </header>

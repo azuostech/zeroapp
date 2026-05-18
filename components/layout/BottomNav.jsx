@@ -6,11 +6,13 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
   { id: 'blocos', href: '/app#blocos', icon: '💰', label: 'Blocos' },
+  { id: 'jornada', href: '/jornada', icon: '🎯', label: 'Jornada' },
   { id: 'mavf', href: '/mavf', icon: '📊', label: 'MAVF' },
   { id: 'perfil', href: '/app#perfil', icon: '👤', label: 'Perfil' }
 ];
 
 function getAutoActiveTab(pathname) {
+  if (pathname.startsWith('/jornada')) return 'jornada';
   if (pathname.startsWith('/mavf')) return 'mavf';
   if (pathname.startsWith('/app')) return 'inicio';
   return '';
@@ -33,6 +35,22 @@ export default function BottomNav({ activeTab = '' }) {
       })}
 
       <style jsx>{`
+        :global(html[data-theme='dark']) {
+          --bottom-nav-bg: #1d1d1d;
+          --bottom-nav-border: #2f2f2f;
+          --bottom-nav-item: #909090;
+          --bottom-nav-item-active: #00c853;
+          --bottom-nav-active-bg: rgba(0, 200, 83, 0.12);
+        }
+
+        :global(html[data-theme='light']) {
+          --bottom-nav-bg: rgba(255, 255, 255, 0.96);
+          --bottom-nav-border: #d9dde1;
+          --bottom-nav-item: #5c6470;
+          --bottom-nav-item-active: #068b44;
+          --bottom-nav-active-bg: rgba(6, 139, 68, 0.11);
+        }
+
         .bottom-nav {
           position: fixed;
           left: 0;
@@ -42,14 +60,15 @@ export default function BottomNav({ activeTab = '' }) {
           display: flex;
           justify-content: space-around;
           gap: 6px;
-          background: #1d1d1d;
-          border-top: 1px solid #2f2f2f;
+          background: var(--bottom-nav-bg, #1d1d1d);
+          border-top: 1px solid var(--bottom-nav-border, #2f2f2f);
           padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+          backdrop-filter: blur(10px);
         }
 
-        .bottom-nav-tab {
+        :global(.bottom-nav-tab) {
           flex: 1;
-          min-width: 64px;
+          min-width: 0;
           max-width: 120px;
           border-radius: 10px;
           display: flex;
@@ -57,15 +76,15 @@ export default function BottomNav({ activeTab = '' }) {
           align-items: center;
           justify-content: center;
           gap: 4px;
-          color: #909090;
+          color: var(--bottom-nav-item, #909090);
           text-decoration: none;
           padding: 8px 4px;
           transition: all 0.2s ease;
         }
 
-        .bottom-nav-tab.active {
-          color: #00c853;
-          background: rgba(0, 200, 83, 0.12);
+        :global(.bottom-nav-tab.active) {
+          color: var(--bottom-nav-item-active, #00c853);
+          background: var(--bottom-nav-active-bg, rgba(0, 200, 83, 0.12));
         }
 
         .tab-icon {

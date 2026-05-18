@@ -2,10 +2,11 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { toast as hotToast } from 'react-hot-toast';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
-import { useMonthCompletion } from '@/hooks/useMonthCompletion';
+import BottomNav from '@/components/layout/BottomNav';
 import {
   SIMPLE_BLOCK_KEYS,
   cloneDefaultFinancialData,
@@ -97,13 +98,114 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
   const [impersonationLabel, setImpersonationLabel] = useState('');
-  const { checkAndAward } = useMonthCompletion();
+  const [workshopCode, setWorkshopCode] = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [tierDisplayKey, setTierDisplayKey] = useState(0);
+  const [headerFaseProgress, setHeaderFaseProgress] = useState(null);
   const adminMode = Boolean(adminViewUserId);
 
   const handleMavfClick = (event) => {
     if (canAccessMavf) return;
     event.preventDefault();
     window.alert('O MAVF e exclusivo para membros da Mentoria em Grupo (tier MOVIMENTO ou superior).');
+  };
+
+  useEffect(() => {
+    if (adminMode) {
+      setHeaderFaseProgress(null);
+      return undefined;
+    }
+
+    let mounted = true;
+
+    const loadFaseProgress = async () => {
+      try {
+        const response = await fetch('/api/coins/history?limit=1', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = await response.json().catch(() => ({}));
+        const fase = payload?.fase_atual;
+        const proxima = payload?.proxima_fase;
+
+        if (!mounted || !fase) return;
+
+        setHeaderFaseProgress({
+          emoji: fase.emoji || '🔥',
+          progressoPct: Number(fase.progresso_pct || 0),
+          coinsParaProxima: Number(fase.coins_para_proxima || 0),
+          nextName: proxima?.nome || null
+        });
+      } catch (_) {
+        // no-op
+      }
+    };
+
+    loadFaseProgress();
+    const onCoinsUpdated = () => loadFaseProgress();
+    window.addEventListener('zero:coins-updated', onCoinsUpdated);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('zero:coins-updated', onCoinsUpdated);
+    };
+  }, [adminMode]);
+
+  const handleRedeemWorkshop = async (event) => {
+    event.preventDefault();
+    if (adminMode || redeemLoading) return;
+
+    const code = workshopCode.trim().toUpperCase();
+    if (!code) {
+      hotToast.error('Digite um código para resgatar');
+      return;
+    }
+
+    setRedeemLoading(true);
+    try {
+      const response = await fetch('/api/workshop/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const mapError = {
+          code_not_found: 'Código não encontrado',
+          code_already_used: 'Este código já foi utilizado',
+          code_expired: 'Este código expirou',
+          tier_already_unlocked: 'Você já tem acesso MOVIMENTO ou superior'
+        };
+        hotToast.error(mapError[payload?.error] || 'Não foi possível resgatar o código');
+        return;
+      }
+
+      setWorkshopCode('');
+      setCanAccessMavf(true);
+      setTierDisplayKey((prev) => prev + 1);
+      hotToast.success('🎉 Código resgatado! +500 🪙 e tier MOVIMENTO desbloqueado');
+
+      const balance = payload?.balance;
+      if (balance && Number.isFinite(Number(balance.coins)) && Number.isFinite(Number(balance.coins_total))) {
+        window.dispatchEvent(
+          new CustomEvent('zero:coins-updated', {
+            detail: {
+              sourceId: 'workshop-redeem',
+              payload: {
+                coins: Number(balance.coins),
+                coins_total: Number(balance.coins_total),
+                phase: String(balance.phase || 'BOMBEIRO'),
+                amount_awarded: 500,
+                triggerAnimation: true
+              }
+            }
+          })
+        );
+      }
+    } catch (_) {
+      hotToast.error('Erro ao resgatar código');
+    } finally {
+      setRedeemLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -154,6 +256,74 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       const year = document.getElementById('anoSelect')?.value;
       if (!month || !year) return null;
       return { month, year };
+    };
+
+    const emitCoinsAwardFeedback = (payload) => {
+      const awards = Array.isArray(payload?.coins_awarded) ? payload.coins_awarded : [];
+      if (!awards.length) return;
+
+      let totalAwarded = 0;
+      awards.forEach((award) => {
+        const amount = Number(award?.amount || 0);
+        if (amount <= 0) return;
+        totalAwarded += amount;
+        toast(`+${amount} 🪙 ${award?.description || 'Recompensa'}`);
+      });
+
+      const balance = payload?.coins_balance;
+      if (!balance || totalAwarded <= 0) return;
+
+      if (Number.isNaN(Number(balance.coins)) || Number.isNaN(Number(balance.coins_total))) {
+        return;
+      }
+
+      try {
+        window.dispatchEvent(
+          new CustomEvent('zero:coins-updated', {
+            detail: {
+              sourceId: 'finance-app-page',
+              payload: {
+                coins: Number(balance.coins),
+                coins_total: Number(balance.coins_total),
+                phase: String(balance.phase || 'BOMBEIRO'),
+                amount_awarded: totalAwarded,
+                triggerAnimation: true
+              }
+            }
+          })
+        );
+      } catch (_) {
+        // no-op
+      }
+    };
+
+    const persistToggleRealized = async ({ bloco, realized, itemIndex = null, grupoIndex = null, subcatIndex = null, valorRealizado = '0' }) => {
+      const period = getCurrentMonthYear();
+      if (!period) {
+        throw new Error('invalid_period');
+      }
+
+      const payload = {
+        month: period.month,
+        year: period.year,
+        action: 'toggle_realized',
+        bloco,
+        realized: Boolean(realized),
+        valor_realizado: valorRealizado,
+        data: dados
+      };
+
+      if (bloco === 'contas') {
+        payload.grupo_index = grupoIndex;
+        payload.subcat_index = subcatIndex;
+      } else {
+        payload.item_index = itemIndex;
+      }
+
+      return apiRequest('/api/finance/month', {
+        method: 'POST',
+        body: JSON.stringify(targetPayload(payload))
+      });
     };
 
     const replicarEstrutura = async (operation, successMsg) => {
@@ -209,18 +379,6 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             })
           )
         });
-
-        if (!adminMode) {
-          const monthNum = Number.parseInt(mes, 10);
-          const yearNum = Number.parseInt(ano, 10);
-          if (Number.isInteger(monthNum) && Number.isInteger(yearNum)) {
-            await checkAndAward({
-              data: dados,
-              month: monthNum,
-              year: yearNum
-            });
-          }
-        }
 
         const dot = document.getElementById('save-dot');
         const lbl = document.getElementById('save-label');
@@ -586,11 +744,13 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       openEditor({ kind: 'simple', bloco, index: i });
     };
 
-    const toggleSimplesRealized = (bloco, i, checked) => {
+    const toggleSimplesRealized = async (bloco, i, checked) => {
       const item = dados[bloco]?.[i];
       if (!item) return;
 
       ensureItemShape(item);
+      const prevRealized = item.realized;
+      const prevValorRealizado = item.valor_realizado;
       item.realized = Boolean(checked);
 
       if (item.realized) {
@@ -604,7 +764,41 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
       renderBlocoSimples(bloco);
       calcularTotais();
-      agendarSalvar();
+
+      const dot = document.getElementById('save-dot');
+      const lbl = document.getElementById('save-label');
+      dot?.classList.add('saving');
+      if (lbl) lbl.textContent = 'Salvando...';
+
+      try {
+        const payload = await persistToggleRealized({
+          bloco,
+          itemIndex: i,
+          realized: item.realized,
+          valorRealizado: item.valor_realizado
+        });
+
+        dados = normalizeFinancialData(payload?.data || dados);
+        renderBlocoSimples(bloco);
+        calcularTotais();
+        emitCoinsAwardFeedback(payload);
+
+        dot?.classList.remove('saving');
+        if (lbl) {
+          lbl.textContent = '✓ Salvo';
+          setTimeout(() => {
+            if (lbl.textContent === '✓ Salvo') lbl.textContent = '';
+          }, 2500);
+        }
+      } catch (_) {
+        item.realized = prevRealized;
+        item.valor_realizado = prevValorRealizado;
+        renderBlocoSimples(bloco);
+        calcularTotais();
+        dot?.classList.remove('saving');
+        if (lbl) lbl.textContent = '⚠ Erro ao salvar';
+        toast('Não foi possível atualizar o item');
+      }
     };
 
     const adicionarGrupo = () => {
@@ -704,11 +898,13 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       openEditor({ kind: 'subcat', gi, si });
     };
 
-    const toggleSubcatRealized = (gi, si, checked) => {
+    const toggleSubcatRealized = async (gi, si, checked) => {
       const item = dados.contas?.[gi]?.subcats?.[si];
       if (!item) return;
 
       ensureItemShape(item);
+      const prevRealized = item.realized;
+      const prevValorRealizado = item.valor_realizado;
       item.realized = Boolean(checked);
 
       if (item.realized) {
@@ -722,7 +918,42 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
       renderSubcats(gi);
       calcularTotais();
-      agendarSalvar();
+
+      const dot = document.getElementById('save-dot');
+      const lbl = document.getElementById('save-label');
+      dot?.classList.add('saving');
+      if (lbl) lbl.textContent = 'Salvando...';
+
+      try {
+        const payload = await persistToggleRealized({
+          bloco: 'contas',
+          grupoIndex: gi,
+          subcatIndex: si,
+          realized: item.realized,
+          valorRealizado: item.valor_realizado
+        });
+
+        dados = normalizeFinancialData(payload?.data || dados);
+        renderSubcats(gi);
+        calcularTotais();
+        emitCoinsAwardFeedback(payload);
+
+        dot?.classList.remove('saving');
+        if (lbl) {
+          lbl.textContent = '✓ Salvo';
+          setTimeout(() => {
+            if (lbl.textContent === '✓ Salvo') lbl.textContent = '';
+          }, 2500);
+        }
+      } catch (_) {
+        item.realized = prevRealized;
+        item.valor_realizado = prevValorRealizado;
+        renderSubcats(gi);
+        calcularTotais();
+        dot?.classList.remove('saving');
+        if (lbl) lbl.textContent = '⚠ Erro ao salvar';
+        toast('Não foi possível atualizar o item');
+      }
     };
 
     const limparMes = async () => {
@@ -997,15 +1228,13 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       delete window.exportarTexto;
       delete window.logout;
     };
-  }, [adminMode, adminViewUserId, checkAndAward]);
+  }, [adminMode, adminViewUserId]);
 
   const mavfLocked = !canAccessMavf;
   const encodedTargetId = adminViewUserId ? encodeURIComponent(adminViewUserId) : null;
   const homeHref = encodedTargetId ? `/admin/users/${encodedTargetId}/dashboard` : '/app';
   const adminMavfHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf` : '/mavf';
-  const adminMavfHistoryHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf/historico` : '/mavf/historico';
   const mavfHref = mavfLocked ? '#' : adminMavfHref;
-  const mavfHistoryHref = mavfLocked ? '#' : adminMavfHistoryHref;
   const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
   return (
@@ -1050,7 +1279,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             <div className="save-dot" id="save-dot" />
             <span id="save-label" />
           </div>
-          <TierDisplay size="sm" showName={false} userId={adminMode ? adminViewUserId : null} />
+          <TierDisplay key={`tier-${tierDisplayKey}-${adminMode ? adminViewUserId : 'self'}`} size="sm" showName={false} userId={adminMode ? adminViewUserId : null} />
           <CoinsDisplay size="sm" />
           <div className="user-name" id="user-name-label" />
           <div className="header-month">
@@ -1088,6 +1317,25 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             Sair
           </button>
         </div>
+
+        {!adminMode && headerFaseProgress ? (
+          <div className="header-fase-progress-mobile">
+            <span className="header-fase-emoji">{headerFaseProgress.emoji}</span>
+            <div className="header-fase-track">
+              <div
+                className="header-fase-fill"
+                style={{
+                  width: `${Math.max(0, Math.min(100, headerFaseProgress.progressoPct))}%`
+                }}
+              />
+            </div>
+            <span className="header-fase-label">
+              {headerFaseProgress.coinsParaProxima > 0 && headerFaseProgress.nextName
+                ? `${headerFaseProgress.coinsParaProxima} 🪙 para ${headerFaseProgress.nextName}`
+                : 'Fase máxima'}
+            </span>
+          </div>
+        ) : null}
       </header>
 
       <main className="main" style={{ display: 'none' }} id="app-main">
@@ -1203,7 +1451,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           </a>
         </div>
 
-        <div id="blocos-container">
+        <div id="blocos">
           <div className="bloco open" data-bloco="receitas" id="bloco-receitas">
             <div className="bloco-header" onClick={() => window.toggleBloco?.('receitas')}>
               <div className="bloco-left">
@@ -1384,27 +1632,36 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             </div>
           </div>
         </div>
+
+        {adminMode ? null : (
+          <section className="perfil-section" id="perfil">
+            <div className="perfil-header">
+              <h3>Perfil e Jornada</h3>
+              <a className="perfil-link" href="/jornada">
+                Ver jornada completa
+              </a>
+            </div>
+
+            <p className="perfil-copy">Tem um código do Workshop? Resgate para desbloquear MOVIMENTO e ganhar +500 coins.</p>
+
+            <form className="perfil-redeem-form" onSubmit={handleRedeemWorkshop}>
+              <input
+                type="text"
+                className="perfil-redeem-input"
+                placeholder="Digite seu código (ex: WS-ABC12345)"
+                value={workshopCode}
+                onChange={(event) => setWorkshopCode(event.target.value)}
+                autoComplete="off"
+              />
+              <button type="submit" className="perfil-redeem-btn" disabled={redeemLoading}>
+                {redeemLoading ? 'Resgatando...' : 'Resgatar'}
+              </button>
+            </form>
+          </section>
+        )}
       </main>
 
-      <nav className="bottom-nav">
-        <a className="bottom-nav-tab active" href={homeHref}>
-          <span className="icon">🏠</span>
-          <span className="label">Início</span>
-        </a>
-        <a
-          className={`bottom-nav-tab${mavfLocked ? ' locked' : ''}${hasActiveMavfSession ? ' has-notification' : ''}`}
-          href={mavfHref}
-          onClick={handleMavfClick}
-          aria-disabled={mavfLocked}
-        >
-          <span className="icon">📊</span>
-          <span className="label">MAVF</span>
-        </a>
-        <a className={`bottom-nav-tab${mavfLocked ? ' locked' : ''}`} href={mavfHistoryHref} onClick={handleMavfClick} aria-disabled={mavfLocked}>
-          <span className="icon">🕘</span>
-          <span className="label">Histórico</span>
-        </a>
-      </nav>
+      {!adminMode ? <BottomNav activeTab="inicio" /> : null}
 
       <div className="value-sheet-overlay" id="value-sheet-overlay" onClick={() => window.closeItemEditor?.()}>
         <div className="value-sheet" onClick={(event) => event.stopPropagation()}>
@@ -1617,6 +1874,10 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           gap: 12px;
         }
 
+        .header-fase-progress-mobile {
+          display: none;
+        }
+
         .theme-switch {
           display: inline-flex;
           background: var(--theme-pill);
@@ -1734,6 +1995,20 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         }
 
         @media (max-width: 620px) {
+          .header {
+            height: auto;
+            padding: 8px 10px;
+            flex-wrap: wrap;
+            row-gap: 8px;
+          }
+
+          .header-right {
+            gap: 7px;
+            width: 100%;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+          }
+
           .save-indicator {
             display: none;
           }
@@ -1746,6 +2021,38 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           .btn-back-admin {
             padding: 6px 8px;
             font-size: 10px;
+          }
+
+          .header-fase-progress-mobile {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            width: 100%;
+            padding-top: 2px;
+          }
+
+          .header-fase-emoji {
+            font-size: 14px;
+            line-height: 1;
+          }
+
+          .header-fase-track {
+            flex: 1;
+            height: 6px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.12);
+          }
+
+          .header-fase-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #00c853);
+          }
+
+          .header-fase-label {
+            font-size: 10px;
+            color: var(--muted);
+            white-space: nowrap;
           }
         }
 
@@ -1809,81 +2116,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           font-weight: 800;
         }
 
-        .bottom-nav {
-          display: none;
-          position: fixed;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 210;
-          background: var(--bg2);
-          border-top: 1px solid var(--border);
-          padding: 8px 8px max(8px, env(safe-area-inset-bottom));
-          justify-content: space-around;
-          gap: 6px;
-        }
-
-        .bottom-nav-tab {
-          flex: 1;
-          max-width: 132px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-          min-height: 48px;
-          text-decoration: none;
-          color: var(--dim);
-          border-radius: 10px;
-          transition: all 0.15s;
-          position: relative;
-        }
-
-        .bottom-nav-tab.active {
-          color: var(--green);
-          background: var(--green-dim);
-          font-weight: 600;
-        }
-
-        .bottom-nav-tab .icon {
-          font-size: 18px;
-          line-height: 1;
-        }
-
-        .bottom-nav-tab .label {
-          font-size: 10px;
-          letter-spacing: 0.2px;
-        }
-
-        .bottom-nav-tab.locked {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .bottom-nav-tab.locked::after {
-          content: '🔒';
-          position: absolute;
-          top: 4px;
-          right: 12px;
-          font-size: 10px;
-        }
-
-        .bottom-nav-tab.has-notification::before {
-          content: '';
-          position: absolute;
-          top: 6px;
-          right: 14px;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--green);
-        }
-
         @media (max-width: 760px) {
-          .bottom-nav {
-            display: flex;
-          }
-
           .main {
             padding: 14px 10px 120px;
           }
@@ -2860,6 +3093,79 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         .bloco[data-bloco='desfrute'] .bloco-titulo,
         .bloco[data-bloco='desfrute'] .bloco-total {
           color: #ff8c00;
+        }
+
+        .perfil-section {
+          margin-top: 14px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg2);
+          padding: 14px;
+        }
+
+        .perfil-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .perfil-header h3 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 700;
+        }
+
+        .perfil-link {
+          color: var(--green);
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .perfil-copy {
+          margin: 8px 0 10px;
+          font-size: 12px;
+          color: var(--muted);
+        }
+
+        .perfil-redeem-form {
+          display: flex;
+          gap: 8px;
+        }
+
+        .perfil-redeem-input {
+          flex: 1;
+          background: var(--bg4);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          color: var(--text);
+          font-size: 12px;
+          padding: 9px 11px;
+          text-transform: uppercase;
+          outline: none;
+        }
+
+        .perfil-redeem-input:focus {
+          border-color: var(--green);
+        }
+
+        .perfil-redeem-btn {
+          background: var(--green-dim);
+          border: 1px solid var(--green);
+          color: var(--green);
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 9px 12px;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .perfil-redeem-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
         }
 
         .toast {

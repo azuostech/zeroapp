@@ -1,5 +1,6 @@
 export const VALID_COINS_ACTIONS = [
   'signup',
+  'item_realized',
   'first_launch_month',
   'month_complete',
   'goal_reached',
@@ -13,6 +14,7 @@ export const VALID_COINS_ACTIONS = [
 
 export const DEFAULT_COINS_DESCRIPTIONS = {
   signup: 'Boas-vindas ao ZERO App',
+  item_realized: 'Item realizado',
   first_launch_month: 'Primeiro lançamento do mês',
   month_complete: 'Mês completo - todos os 6 blocos',
   goal_reached: 'Meta de reserva atingida',
@@ -26,6 +28,7 @@ export const DEFAULT_COINS_DESCRIPTIONS = {
 
 export const DEFAULT_COINS_ACTION_AMOUNTS = {
   signup: 50,
+  item_realized: 5,
   first_launch_month: 10,
   month_complete: 100,
   goal_reached: 150,

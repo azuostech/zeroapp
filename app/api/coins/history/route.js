@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
-import { getCoinsHistory } from '@/src/modules/coins/application/coins-service';
+import { getCoinsBalance, getCoinsHistory } from '@/src/modules/coins/application/coins-service';
+import { getProgressInfo } from '@/src/modules/coins/domain/jornada-phases';
 
 export async function GET(request) {
   const limitParam = request.nextUrl.searchParams.get('limit') || '20';
@@ -29,13 +30,47 @@ export async function GET(request) {
   }
 
   try {
-    const history = await getCoinsHistory({
-      supabase,
-      userId: user.id,
-      limit
-    });
+    const [history, balance] = await Promise.all([
+      getCoinsHistory({
+        supabase,
+        userId: user.id,
+        limit
+      }),
+      getCoinsBalance({
+        supabase,
+        userId: user.id
+      })
+    ]);
 
-    return NextResponse.json({ data: history });
+    const coins = Number(balance?.coins || 0);
+    const coinsTotal = Number(balance?.coins_total || 0);
+    const progress = getProgressInfo(coinsTotal);
+
+    return NextResponse.json({
+      // Compatibilidade com consumidores antigos.
+      data: history,
+      balance: {
+        coins,
+        coins_total: coinsTotal
+      },
+      transactions: history,
+      fase_atual: {
+        id: progress.faseAtual.id,
+        emoji: progress.faseAtual.emoji,
+        nome: progress.faseAtual.nome,
+        phase: progress.faseAtual.phase,
+        progresso_pct: progress.progressoPct,
+        coins_para_proxima: progress.coinsParaProxima
+      },
+      proxima_fase: progress.proximaFase
+        ? {
+            id: progress.proximaFase.id,
+            emoji: progress.proximaFase.emoji,
+            nome: progress.proximaFase.nome,
+            phase: progress.proximaFase.phase
+          }
+        : null
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
