@@ -1,4 +1,9 @@
-import { cloneDefaultFinancialData, normalizeFinancialData } from '@/src/modules/finance/domain/defaults';
+import {
+  cloneDefaultFinancialData,
+  createContaSubcat,
+  createFinanceItem,
+  normalizeFinancialData
+} from '@/src/modules/finance/domain/defaults';
 
 const SIMPLE_BLOCKS = new Set(['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute']);
 
@@ -33,7 +38,7 @@ function asGroups(value) {
 function addSimpleCategory(data, bloco, nome) {
   const list = asArray(data[bloco]);
   if (list.some((item) => sameName(item?.nome, nome))) return false;
-  list.push({ nome, valor: '' });
+  list.push(createFinanceItem(nome, '0'));
   data[bloco] = list;
   return true;
 }
@@ -72,7 +77,7 @@ function addSubcategory(data, groupName, nome) {
   }
 
   if (asArray(group.subcats).some((item) => sameName(item?.nome, nome))) return false;
-  group.subcats.push({ nome, valor: '' });
+  group.subcats.push(createContaSubcat(nome, '0'));
   data.contas = groups;
   return true;
 }

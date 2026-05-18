@@ -6,45 +6,18 @@ import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import { useMonthCompletion } from '@/hooks/useMonthCompletion';
+import {
+  SIMPLE_BLOCK_KEYS,
+  cloneDefaultFinancialData,
+  createContaSubcat,
+  createFinanceItem,
+  normalizeFinancialData
+} from '@/src/modules/finance/domain/defaults';
 
 const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
 
-const DEFAULTS = {
-  receitas: [
-    { nome: 'Salário 1', valor: '' },
-    { nome: 'Salário 2', valor: '' },
-    { nome: 'Aluguel', valor: '' },
-    { nome: 'Aposentadoria', valor: '' }
-  ],
-  'pagar-primeiro': [
-    { nome: 'Lucro Primeiro', valor: '' },
-    { nome: 'Reserva de Liquidez', valor: '' },
-    { nome: 'Outros pagamentos', valor: '' }
-  ],
-  doar: [
-    { nome: 'Dízimos', valor: '' },
-    { nome: 'Ofertas', valor: '' },
-    { nome: 'Outras doações', valor: '' }
-  ],
-  contas: [
-    { nome: 'Habitação', subcats: [{ nome: 'Aluguel', valor: '' }, { nome: 'Condomínio', valor: '' }, { nome: 'Energia', valor: '' }, { nome: 'Água', valor: '' }] },
-    { nome: 'Transporte', subcats: [{ nome: 'Combustível', valor: '' }, { nome: 'Seguro auto', valor: '' }, { nome: 'Estacionamento', valor: '' }] },
-    { nome: 'Saúde', subcats: [{ nome: 'Plano de saúde', valor: '' }, { nome: 'Medicamentos', valor: '' }, { nome: 'Consultas', valor: '' }] },
-    { nome: 'Educação', subcats: [{ nome: 'Mensalidade', valor: '' }, { nome: 'Cursos', valor: '' }, { nome: 'Material', valor: '' }] },
-    { nome: 'Alimentação', subcats: [{ nome: 'Supermercado', valor: '' }, { nome: 'Restaurante', valor: '' }] },
-    { nome: 'Cuidados Pessoais', subcats: [{ nome: 'Salão', valor: '' }, { nome: 'Academia', valor: '' }] },
-    { nome: 'Impostos', subcats: [{ nome: 'IPTU', valor: '' }, { nome: 'IPVA', valor: '' }] },
-    { nome: 'Bancos', subcats: [{ nome: 'Tarifas', valor: '' }, { nome: 'Anuidades', valor: '' }] },
-    { nome: 'Cartões', subcats: [{ nome: 'Cartão 1', valor: '' }, { nome: 'Cartão 2', valor: '' }] }
-  ],
-  investimentos: [{ nome: 'Carteira de Investimentos', valor: '' }, { nome: 'Consórcio', valor: '' }, { nome: 'Cotas', valor: '' }],
-  desfrute: [{ nome: 'Viagem', valor: '' }, { nome: 'Jantar', valor: '' }, { nome: 'Lazer', valor: '' }]
-};
-
 const BLOCOS_SAIDA = ['pagar-primeiro', 'doar', 'contas', 'investimentos', 'desfrute'];
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 function esc(s) {
   return String(s || '')
@@ -158,6 +131,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
     let currentUser = null;
     let saveTimer = null;
     let mounted = true;
+    let editingTarget = null;
     const targetUserId = adminMode ? adminViewUserId : null;
     const targetFinancePath = (path) => withUserQuery(path, targetUserId);
     const targetPayload = (body) => withUserBody(body, targetUserId);
@@ -273,38 +247,173 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       saveTimer = setTimeout(salvarNuvem, 1500);
     };
 
+    const getPrevisto = (item) => pm(item?.valor_previsto ?? item?.valor ?? '0');
+    const getRealizadoBase = (item) => pm(item?.valor_realizado ?? item?.valor_previsto ?? item?.valor ?? '0');
+
+    const ensureItemShape = (item) => {
+      const safeItem = item && typeof item === 'object' ? item : createFinanceItem('');
+      const previsto = typeof safeItem.valor_previsto === 'string' ? safeItem.valor_previsto : String(safeItem.valor ?? '0');
+
+      safeItem.valor_previsto = previsto;
+      safeItem.valor = typeof safeItem.valor === 'string' ? safeItem.valor : previsto;
+      safeItem.valor_realizado = typeof safeItem.valor_realizado === 'string' ? safeItem.valor_realizado : '0';
+      safeItem.realized = Boolean(safeItem.realized);
+
+      return safeItem;
+    };
+
+    const ensureDadosShape = () => {
+      dados = normalizeFinancialData(dados);
+    };
+
+    const resumoStatus = (previsto, realizado, totalItens, realizados) => {
+      if (!totalItens) return 'Não iniciado';
+      if (previsto === 0 && realizado === 0) return `${Math.max(0, totalItens - realizados)} pendentes`;
+      if (previsto > 0 && realizado > previsto) return `⚠ Acima +${Math.round((realizado / previsto) * 100) - 100}%`;
+      if (realizados === totalItens) return 'Completo ✓';
+      return `${Math.max(0, totalItens - realizados)} pendentes`;
+    };
+
+    const resumoValor = (previsto, realizado) => `${fc(realizado)} / ${fc(previsto)}`;
+    const rowAmountLabel = (item) => {
+      if (!item) return 'R$ 0,00';
+      return fr(item.realized ? getRealizadoBase(item) : getPrevisto(item));
+    };
+
+    const getEditingItem = () => {
+      if (!editingTarget) return null;
+      if (editingTarget.kind === 'simple') return dados?.[editingTarget.bloco]?.[editingTarget.index] || null;
+      if (editingTarget.kind === 'subcat') return dados?.contas?.[editingTarget.gi]?.subcats?.[editingTarget.si] || null;
+      return null;
+    };
+
+    const openEditor = (target) => {
+      editingTarget = target;
+      const item = getEditingItem();
+      if (!item) {
+        editingTarget = null;
+        return;
+      }
+      ensureItemShape(item);
+
+      const overlay = document.getElementById('value-sheet-overlay');
+      const title = document.getElementById('sheet-item-title');
+      const previstoInput = document.getElementById('sheet-previsto-input');
+      const realizadoInput = document.getElementById('sheet-realizado-input');
+      const status = document.getElementById('sheet-item-status');
+
+      if (!overlay || !title || !previstoInput || !realizadoInput || !status) return;
+
+      title.textContent = item.nome || 'Item';
+      status.textContent = item.realized ? 'Status atual: realizado' : 'Status atual: pendente';
+      previstoInput.value = item.valor_previsto ?? item.valor ?? '';
+      realizadoInput.value = item.valor_realizado ?? '';
+      overlay.classList.add('show');
+      setTimeout(() => previstoInput.focus(), 0);
+    };
+
+    const closeEditor = () => {
+      editingTarget = null;
+      document.getElementById('value-sheet-overlay')?.classList.remove('show');
+    };
+
+    const saveEditor = () => {
+      const item = getEditingItem();
+      if (!item) {
+        closeEditor();
+        return;
+      }
+
+      const previstoInput = document.getElementById('sheet-previsto-input');
+      const realizadoInput = document.getElementById('sheet-realizado-input');
+      if (!previstoInput || !realizadoInput) return;
+
+      ensureItemShape(item);
+      item.valor_previsto = previstoInput.value;
+      item.valor = previstoInput.value;
+      item.valor_realizado = realizadoInput.value;
+
+      if (item.realized && pm(item.valor_realizado) <= 0) {
+        item.valor_realizado = item.valor_previsto ?? item.valor ?? '0';
+      }
+
+      if (editingTarget?.kind === 'simple') {
+        renderBlocoSimples(editingTarget.bloco);
+      } else if (editingTarget?.kind === 'subcat') {
+        renderSubcats(editingTarget.gi);
+      }
+
+      calcularTotais();
+      agendarSalvar();
+      closeEditor();
+    };
+
     const calcularTotais = () => {
+      ensureDadosShape();
+
       const t = {};
-      ['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute'].forEach((bloco) => {
-        t[bloco] = (dados[bloco] || []).reduce((acc, cat) => acc + pm(cat.valor), 0);
+      SIMPLE_BLOCK_KEYS.forEach((bloco) => {
+        const itens = (dados[bloco] || []).map(ensureItemShape);
+        const previsto = itens.reduce((acc, item) => acc + getPrevisto(item), 0);
+        const realizado = itens.filter((item) => item.realized).reduce((acc, item) => acc + getRealizadoBase(item), 0);
+        const realizados = itens.filter((item) => item.realized).length;
+
+        t[bloco] = {
+          previsto,
+          realizado,
+          totalItens: itens.length,
+          realizados,
+          status: resumoStatus(previsto, realizado, itens.length, realizados)
+        };
       });
 
-      t.contas = (dados.contas || []).reduce((acc, grupo) => acc + (grupo.subcats || []).reduce((inner, sub) => inner + pm(sub.valor), 0), 0);
+      const contasSubcats = (dados.contas || []).flatMap((grupo) => (Array.isArray(grupo?.subcats) ? grupo.subcats : []).map(ensureItemShape));
+      const contasPrevisto = contasSubcats.reduce((acc, item) => acc + getPrevisto(item), 0);
+      const contasRealizado = contasSubcats.filter((item) => item.realized).reduce((acc, item) => acc + getRealizadoBase(item), 0);
+      const contasRealizados = contasSubcats.filter((item) => item.realized).length;
+
+      t.contas = {
+        previsto: contasPrevisto,
+        realizado: contasRealizado,
+        totalItens: contasSubcats.length,
+        realizados: contasRealizados,
+        status: resumoStatus(contasPrevisto, contasRealizado, contasSubcats.length, contasRealizados)
+      };
 
       Object.keys(t).forEach((bloco) => {
-        const el = document.getElementById(`total-${bloco}`);
-        if (el) el.textContent = fc(t[bloco]);
+        const totalEl = document.getElementById(`total-${bloco}`);
+        if (totalEl) totalEl.textContent = resumoValor(t[bloco].previsto, t[bloco].realizado);
+
+        const progressEl = document.getElementById(`progress-${bloco}`);
+        if (progressEl) progressEl.textContent = t[bloco].status;
       });
 
-      setText('s-receitas', fc(t.receitas || 0));
-      setText('s-pagar', fc(t['pagar-primeiro'] || 0));
-      setText('s-doar', fc(t.doar || 0));
-      setText('s-contas', fc(t.contas || 0));
-      setText('s-invest', fc(t.investimentos || 0));
-      setText('s-desfrute', fc(t.desfrute || 0));
+      setText('s-receitas', resumoValor(t.receitas?.previsto || 0, t.receitas?.realizado || 0));
+      setText('s-pagar', resumoValor(t['pagar-primeiro']?.previsto || 0, t['pagar-primeiro']?.realizado || 0));
+      setText('s-doar', resumoValor(t.doar?.previsto || 0, t.doar?.realizado || 0));
+      setText('s-contas', resumoValor(t.contas?.previsto || 0, t.contas?.realizado || 0));
+      setText('s-invest', resumoValor(t.investimentos?.previsto || 0, t.investimentos?.realizado || 0));
+      setText('s-desfrute', resumoValor(t.desfrute?.previsto || 0, t.desfrute?.realizado || 0));
 
-      const saldo = (t.receitas || 0) - BLOCOS_SAIDA.reduce((acc, bloco) => acc + (t[bloco] || 0), 0);
+      const saldoPrevisto = (t.receitas?.previsto || 0) - BLOCOS_SAIDA.reduce((acc, bloco) => acc + (t[bloco]?.previsto || 0), 0);
+      const saldoRealizado = (t.receitas?.realizado || 0) - BLOCOS_SAIDA.reduce((acc, bloco) => acc + (t[bloco]?.realizado || 0), 0);
       const totalEl = document.getElementById('s-total');
       if (!totalEl) return;
-      totalEl.textContent = fr(saldo);
-      totalEl.className = `saldo-final-value${saldo < 0 ? ' neg' : ''}`;
+      totalEl.textContent = fr(saldoRealizado);
+      totalEl.className = `saldo-final-value${saldoRealizado < 0 ? ' neg' : ''}`;
+
+      setText('s-total-previsto', `Previsto: ${fr(saldoPrevisto)}`);
+
+      return t;
     };
 
     const atualizarTotalGrupo = (gi) => {
       const el = document.getElementById(`gtotal-${gi}`);
       if (!el) return;
-      const total = (dados.contas[gi]?.subcats || []).reduce((acc, sub) => acc + pm(sub.valor), 0);
-      el.textContent = total > 0 ? fc(total) : '';
+      const subcats = (dados.contas[gi]?.subcats || []).map(ensureItemShape);
+      const previsto = subcats.reduce((acc, sub) => acc + getPrevisto(sub), 0);
+      const realizado = subcats.filter((sub) => sub.realized).reduce((acc, sub) => acc + getRealizadoBase(sub), 0);
+      el.textContent = resumoValor(previsto, realizado);
     };
 
     const renderSubcats = (gi) => {
@@ -312,12 +421,19 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       if (!container) return;
       container.innerHTML = '';
 
-      (dados.contas[gi]?.subcats || []).forEach((sub, si) => {
+      (dados.contas[gi]?.subcats || []).forEach((rawSub, si) => {
+        const sub = ensureItemShape(rawSub);
         const row = document.createElement('div');
-        row.className = 'subcat-row';
-        row.innerHTML = `<div class="subcat-nome">${esc(sub.nome)}</div>
-          <input type="text" class="subcat-input" inputmode="decimal" placeholder="R$ 0,00" value="${esc(sub.valor)}"
-            onchange="atualizarSubcat(${gi},${si},this.value)" onkeydown="numOnly(event)" onfocus="this.select()">
+        row.className = `subcat-row${sub.realized ? ' is-realized' : ''}`;
+        row.innerHTML = `<label class="row-check-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="row-check" ${sub.realized ? 'checked' : ''} onchange="toggleSubcatRealized(${gi},${si},this.checked)">
+            <span class="row-check-ui">${sub.realized ? '✓' : ''}</span>
+          </label>
+          <div class="subcat-main">
+            <div class="subcat-nome${sub.realized ? ' done' : ''}">${esc(sub.nome)}</div>
+            <div class="subcat-meta">${sub.realized ? 'Pago' : 'Pendente'}</div>
+          </div>
+          <button class="subcat-amount-btn${sub.realized ? ' realized' : ''}" onclick="openSubcatEditor(${gi},${si})">${esc(rowAmountLabel(sub))}</button>
           <button class="subcat-remove" onclick="removerSubcat(${gi},${si})">✕</button>`;
         container.appendChild(row);
       });
@@ -338,11 +454,11 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           </div>
         </div>
         <div class="grupo-body" id="gbody-${gi}">
-          <div id="subcats-${gi}"></div>
-          <div class="add-subcat-row">
+          <div class="add-subcat-row add-subcat-row-top">
             <input type="text" class="add-subcat-input" id="new-sub-${gi}" placeholder="+ Nova subcategoria">
             <button class="add-subcat-btn" onclick="adicionarSubcat(${gi})">Adicionar</button>
           </div>
+          <div id="subcats-${gi}"></div>
         </div>`;
 
       setTimeout(() => renderSubcats(gi), 0);
@@ -361,12 +477,19 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       if (!container) return;
       container.innerHTML = '';
 
-      (dados[bloco] || []).forEach((cat, i) => {
+      (dados[bloco] || []).forEach((rawCat, i) => {
+        const cat = ensureItemShape(rawCat);
         const row = document.createElement('div');
-        row.className = 'cat-row';
-        row.innerHTML = `<div class="cat-nome">${esc(cat.nome)}</div>
-          <input type="text" class="cat-input" inputmode="decimal" placeholder="R$ 0,00" value="${esc(cat.valor)}"
-            onchange="atualizarSimples('${bloco}',${i},this.value)" onkeydown="numOnly(event)" onfocus="this.select()">
+        row.className = `cat-row${cat.realized ? ' is-realized' : ''}`;
+        row.innerHTML = `<label class="row-check-wrap">
+            <input type="checkbox" class="row-check" ${cat.realized ? 'checked' : ''} onchange="toggleSimplesRealized('${bloco}',${i},this.checked)">
+            <span class="row-check-ui">${cat.realized ? '✓' : ''}</span>
+          </label>
+          <div class="cat-main">
+            <div class="cat-nome${cat.realized ? ' done' : ''}">${esc(cat.nome)}</div>
+            <div class="cat-meta">${cat.realized ? 'Pago' : 'Pendente'}</div>
+          </div>
+          <button class="cat-amount-btn${cat.realized ? ' realized' : ''}" onclick="openSimplesEditor('${bloco}',${i})">${esc(rowAmountLabel(cat))}</button>
           <button class="cat-remove" onclick="removerCat('${bloco}',${i})">✕</button>`;
         container.appendChild(row);
       });
@@ -384,7 +507,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       if (!mes || !ano) return;
 
       const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${mes}&year=${ano}`));
-      dados = payload?.data && Object.keys(payload.data).length > 0 ? payload.data : clone(DEFAULTS);
+      dados = normalizeFinancialData(payload?.data && Object.keys(payload.data).length > 0 ? payload.data : cloneDefaultFinancialData());
       renderTudo();
     };
 
@@ -406,7 +529,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       if (!nome) return;
 
       if (!dados[bloco]) dados[bloco] = [];
-      dados[bloco].push({ nome, valor: '' });
+      dados[bloco].push(createFinanceItem(nome, '0'));
       input.value = '';
       renderBlocoSimples(bloco);
       calcularTotais();
@@ -437,8 +560,45 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       }
     };
 
-    const atualizarSimples = (bloco, i, val) => {
-      dados[bloco][i].valor = val;
+    const atualizarSimples = (bloco, i, campo, val) => {
+      const item = dados[bloco]?.[i];
+      if (!item) return;
+
+      ensureItemShape(item);
+
+      if (campo === 'valor_realizado') {
+        item.valor_realizado = val;
+        item.realized = true;
+      } else {
+        item.valor_previsto = val;
+        item.valor = val;
+      }
+
+      calcularTotais();
+      agendarSalvar();
+    };
+
+    const openSimplesEditor = (bloco, i) => {
+      openEditor({ kind: 'simple', bloco, index: i });
+    };
+
+    const toggleSimplesRealized = (bloco, i, checked) => {
+      const item = dados[bloco]?.[i];
+      if (!item) return;
+
+      ensureItemShape(item);
+      item.realized = Boolean(checked);
+
+      if (item.realized) {
+        const atual = pm(item.valor_realizado);
+        if (atual <= 0) {
+          item.valor_realizado = item.valor_previsto ?? item.valor ?? '0';
+        }
+      } else {
+        item.valor_realizado = '0';
+      }
+
+      renderBlocoSimples(bloco);
       calcularTotais();
       agendarSalvar();
     };
@@ -447,6 +607,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       const input = document.getElementById('new-grupo-contas');
       const nome = input?.value.trim();
       if (!nome) return;
+      ensureDadosShape();
       dados.contas.push({ nome, subcats: [] });
       input.value = '';
       renderBlocoContas();
@@ -484,7 +645,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       const nome = input?.value.trim();
       if (!nome) return;
       const groupName = dados.contas[gi]?.nome;
-      dados.contas[gi].subcats.push({ nome, valor: '' });
+      dados.contas[gi].subcats.push(createContaSubcat(nome, '0'));
       input.value = '';
       renderSubcats(gi);
       calcularTotais();
@@ -516,23 +677,68 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       }
     };
 
-    const atualizarSubcat = (gi, si, val) => {
-      dados.contas[gi].subcats[si].valor = val;
+    const atualizarSubcat = (gi, si, campo, val) => {
+      const item = dados.contas?.[gi]?.subcats?.[si];
+      if (!item) return;
+
+      ensureItemShape(item);
+
+      if (campo === 'valor_realizado') {
+        item.valor_realizado = val;
+        item.realized = true;
+      } else {
+        item.valor_previsto = val;
+        item.valor = val;
+      }
+
       atualizarTotalGrupo(gi);
+      calcularTotais();
+      agendarSalvar();
+    };
+
+    const openSubcatEditor = (gi, si) => {
+      openEditor({ kind: 'subcat', gi, si });
+    };
+
+    const toggleSubcatRealized = (gi, si, checked) => {
+      const item = dados.contas?.[gi]?.subcats?.[si];
+      if (!item) return;
+
+      ensureItemShape(item);
+      item.realized = Boolean(checked);
+
+      if (item.realized) {
+        const atual = pm(item.valor_realizado);
+        if (atual <= 0) {
+          item.valor_realizado = item.valor_previsto ?? item.valor ?? '0';
+        }
+      } else {
+        item.valor_realizado = '0';
+      }
+
+      renderSubcats(gi);
       calcularTotais();
       agendarSalvar();
     };
 
     const limparMes = async () => {
       if (!window.confirm('Zerar todos os valores deste mês?')) return;
-      ['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute'].forEach((bloco) =>
+      SIMPLE_BLOCK_KEYS.forEach((bloco) =>
         (dados[bloco] || []).forEach((cat) => {
-          cat.valor = '';
+          const item = ensureItemShape(cat);
+          item.valor_previsto = '';
+          item.valor = '';
+          item.valor_realizado = '0';
+          item.realized = false;
         })
       );
       (dados.contas || []).forEach((grupo) =>
         (grupo.subcats || []).forEach((sub) => {
-          sub.valor = '';
+          const item = ensureItemShape(sub);
+          item.valor_previsto = '';
+          item.valor = '';
+          item.valor_realizado = '0';
+          item.realized = false;
         })
       );
       renderTudo();
@@ -554,29 +760,39 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       ].forEach(({ key, label }) => {
         txt += `${label}\n${'─'.repeat(30)}\n`;
         (dados[key] || [])
-          .filter((c) => pm(c.valor) > 0)
+          .map(ensureItemShape)
+          .filter((c) => getPrevisto(c) > 0 || (c.realized && getRealizadoBase(c) > 0))
           .forEach((c) => {
-            txt += `  ${c.nome.padEnd(24)} ${fr(pm(c.valor))}\n`;
+            txt += `  ${c.nome.padEnd(16)} Prev ${fr(getPrevisto(c))} | Real ${fr(c.realized ? getRealizadoBase(c) : 0)}${c.realized ? ' ✓' : ''}\n`;
           });
-        txt += `  ${'TOTAL'.padEnd(24)} ${fr((dados[key] || []).reduce((a, c) => a + pm(c.valor), 0))}\n\n`;
+        txt += `  ${'TOTAL PREV'.padEnd(16)} ${fr((dados[key] || []).reduce((a, c) => a + getPrevisto(ensureItemShape(c)), 0))}\n`;
+        txt += `  ${'TOTAL REAL'.padEnd(16)} ${fr((dados[key] || []).reduce((a, c) => a + (ensureItemShape(c).realized ? getRealizadoBase(c) : 0), 0))}\n\n`;
       });
 
-      const totalContas = (dados.contas || []).reduce((a, g) => a + (g.subcats || []).reduce((b, s) => b + pm(s.valor), 0), 0);
+      const totalContasPrev = (dados.contas || []).reduce((a, g) => a + (g.subcats || []).reduce((b, s) => b + getPrevisto(ensureItemShape(s)), 0), 0);
+      const totalContasReal = (dados.contas || []).reduce(
+        (a, g) => a + (g.subcats || []).reduce((b, s) => b + (ensureItemShape(s).realized ? getRealizadoBase(s) : 0), 0),
+        0
+      );
       txt += `4. PAGAR AS CONTAS\n${'─'.repeat(30)}\n`;
 
       (dados.contas || []).forEach((g) => {
-        const gt = (g.subcats || []).reduce((a, s) => a + pm(s.valor), 0);
-        if (!gt) return;
+        const gtPrev = (g.subcats || []).reduce((a, s) => a + getPrevisto(ensureItemShape(s)), 0);
+        const gtReal = (g.subcats || []).reduce((a, s) => a + (ensureItemShape(s).realized ? getRealizadoBase(s) : 0), 0);
+        if (!gtPrev && !gtReal) return;
         txt += `  ${g.nome}\n`;
         (g.subcats || [])
-          .filter((s) => pm(s.valor) > 0)
+          .map(ensureItemShape)
+          .filter((s) => getPrevisto(s) > 0 || (s.realized && getRealizadoBase(s) > 0))
           .forEach((s) => {
-            txt += `    ${s.nome.padEnd(22)} ${fr(pm(s.valor))}\n`;
+            txt += `    ${s.nome.padEnd(14)} Prev ${fr(getPrevisto(s))} | Real ${fr(s.realized ? getRealizadoBase(s) : 0)}${s.realized ? ' ✓' : ''}\n`;
           });
-        txt += `    ${'Subtotal'.padEnd(22)} ${fr(gt)}\n`;
+        txt += `    ${'Subtotal Prev'.padEnd(18)} ${fr(gtPrev)}\n`;
+        txt += `    ${'Subtotal Real'.padEnd(18)} ${fr(gtReal)}\n`;
       });
 
-      txt += `  ${'TOTAL'.padEnd(24)} ${fr(totalContas)}\n\n`;
+      txt += `  ${'TOTAL PREV'.padEnd(16)} ${fr(totalContasPrev)}\n`;
+      txt += `  ${'TOTAL REAL'.padEnd(16)} ${fr(totalContasReal)}\n\n`;
 
       [
         { key: 'investimentos', label: '5. INVESTIMENTOS' },
@@ -584,20 +800,30 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       ].forEach(({ key, label }) => {
         txt += `${label}\n${'─'.repeat(30)}\n`;
         (dados[key] || [])
-          .filter((c) => pm(c.valor) > 0)
+          .map(ensureItemShape)
+          .filter((c) => getPrevisto(c) > 0 || (c.realized && getRealizadoBase(c) > 0))
           .forEach((c) => {
-            txt += `  ${c.nome.padEnd(24)} ${fr(pm(c.valor))}\n`;
+            txt += `  ${c.nome.padEnd(16)} Prev ${fr(getPrevisto(c))} | Real ${fr(c.realized ? getRealizadoBase(c) : 0)}${c.realized ? ' ✓' : ''}\n`;
           });
-        txt += `  ${'TOTAL'.padEnd(24)} ${fr((dados[key] || []).reduce((a, c) => a + pm(c.valor), 0))}\n\n`;
+        txt += `  ${'TOTAL PREV'.padEnd(16)} ${fr((dados[key] || []).reduce((a, c) => a + getPrevisto(ensureItemShape(c)), 0))}\n`;
+        txt += `  ${'TOTAL REAL'.padEnd(16)} ${fr((dados[key] || []).reduce((a, c) => a + (ensureItemShape(c).realized ? getRealizadoBase(c) : 0), 0))}\n\n`;
       });
 
-      const receitas = (dados.receitas || []).reduce((a, c) => a + pm(c.valor), 0);
-      const saidas = BLOCOS_SAIDA.reduce((a, bloco) => {
-        if (bloco === 'contas') return a + totalContas;
-        return a + (dados[bloco] || []).reduce((x, c) => x + pm(c.valor), 0);
+      const receitasPrev = (dados.receitas || []).reduce((a, c) => a + getPrevisto(ensureItemShape(c)), 0);
+      const receitasReal = (dados.receitas || []).reduce(
+        (a, c) => a + (ensureItemShape(c).realized ? getRealizadoBase(c) : 0),
+        0
+      );
+      const saidasPrev = BLOCOS_SAIDA.reduce((a, bloco) => {
+        if (bloco === 'contas') return a + totalContasPrev;
+        return a + (dados[bloco] || []).reduce((x, c) => x + getPrevisto(ensureItemShape(c)), 0);
+      }, 0);
+      const saidasReal = BLOCOS_SAIDA.reduce((a, bloco) => {
+        if (bloco === 'contas') return a + totalContasReal;
+        return a + (dados[bloco] || []).reduce((x, c) => x + (ensureItemShape(c).realized ? getRealizadoBase(c) : 0), 0);
       }, 0);
 
-      txt += `${'═'.repeat(42)}\nSALDO DO MÊS: ${fr(receitas - saidas)}\n`;
+      txt += `${'═'.repeat(42)}\nSALDO PREVISTO: ${fr(receitasPrev - saidasPrev)}\nSALDO REALIZADO: ${fr(receitasReal - saidasReal)}\n`;
 
       const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -625,6 +851,18 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
     };
 
     const handleEnter = (event) => {
+      const overlayOpen = document.getElementById('value-sheet-overlay')?.classList.contains('show');
+      if (event.key === 'Escape' && overlayOpen) {
+        closeEditor();
+        return;
+      }
+
+      if (overlayOpen && event.key === 'Enter') {
+        event.preventDefault();
+        saveEditor();
+        return;
+      }
+
       if (event.key !== 'Enter') return;
       const el = document.activeElement;
       if (!el) return;
@@ -711,11 +949,17 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
     window.adicionarCat = adicionarCat;
     window.removerCat = removerCat;
     window.atualizarSimples = atualizarSimples;
+    window.toggleSimplesRealized = toggleSimplesRealized;
+    window.openSimplesEditor = openSimplesEditor;
     window.adicionarGrupo = adicionarGrupo;
     window.removerGrupo = removerGrupo;
     window.adicionarSubcat = adicionarSubcat;
     window.removerSubcat = removerSubcat;
     window.atualizarSubcat = atualizarSubcat;
+    window.toggleSubcatRealized = toggleSubcatRealized;
+    window.openSubcatEditor = openSubcatEditor;
+    window.closeItemEditor = closeEditor;
+    window.saveItemEditor = saveEditor;
     window.limparMes = limparMes;
     window.exportarTexto = exportarTexto;
     window.logout = logout;
@@ -734,11 +978,17 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       delete window.adicionarCat;
       delete window.removerCat;
       delete window.atualizarSimples;
+      delete window.toggleSimplesRealized;
+      delete window.openSimplesEditor;
       delete window.adicionarGrupo;
       delete window.removerGrupo;
       delete window.adicionarSubcat;
       delete window.removerSubcat;
       delete window.atualizarSubcat;
+      delete window.toggleSubcatRealized;
+      delete window.openSubcatEditor;
+      delete window.closeItemEditor;
+      delete window.saveItemEditor;
       delete window.limparMes;
       delete window.exportarTexto;
       delete window.logout;
@@ -907,7 +1157,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             </div>
           </div>
           <div className="saldo-final">
-            <div className="saldo-final-label">Saldo do Mês</div>
+            <div>
+              <div className="saldo-final-label">Saldo Realizado do Mês</div>
+              <div className="saldo-final-meta" id="s-total-previsto">
+                Previsto: R$ 0,00
+              </div>
+            </div>
             <div className="saldo-final-value" id="s-total">
               R$ 0,00
             </div>
@@ -921,6 +1176,9 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           <button className="btn btn-outline" onClick={() => window.exportarTexto?.()}>
             ↓ Exportar resumo
           </button>
+          <a className="btn btn-outline" href="/resumo">
+            Ver resumo mensal
+          </a>
         </div>
 
         <div id="blocos-container">
@@ -935,19 +1193,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-receitas">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-receitas">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="cats-receitas" />
-              <div className="add-row">
+              <div className="add-row add-row-top">
                 <input type="text" className="add-input" id="new-receitas" placeholder="+ Nova receita (ex: Freelance)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('receitas')}>
                   Adicionar
                 </button>
               </div>
+              <div id="cats-receitas" />
             </div>
           </div>
 
@@ -962,19 +1223,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-pagar-primeiro">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-pagar-primeiro">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="cats-pagar-primeiro" />
-              <div className="add-row">
+              <div className="add-row add-row-top">
                 <input type="text" className="add-input" id="new-pagar-primeiro" placeholder="+ Adicionar (ex: Reserva de emergência)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('pagar-primeiro')}>
                   Adicionar
                 </button>
               </div>
+              <div id="cats-pagar-primeiro" />
             </div>
           </div>
 
@@ -989,19 +1253,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-doar">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-doar">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="cats-doar" />
-              <div className="add-row">
+              <div className="add-row add-row-top">
                 <input type="text" className="add-input" id="new-doar" placeholder="+ Adicionar (ex: Missões)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('doar')}>
                   Adicionar
                 </button>
               </div>
+              <div id="cats-doar" />
             </div>
           </div>
 
@@ -1016,19 +1283,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-contas">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-contas">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="grupos-contas" />
-              <div className="add-grupo-row">
+              <div className="add-grupo-row add-grupo-row-top">
                 <input type="text" className="add-grupo-input" id="new-grupo-contas" placeholder="+ Novo grupo (ex: Saúde, Lazer...)" />
                 <button className="add-grupo-btn" onClick={() => window.adicionarGrupo?.()}>
                   + Grupo
                 </button>
               </div>
+              <div id="grupos-contas" />
             </div>
           </div>
 
@@ -1043,19 +1313,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-investimentos">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-investimentos">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="cats-investimentos" />
-              <div className="add-row">
+              <div className="add-row add-row-top">
                 <input type="text" className="add-input" id="new-investimentos" placeholder="+ Adicionar (ex: Tesouro Direto)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('investimentos')}>
                   Adicionar
                 </button>
               </div>
+              <div id="cats-investimentos" />
             </div>
           </div>
 
@@ -1070,19 +1343,22 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </div>
               <div className="bloco-right">
                 <div className="bloco-total" id="total-desfrute">
-                  R$ 0
+                  R$ 0 / R$ 0
+                </div>
+                <div className="bloco-progress" id="progress-desfrute">
+                  Não iniciado
                 </div>
                 <div className="bloco-chevron">▼</div>
               </div>
             </div>
             <div className="bloco-body">
-              <div id="cats-desfrute" />
-              <div className="add-row">
+              <div className="add-row add-row-top">
                 <input type="text" className="add-input" id="new-desfrute" placeholder="+ Adicionar (ex: Cinema)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('desfrute')}>
                   Adicionar
                 </button>
               </div>
+              <div id="cats-desfrute" />
             </div>
           </div>
         </div>
@@ -1107,6 +1383,35 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           <span className="label">Histórico</span>
         </a>
       </nav>
+
+      <div className="value-sheet-overlay" id="value-sheet-overlay" onClick={() => window.closeItemEditor?.()}>
+        <div className="value-sheet" onClick={(event) => event.stopPropagation()}>
+          <div className="value-sheet-title" id="sheet-item-title">
+            Item
+          </div>
+          <div className="value-sheet-status" id="sheet-item-status">
+            Status atual
+          </div>
+          <div className="value-sheet-grid">
+            <label className="value-field">
+              <span>Previsto</span>
+              <input type="text" id="sheet-previsto-input" inputMode="decimal" placeholder="R$ 0,00" />
+            </label>
+            <label className="value-field">
+              <span>Realizado</span>
+              <input type="text" id="sheet-realizado-input" inputMode="decimal" placeholder="R$ 0,00" />
+            </label>
+          </div>
+          <div className="value-sheet-actions">
+            <button className="btn-sheet btn-sheet-ghost" onClick={() => window.closeItemEditor?.()}>
+              Cancelar
+            </button>
+            <button className="btn-sheet" onClick={() => window.saveItemEditor?.()}>
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="toast" id="toast" />
 
@@ -1643,6 +1948,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           color: var(--muted);
         }
 
+        .saldo-final-meta {
+          margin-top: 4px;
+          font-size: 11px;
+          color: var(--dim);
+        }
+
         .saldo-final-value {
           font-family: 'Space Mono', monospace;
           font-size: 20px;
@@ -1776,20 +2087,31 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
         .bloco-right {
           display: flex;
-          align-items: center;
-          gap: 14px;
+          align-items: flex-end;
+          gap: 10px;
+          flex-direction: column;
         }
 
         .bloco-total {
           font-family: 'Space Mono', monospace;
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 700;
+          text-align: right;
+          line-height: 1.2;
+        }
+
+        .bloco-progress {
+          font-size: 10px;
+          color: var(--muted);
+          max-width: 170px;
+          text-align: right;
         }
 
         .bloco-chevron {
           color: var(--muted);
           font-size: 11px;
           transition: transform 0.2s;
+          align-self: flex-end;
         }
 
         .bloco.open .bloco-chevron {
@@ -1811,7 +2133,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           gap: 10px;
           padding: 11px 20px;
           border-bottom: 1px solid var(--line-soft);
-          transition: background 0.1s;
+          transition: background 0.1s, border-color 0.2s;
+        }
+
+        .cat-row.is-realized {
+          background: rgba(0, 200, 83, 0.06);
+          border-color: rgba(0, 200, 83, 0.22);
         }
 
         .cat-row:hover {
@@ -1823,9 +2150,31 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         }
 
         .cat-nome {
-          flex: 1;
           font-size: 13px;
           color: var(--dim);
+        }
+
+        .cat-nome.done {
+          text-decoration: line-through;
+          color: var(--muted);
+        }
+
+        .cat-main {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .cat-meta {
+          margin-top: 3px;
+          font-size: 11px;
+          color: var(--muted);
+        }
+
+        .cat-values {
+          display: flex;
+          gap: 8px;
+          margin-top: 6px;
+          flex-wrap: wrap;
         }
 
         .cat-input {
@@ -1840,6 +2189,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           text-align: right;
           outline: none;
           transition: border-color 0.15s;
+        }
+
+        .cat-input.realized {
+          border-color: rgba(0, 200, 83, 0.45);
+          color: var(--green);
+          background: rgba(0, 200, 83, 0.08);
         }
 
         .cat-input:focus {
@@ -1870,12 +2225,77 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           color: var(--red);
         }
 
+        .cat-amount-btn {
+          border: 1px solid var(--border);
+          background: var(--bg4);
+          color: var(--text);
+          border-radius: 9px;
+          padding: 7px 10px;
+          font-family: 'Space Mono', monospace;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          min-width: 122px;
+          text-align: right;
+        }
+
+        .cat-amount-btn.realized {
+          border-color: rgba(0, 200, 83, 0.42);
+          color: var(--green);
+          background: rgba(0, 200, 83, 0.1);
+        }
+
+        .row-check-wrap {
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 6px;
+          position: relative;
+          flex-shrink: 0;
+          cursor: pointer;
+        }
+
+        .row-check {
+          position: absolute;
+          opacity: 0;
+          inset: 0;
+          cursor: pointer;
+          margin: 0;
+        }
+
+        .row-check-ui {
+          width: 20px;
+          height: 20px;
+          border-radius: 999px;
+          border: 2px solid var(--muted);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 800;
+          color: transparent;
+          transition: all 0.15s;
+        }
+
+        .row-check:checked + .row-check-ui {
+          border-color: var(--green);
+          background: var(--green);
+          color: #05210e;
+        }
+
         .add-row {
           display: flex;
           gap: 8px;
           padding: 11px 20px;
           background: var(--bg3);
           border-top: 1px solid var(--border);
+        }
+
+        .add-row-top {
+          border-top: 0;
+          border-bottom: 1px solid var(--border);
         }
 
         .add-input {
@@ -1969,10 +2389,11 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
         .grupo-total {
           font-family: 'Space Mono', monospace;
-          font-size: 12px;
-          color: var(--red);
-          min-width: 60px;
+          font-size: 11px;
+          color: var(--dim);
+          min-width: 120px;
           text-align: right;
+          line-height: 1.2;
         }
 
         .grupo-remove-btn {
@@ -2004,7 +2425,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           gap: 10px;
           padding: 9px 20px 9px 46px;
           border-bottom: 1px solid var(--line-softer);
-          transition: background 0.1s;
+          transition: background 0.1s, border-color 0.2s;
+        }
+
+        .subcat-row.is-realized {
+          background: rgba(0, 200, 83, 0.05);
+          border-color: rgba(0, 200, 83, 0.2);
         }
 
         .subcat-row:hover {
@@ -2016,9 +2442,30 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         }
 
         .subcat-nome {
-          flex: 1;
           font-size: 12px;
           color: var(--muted);
+        }
+
+        .subcat-nome.done {
+          text-decoration: line-through;
+        }
+
+        .subcat-main {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .subcat-meta {
+          margin-top: 2px;
+          font-size: 11px;
+          color: var(--muted);
+        }
+
+        .subcat-values {
+          display: flex;
+          gap: 8px;
+          margin-top: 5px;
+          flex-wrap: wrap;
         }
 
         .subcat-input {
@@ -2033,6 +2480,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           text-align: right;
           outline: none;
           transition: border-color 0.15s;
+        }
+
+        .subcat-input.realized {
+          border-color: rgba(0, 200, 83, 0.45);
+          color: var(--green);
+          background: rgba(0, 200, 83, 0.08);
         }
 
         .subcat-input:focus {
@@ -2063,12 +2516,37 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           color: var(--red);
         }
 
+        .subcat-amount-btn {
+          border: 1px solid var(--border);
+          background: var(--bg4);
+          color: var(--text);
+          border-radius: 8px;
+          padding: 6px 9px;
+          font-family: 'Space Mono', monospace;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          min-width: 110px;
+          text-align: right;
+        }
+
+        .subcat-amount-btn.realized {
+          border-color: rgba(0, 200, 83, 0.42);
+          color: var(--green);
+          background: rgba(0, 200, 83, 0.1);
+        }
+
         .add-subcat-row {
           display: flex;
           gap: 8px;
           padding: 8px 16px 8px 46px;
           background: rgba(255, 68, 68, 0.025);
           border-top: 1px solid rgba(255, 68, 68, 0.06);
+        }
+
+        .add-subcat-row-top {
+          border-top: 0;
+          border-bottom: 1px solid rgba(255, 68, 68, 0.08);
         }
 
         .add-subcat-input {
@@ -2115,6 +2593,11 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           padding: 12px 20px;
           background: rgba(255, 68, 68, 0.03);
           border-top: 1px solid rgba(255, 68, 68, 0.07);
+        }
+
+        .add-grupo-row-top {
+          border-top: 0;
+          border-bottom: 1px solid rgba(255, 68, 68, 0.09);
         }
 
         .add-grupo-input {
@@ -2227,6 +2710,127 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
 
         .toast.show {
           transform: translateX(-50%) translateY(0);
+        }
+
+        .value-sheet-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(4, 6, 8, 0.68);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 12px;
+          z-index: 998;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.18s;
+        }
+
+        .value-sheet-overlay.show {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .value-sheet {
+          width: min(560px, 100%);
+          border: 1px solid var(--border);
+          background: var(--bg2);
+          border-radius: 14px;
+          padding: 14px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .value-sheet-title {
+          font-size: 16px;
+          font-weight: 700;
+        }
+
+        .value-sheet-status {
+          margin-top: 4px;
+          font-size: 11px;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .value-sheet-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .value-field {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .value-field span {
+          font-size: 10px;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .value-field input {
+          background: var(--bg4);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          color: var(--text);
+          font-family: 'Space Mono', monospace;
+          font-size: 13px;
+          padding: 8px 10px;
+          outline: none;
+          text-align: right;
+        }
+
+        .value-sheet-actions {
+          margin-top: 12px;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .btn-sheet {
+          border: 0;
+          border-radius: 8px;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          background: var(--green);
+          color: #04190d;
+        }
+
+        .btn-sheet-ghost {
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--dim);
+        }
+
+        @media (max-width: 560px) {
+          .cat-row,
+          .subcat-row {
+            gap: 8px;
+            padding-left: 12px;
+            padding-right: 12px;
+          }
+
+          .subcat-row {
+            padding-left: 28px;
+          }
+
+          .cat-amount-btn,
+          .subcat-amount-btn {
+            min-width: 94px;
+            font-size: 11px;
+            padding: 6px 8px;
+          }
+
+          .value-sheet-grid {
+            grid-template-columns: 1fr;
+          }
         }
 
         .loading-screen {
