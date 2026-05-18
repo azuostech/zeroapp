@@ -1279,8 +1279,17 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             <div className="save-dot" id="save-dot" />
             <span id="save-label" />
           </div>
-          <TierDisplay key={`tier-${tierDisplayKey}-${adminMode ? adminViewUserId : 'self'}`} size="sm" showName={false} userId={adminMode ? adminViewUserId : null} />
-          <CoinsDisplay size="sm" />
+          <a className="jornada-shortcut-link" href="/jornada" aria-label="Abrir jornada (tier)">
+            <TierDisplay
+              key={`tier-${tierDisplayKey}-${adminMode ? adminViewUserId : 'self'}`}
+              size="sm"
+              showName={false}
+              userId={adminMode ? adminViewUserId : null}
+            />
+          </a>
+          <a className="jornada-shortcut-link" href="/jornada" aria-label="Abrir jornada (coins)">
+            <CoinsDisplay size="sm" />
+          </a>
           <div className="user-name" id="user-name-label" />
           <div className="header-month">
             <select className="month-select" id="mesSelect" onChange={() => window.trocarMes?.()}>
@@ -1872,6 +1881,18 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           display: flex;
           align-items: center;
           gap: 12px;
+        }
+
+        .jornada-shortcut-link {
+          display: inline-flex;
+          align-items: center;
+          text-decoration: none;
+          border-radius: 999px;
+        }
+
+        .jornada-shortcut-link:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
         }
 
         .header-fase-progress-mobile {

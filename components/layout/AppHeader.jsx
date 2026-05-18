@@ -112,10 +112,11 @@ export default function AppHeader() {
         </Link>
 
         <div className="header-actions">
-          <TierDisplay size="sm" showName={false} />
-          <Link href="/jornada" className="coins-link" aria-label="Ver jornada">
+          <Link href="/jornada" className="jornada-shortcut-link" aria-label="Abrir jornada (tier)">
+            <TierDisplay size="sm" showName={false} />
+          </Link>
+          <Link href="/jornada" className="jornada-shortcut-link" aria-label="Abrir jornada (coins)">
             <CoinsDisplay size="sm" className="header-coins" />
-            <span className="coins-link-hint">Ver jornada ›</span>
           </Link>
 
           <div className="user-avatar" title={displayName} aria-label={`Avatar de ${displayName}`}>
@@ -205,25 +206,16 @@ export default function AppHeader() {
           flex-shrink: 0;
         }
 
-        :global(.coins-link) {
+        :global(.jornada-shortcut-link) {
           display: inline-flex;
-          flex-direction: column;
           align-items: center;
-          gap: 2px;
           text-decoration: none;
+          border-radius: 999px;
         }
 
-        .coins-link-hint {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.2px;
-          color: #95a29a;
-          line-height: 1;
-        }
-
-        :global(.coins-link:hover .coins-link-hint),
-        :global(.coins-link:focus-visible .coins-link-hint) {
-          color: var(--app-header-logo, #00c853);
+        :global(.jornada-shortcut-link:focus-visible) {
+          outline: 2px solid var(--app-header-logo, #00c853);
+          outline-offset: 2px;
         }
 
         .user-avatar {
