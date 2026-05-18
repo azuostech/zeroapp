@@ -275,6 +275,10 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
     };
 
     const resumoValor = (previsto, realizado) => `${fc(realizado)} / ${fc(previsto)}`;
+    const setSaldoResumo = (baseId, previsto, realizado) => {
+      setText(baseId, fc(realizado));
+      setText(`${baseId}-prev`, fc(previsto));
+    };
     const rowAmountLabel = (item) => {
       if (!item) return 'R$ 0,00';
       return fr(item.realized ? getRealizadoBase(item) : getPrevisto(item));
@@ -388,12 +392,12 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         if (progressEl) progressEl.textContent = t[bloco].status;
       });
 
-      setText('s-receitas', resumoValor(t.receitas?.previsto || 0, t.receitas?.realizado || 0));
-      setText('s-pagar', resumoValor(t['pagar-primeiro']?.previsto || 0, t['pagar-primeiro']?.realizado || 0));
-      setText('s-doar', resumoValor(t.doar?.previsto || 0, t.doar?.realizado || 0));
-      setText('s-contas', resumoValor(t.contas?.previsto || 0, t.contas?.realizado || 0));
-      setText('s-invest', resumoValor(t.investimentos?.previsto || 0, t.investimentos?.realizado || 0));
-      setText('s-desfrute', resumoValor(t.desfrute?.previsto || 0, t.desfrute?.realizado || 0));
+      setSaldoResumo('s-receitas', t.receitas?.previsto || 0, t.receitas?.realizado || 0);
+      setSaldoResumo('s-pagar', t['pagar-primeiro']?.previsto || 0, t['pagar-primeiro']?.realizado || 0);
+      setSaldoResumo('s-doar', t.doar?.previsto || 0, t.doar?.realizado || 0);
+      setSaldoResumo('s-contas', t.contas?.previsto || 0, t.contas?.realizado || 0);
+      setSaldoResumo('s-invest', t.investimentos?.previsto || 0, t.investimentos?.realizado || 0);
+      setSaldoResumo('s-desfrute', t.desfrute?.previsto || 0, t.desfrute?.realizado || 0);
 
       const saldoPrevisto = (t.receitas?.previsto || 0) - BLOCOS_SAIDA.reduce((acc, bloco) => acc + (t[bloco]?.previsto || 0), 0);
       const saldoRealizado = (t.receitas?.realizado || 0) - BLOCOS_SAIDA.reduce((acc, bloco) => acc + (t[bloco]?.realizado || 0), 0);
@@ -1124,10 +1128,16 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               <div className="saldo-value" id="s-receitas">
                 R$ 0
               </div>
+              <div className="saldo-value-prev" id="s-receitas-prev">
+                R$ 0
+              </div>
             </div>
             <div className="saldo-item">
               <div className="saldo-label">Se Pagar 1°</div>
               <div className="saldo-value" id="s-pagar">
+                R$ 0
+              </div>
+              <div className="saldo-value-prev" id="s-pagar-prev">
                 R$ 0
               </div>
             </div>
@@ -1136,10 +1146,16 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               <div className="saldo-value" id="s-doar">
                 R$ 0
               </div>
+              <div className="saldo-value-prev" id="s-doar-prev">
+                R$ 0
+              </div>
             </div>
             <div className="saldo-item">
               <div className="saldo-label">Contas</div>
               <div className="saldo-value" id="s-contas">
+                R$ 0
+              </div>
+              <div className="saldo-value-prev" id="s-contas-prev">
                 R$ 0
               </div>
             </div>
@@ -1148,10 +1164,16 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               <div className="saldo-value" id="s-invest">
                 R$ 0
               </div>
+              <div className="saldo-value-prev" id="s-invest-prev">
+                R$ 0
+              </div>
             </div>
             <div className="saldo-item">
               <div className="saldo-label">Desfrute</div>
               <div className="saldo-value" id="s-desfrute">
+                R$ 0
+              </div>
+              <div className="saldo-value-prev" id="s-desfrute-prev">
                 R$ 0
               </div>
             </div>
@@ -1863,7 +1885,146 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           }
 
           .main {
-            padding-bottom: 120px;
+            padding: 14px 10px 120px;
+          }
+
+          .intro {
+            margin-bottom: 14px;
+          }
+
+          .intro-title {
+            font-size: 10px;
+            letter-spacing: 1.2px;
+            margin-bottom: 7px;
+          }
+
+          .step-pill {
+            font-size: 10px;
+            padding: 4px 8px;
+          }
+
+          .saldos-bar {
+            margin-bottom: 14px;
+            border-radius: 18px;
+            padding: 14px 12px;
+          }
+
+          .saldos-grid {
+            gap: 8px;
+            margin-bottom: 12px;
+          }
+
+          .saldo-label {
+            font-size: 8px;
+            letter-spacing: 1px;
+          }
+
+          .saldo-value {
+            font-size: 12px;
+          }
+
+          .saldo-value-prev {
+            font-size: 9px;
+            margin-top: 2px;
+          }
+
+          .saldo-final {
+            align-items: flex-end;
+            gap: 12px;
+          }
+
+          .saldo-final-value {
+            font-size: 26px;
+          }
+
+          .actions-bar {
+            gap: 6px;
+            margin-bottom: 14px;
+          }
+
+          .btn {
+            flex: 1 1 calc(50% - 6px);
+            padding: 10px 12px;
+            font-size: 11px;
+          }
+
+          .bloco {
+            margin-bottom: 10px;
+            border-radius: 18px;
+          }
+
+          .bloco-header {
+            padding: 14px 12px;
+          }
+
+          .bloco-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 11px;
+            font-size: 18px;
+          }
+
+          .bloco-titulo {
+            font-size: 18px;
+            line-height: 1.1;
+          }
+
+          .bloco-desc {
+            margin-top: 3px;
+            font-size: 12px;
+          }
+
+          .bloco-total {
+            font-size: 13px;
+          }
+
+          .bloco-progress {
+            font-size: 10px;
+          }
+
+          .add-row,
+          .add-grupo-row {
+            padding: 10px 12px;
+          }
+
+          .add-subcat-row {
+            padding: 8px 10px 8px 28px;
+          }
+
+          .cat-row {
+            padding: 10px 12px;
+          }
+
+          .subcat-row {
+            padding: 8px 10px 8px 28px;
+          }
+
+          .cat-nome {
+            font-size: 17px;
+            line-height: 1.1;
+          }
+
+          .subcat-nome {
+            font-size: 14px;
+            line-height: 1.1;
+          }
+
+          .cat-meta,
+          .subcat-meta {
+            font-size: 10px;
+            margin-top: 4px;
+          }
+
+          .cat-amount-btn {
+            min-width: 106px;
+            font-size: 12px;
+            padding: 7px 8px;
+          }
+
+          .subcat-amount-btn {
+            min-width: 94px;
+            font-size: 10px;
+            padding: 6px 7px;
           }
         }
 
@@ -1931,6 +2092,15 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           font-size: 13px;
           font-weight: 700;
           color: var(--green);
+        }
+
+        .saldo-value-prev {
+          margin-top: 3px;
+          font-family: 'Space Mono', monospace;
+          font-size: 10px;
+          font-weight: 600;
+          color: var(--dim);
+          line-height: 1.2;
         }
 
         .saldo-final {
@@ -2810,6 +2980,39 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         }
 
         @media (max-width: 560px) {
+          .header {
+            height: auto;
+            padding: 8px 8px;
+          }
+
+          .header-right {
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+          }
+
+          .brand-name {
+            font-size: 12px;
+          }
+
+          .header-month {
+            gap: 5px;
+          }
+
+          .month-select {
+            font-size: 10px;
+            padding: 5px 7px;
+          }
+
+          .theme-switch {
+            padding: 2px;
+          }
+
+          .theme-btn {
+            font-size: 9px;
+            padding: 4px 7px;
+          }
+
           .cat-row,
           .subcat-row {
             gap: 8px;
@@ -2826,6 +3029,30 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             min-width: 94px;
             font-size: 11px;
             padding: 6px 8px;
+          }
+
+          .value-sheet-overlay {
+            align-items: flex-end;
+            padding: 0;
+          }
+
+          .value-sheet {
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            border-left: 0;
+            border-right: 0;
+            border-bottom: 0;
+            padding: 14px 12px max(14px, env(safe-area-inset-bottom));
+          }
+
+          .value-sheet-actions {
+            gap: 6px;
+          }
+
+          .btn-sheet {
+            flex: 1;
+            text-align: center;
+            padding: 10px 10px;
           }
 
           .value-sheet-grid {
