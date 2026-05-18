@@ -5,14 +5,11 @@ import { usePathname } from 'next/navigation';
 
 const TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
-  { id: 'blocos', href: '/app#blocos', icon: '💰', label: 'Blocos' },
-  { id: 'jornada', href: '/jornada', icon: '🎯', label: 'Jornada' },
   { id: 'mavf', href: '/mavf', icon: '📊', label: 'MAVF' },
   { id: 'perfil', href: '/app#perfil', icon: '👤', label: 'Perfil' }
 ];
 
 function getAutoActiveTab(pathname) {
-  if (pathname.startsWith('/jornada')) return 'jornada';
   if (pathname.startsWith('/mavf')) return 'mavf';
   if (pathname.startsWith('/app')) return 'inicio';
   return '';

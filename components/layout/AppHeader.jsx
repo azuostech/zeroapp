@@ -113,7 +113,10 @@ export default function AppHeader() {
 
         <div className="header-actions">
           <TierDisplay size="sm" showName={false} />
-          <CoinsDisplay size="sm" className="header-coins" />
+          <Link href="/jornada" className="coins-link" aria-label="Ver jornada">
+            <CoinsDisplay size="sm" className="header-coins" />
+            <span className="coins-link-hint">Ver jornada ›</span>
+          </Link>
 
           <div className="user-avatar" title={displayName} aria-label={`Avatar de ${displayName}`}>
             {avatarInitial}
@@ -200,6 +203,27 @@ export default function AppHeader() {
 
         :global(.header-coins) {
           flex-shrink: 0;
+        }
+
+        :global(.coins-link) {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          text-decoration: none;
+        }
+
+        .coins-link-hint {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.2px;
+          color: #95a29a;
+          line-height: 1;
+        }
+
+        :global(.coins-link:hover .coins-link-hint),
+        :global(.coins-link:focus-visible .coins-link-hint) {
+          color: var(--app-header-logo, #00c853);
         }
 
         .user-avatar {
