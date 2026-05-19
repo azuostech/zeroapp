@@ -1,0 +1,240 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useGratitude } from '@/hooks/useGratitude';
+import GratidaoForm from '@/components/mavf/GratidaoForm';
+import GratidaoItem from '@/components/mavf/GratidaoItem';
+import { truncateText } from '@/src/modules/mavf/application/practices-format';
+
+export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, targetUserId = null }) {
+  const { entries, stats, isLoading, error, addEntry, removeEntry, refresh } = useGratitude(targetUserId);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const preview = useMemo(() => {
+    if (summary?.ultimo?.descricao) return truncateText(summary.ultimo.descricao, 60);
+    return 'Comece sua prática de gratidão.';
+  }, [summary]);
+
+  const visibleItems = useMemo(() => entries.slice(0, 20), [entries]);
+
+  const handleAdd = async (payload) => {
+    const result = await addEntry(payload);
+    await refresh();
+    await onUpdate?.();
+    return result;
+  };
+
+  const handleRemove = async (entry) => {
+    const confirmed = window.confirm('Deseja remover este registro de gratidão?');
+    if (!confirmed) return;
+
+    try {
+      await removeEntry(entry.id);
+      await onUpdate?.();
+      toast.success('Registro removido');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao remover registro');
+    }
+  };
+
+  return (
+    <section className={`practice-card gratitude ${expanded ? 'expanded' : ''}`}>
+      <button type="button" className="card-head" onClick={onToggle}>
+        <div>
+          <div className="head-title">🌸 Gratidão</div>
+          <div className="head-meta">
+            {summary?.total ?? stats.total} registros · 🔥 {summary?.streak ?? stats.streak} dias seguidos
+          </div>
+          <div className="head-preview">{preview}</div>
+        </div>
+        <span className="chevron">{expanded ? '▾' : '▸'}</span>
+      </button>
+
+      {expanded ? (
+        <div className="card-body">
+          {(summary?.streak ?? stats.streak) > 1 ? (
+            <div className="streak-badge">🔥 {summary?.streak ?? stats.streak} dias seguidos</div>
+          ) : null}
+
+          <button type="button" className="primary-btn" onClick={() => setIsFormOpen(true)}>
+            🌸 Registrar gratidão de hoje
+          </button>
+
+          {isLoading ? <div className="feedback">Carregando gratidão...</div> : null}
+          {error ? <div className="feedback error">{error}</div> : null}
+
+          {!isLoading && !error ? (
+            visibleItems.length === 0 ? (
+              <div className="empty">
+                <div className="empty-icon">🌸</div>
+                <h4>Comece sua prática de gratidão</h4>
+                <p>
+                  Quem não vê o que tem, não cuida do que tem. O que você tem hoje pelo que é grato?
+                </p>
+                <button type="button" className="ghost-btn" onClick={() => setIsFormOpen(true)}>
+                  Registrar gratidão de hoje
+                </button>
+              </div>
+            ) : (
+              <div className="items">
+                {visibleItems.map((entry) => (
+                  <GratidaoItem key={entry.id} entry={entry} onRemove={handleRemove} />
+                ))}
+                {Number(stats.total) > 20 ? <div className="more">Mostrando 20 de {stats.total} registros</div> : null}
+              </div>
+            )
+          ) : null}
+        </div>
+      ) : null}
+
+      {isFormOpen ? (
+        <GratidaoForm
+          onSave={handleAdd}
+          onClose={() => setIsFormOpen(false)}
+          onSuccess={() => onUpdate?.()}
+          currentStreak={summary?.streak ?? stats.streak}
+        />
+      ) : null}
+
+      <style jsx>{`
+        .practice-card {
+          border: 1px solid #3c3136;
+          background: #171316;
+          border-radius: 14px;
+          margin-bottom: 12px;
+          overflow: hidden;
+        }
+
+        .practice-card.expanded {
+          border-color: rgba(251, 113, 133, 0.5);
+          box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.2) inset;
+        }
+
+        .card-head {
+          width: 100%;
+          border: none;
+          background: transparent;
+          color: inherit;
+          text-align: left;
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 14px;
+          cursor: pointer;
+        }
+
+        .head-title {
+          color: #fb7185;
+          font-size: 17px;
+          font-weight: 800;
+          margin-bottom: 4px;
+        }
+
+        .head-meta {
+          color: #b09aa3;
+          font-size: 12px;
+          margin-bottom: 4px;
+        }
+
+        .head-preview {
+          color: #d3c2c8;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .chevron {
+          color: #d7a6b1;
+          font-size: 18px;
+          padding-top: 2px;
+        }
+
+        .card-body {
+          border-top: 1px solid #403138;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .streak-badge {
+          align-self: flex-start;
+          border: 1px solid rgba(251, 113, 133, 0.5);
+          background: rgba(251, 113, 133, 0.18);
+          color: #ffd7df;
+          border-radius: 999px;
+          padding: 4px 10px;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .primary-btn,
+        .ghost-btn {
+          border-radius: 10px;
+          border: 1px solid #fb7185;
+          padding: 10px 12px;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .primary-btn {
+          background: #fb7185;
+          color: #2f1319;
+        }
+
+        .ghost-btn {
+          background: transparent;
+          color: #ffc2cc;
+          border-color: rgba(251, 113, 133, 0.45);
+        }
+
+        .feedback {
+          font-size: 13px;
+          color: #b6a5ac;
+        }
+
+        .feedback.error {
+          color: #ff9999;
+        }
+
+        .items {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .more {
+          text-align: center;
+          font-size: 11px;
+          color: #b49ea7;
+        }
+
+        .empty {
+          border: 1px dashed #4b3a42;
+          border-radius: 12px;
+          background: #1a1318;
+          padding: 14px;
+          text-align: center;
+        }
+
+        .empty-icon {
+          font-size: 28px;
+          margin-bottom: 6px;
+        }
+
+        .empty h4 {
+          margin: 0 0 6px;
+          color: #ffd8df;
+        }
+
+        .empty p {
+          margin: 0 0 10px;
+          color: #ccb8c0;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+      `}</style>
+    </section>
+  );
+}

@@ -9,6 +9,10 @@ import MAVFPaywall from '@/components/mavf/MAVFPaywall';
 import MAVFTabs from '@/components/mavf/MAVFTabs';
 import ObjectivesList from '@/components/mavf/ObjectivesList';
 import MAVFAppShell from '@/components/mavf/MAVFAppShell';
+import GanhosCard from '@/components/mavf/GanhosCard';
+import GratidaoCard from '@/components/mavf/GratidaoCard';
+import IdentidadeCard from '@/components/mavf/IdentidadeCard';
+import { useMavfSummary } from '@/hooks/useMavfSummary';
 
 function withUserQuery(path, userId) {
   if (!userId) return path;
@@ -18,6 +22,7 @@ function withUserQuery(path, userId) {
 
 export default function MAVFPage({ adminViewUserId = null, adminClientLabel = '' }) {
   const [activeTab, setActiveTab] = useState('mapa');
+  const [expandedPractice, setExpandedPractice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [currentTier, setCurrentTier] = useState('DESPERTAR');
@@ -27,6 +32,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   const [progress, setProgress] = useState({ completed: 0, total: 11, percentage: 0, all_completed: false });
   const adminMode = Boolean(adminViewUserId);
   const targetUserId = adminMode ? adminViewUserId : null;
+  const { summary, isLoading: isSummaryLoading, error: summaryError, refresh: refreshSummary } = useMavfSummary(targetUserId);
   const mavfHistoryHref = adminMode
     ? `/admin/users/${encodeURIComponent(adminViewUserId)}/mavf/historico`
     : '/mavf/historico';
@@ -256,6 +262,50 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             adminMode={adminMode}
           />
         )}
+
+        <div className="mt-10">
+          <div className="text-[11px] uppercase tracking-[1.2px] text-[#7f7f7f] mb-2">Práticas Diárias</div>
+          <h2 className="text-[22px] md:text-[26px] font-bold mb-2">Consistência que transforma</h2>
+          <p className="text-[#8f8f8f] text-sm mb-5">
+            Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
+          </p>
+
+          {summaryError ? (
+            <div className="mb-3 rounded-[10px] border border-[rgba(255,95,95,0.35)] bg-[rgba(255,95,95,0.12)] px-4 py-3 text-sm text-[#ff9f9f]">
+              {summaryError}
+            </div>
+          ) : null}
+
+          {isSummaryLoading && !summary ? (
+            <div className="mb-3 rounded-[10px] border border-[#333333] bg-[#181818] px-4 py-3 text-sm text-[#999]">
+              Carregando resumo das práticas...
+            </div>
+          ) : null}
+
+          <GanhosCard
+            summary={summary?.gains}
+            expanded={expandedPractice === 'ganhos'}
+            onToggle={() => setExpandedPractice((prev) => (prev === 'ganhos' ? null : 'ganhos'))}
+            onUpdate={refreshSummary}
+            targetUserId={targetUserId}
+          />
+
+          <GratidaoCard
+            summary={summary?.gratitude}
+            expanded={expandedPractice === 'gratidao'}
+            onToggle={() => setExpandedPractice((prev) => (prev === 'gratidao' ? null : 'gratidao'))}
+            onUpdate={refreshSummary}
+            targetUserId={targetUserId}
+          />
+
+          <IdentidadeCard
+            summary={summary?.identity}
+            expanded={expandedPractice === 'identidade'}
+            onToggle={() => setExpandedPractice((prev) => (prev === 'identidade' ? null : 'identidade'))}
+            onUpdate={refreshSummary}
+            targetUserId={targetUserId}
+          />
+        </div>
       </div>
     </MAVFAppShell>
   );
