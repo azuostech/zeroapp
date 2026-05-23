@@ -2,6 +2,8 @@
  * Publica um evento no feed coletivo da turma.
  * Nao lanca excecao: falha silenciosamente para nao bloquear o fluxo principal.
  */
+import { getServiceSupabase } from '@/src/lib/supabase/service';
+
 export async function publishFeedEvent(
   supabase,
   {
@@ -13,9 +15,20 @@ export async function publishFeedEvent(
   }
 ) {
   try {
-    const { data: profile } = await supabase.from('profiles').select('turma').eq('id', userId).maybeSingle();
+    let writer = supabase;
 
-    await supabase.from('feed_events').insert({
+    try {
+      writer = getServiceSupabase();
+    } catch (_) {
+      writer = supabase;
+    }
+
+    const { data: profile, error: profileError } = await writer.from('profiles').select('turma').eq('id', userId).maybeSingle();
+    if (profileError) {
+      throw profileError;
+    }
+
+    const payload = {
       user_id: userId,
       event_type: eventType,
       title,
@@ -23,8 +36,25 @@ export async function publishFeedEvent(
       metadata,
       is_visible: true,
       turma: profile?.turma || null
+    };
+
+    const { error: insertError } = await writer.from('feed_events').insert(payload);
+    if (insertError && writer !== supabase) {
+      const { error: fallbackInsertError } = await supabase.from('feed_events').insert(payload);
+      if (fallbackInsertError) {
+        throw fallbackInsertError;
+      }
+      return;
+    }
+
+    if (insertError) {
+      throw insertError;
+    }
+  } catch (error) {
+    console.error('[community/feed-publisher] publish failed:', {
+      userId,
+      eventType,
+      reason: error?.message || 'unknown_error'
     });
-  } catch (_) {
-    // Falha silenciosa: feed nao pode quebrar a acao principal.
   }
 }

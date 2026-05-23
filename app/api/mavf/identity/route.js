@@ -3,6 +3,7 @@ import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 import { awardMavfCoinsWithSession } from '@/src/modules/mavf/application/mavf-coins-award';
+import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 
 function normalizeText(value) {
   return String(value || '').trim();
@@ -101,6 +102,17 @@ export async function POST(request) {
     if (error || !declaration) {
       return NextResponse.json({ error: resolveDbErrorMessage(error, 'Erro ao registrar identidade') }, { status: 500 });
     }
+
+    await publishFeedEvent(supabase, {
+      userId: context.targetUserId,
+      eventType: 'identity_registered',
+      title: 'Registrou nova declaracao de identidade 💎',
+      body: declaration.declaracao,
+      metadata: {
+        declaration_id: declaration.id,
+        encontro_ref: declaration.encontro_ref || null
+      }
+    });
 
     let awardWarning = null;
     let coinsAwarded = {
