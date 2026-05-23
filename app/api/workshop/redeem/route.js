@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 
 const WORKSHOP_AWARD_AMOUNT = 500;
 const TIER_ORDER = {
@@ -159,6 +160,14 @@ export async function POST(request) {
 
       throw awardError;
     }
+
+    await publishFeedEvent(supabase, {
+      userId: user.id,
+      eventType: 'workshop_redeemed',
+      title: 'Entrou para a mentoria! 🎓',
+      body: null,
+      metadata: { novo_tier: 'MOVIMENTO' }
+    });
 
     return NextResponse.json({
       success: true,

@@ -7,6 +7,7 @@ import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import BottomNav from '@/components/layout/BottomNav';
+import QuickAccessCard from '@/components/layout/QuickAccessCard';
 import {
   SIMPLE_BLOCK_KEYS,
   cloneDefaultFinancialData,
@@ -1642,6 +1643,13 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           </div>
         </div>
 
+        {!adminMode ? (
+          <section className="home-quick-access">
+            <QuickAccessCard emoji="👥" title="Minha Turma" subtitle="Ver conquistas e desafios" href="/turma" />
+            <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
+          </section>
+        ) : null}
+
         {adminMode ? null : (
           <section className="perfil-section" id="perfil">
             <div className="perfil-header">
@@ -3114,6 +3122,19 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         .bloco[data-bloco='desfrute'] .bloco-titulo,
         .bloco[data-bloco='desfrute'] .bloco-total {
           color: #ff8c00;
+        }
+
+        .home-quick-access {
+          margin-top: 14px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        @media (max-width: 700px) {
+          .home-quick-access {
+            grid-template-columns: 1fr;
+          }
         }
 
         .perfil-section {

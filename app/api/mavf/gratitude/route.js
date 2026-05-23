@@ -4,6 +4,7 @@ import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 import { calculateStreak } from '@/src/modules/mavf/application/practices-utils';
 import { awardMavfCoinsWithSession } from '@/src/modules/mavf/application/mavf-coins-award';
+import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 
 const VALID_CATEGORIES = ['financeiro', 'crescimento', 'relacionamentos', 'saude', 'outro'];
 
@@ -162,6 +163,16 @@ export async function POST(request) {
       streak = calculateStreak(entriesForStreak);
     } catch (_) {
       streak = 1;
+    }
+
+    if (streak === 7 || streak === 30) {
+      await publishFeedEvent(supabase, {
+        userId: context.targetUserId,
+        eventType: `gratitude_streak_${streak}`,
+        title: `${streak} dias seguidos de gratidao! 🔥`,
+        body: null,
+        metadata: { streak }
+      });
     }
 
     const award = resolveStreakAward(streak);

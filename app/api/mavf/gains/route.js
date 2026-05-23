@@ -4,6 +4,7 @@ import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 import { parsePositiveLimit } from '@/src/modules/mavf/application/practices-utils';
 import { awardMavfCoinsWithSession } from '@/src/modules/mavf/application/mavf-coins-award';
+import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 
 const VALID_SIZES = ['pequeno', 'medio', 'grande'];
 
@@ -131,6 +132,16 @@ export async function POST(request) {
 
     if (error || !gain) {
       return NextResponse.json({ error: resolveDbErrorMessage(error, 'Erro ao registrar ganho') }, { status: 500 });
+    }
+
+    if (tamanho === 'grande') {
+      await publishFeedEvent(supabase, {
+        userId: context.targetUserId,
+        eventType: 'gain_grande',
+        title: 'Registrou um grande ganho! ⚡',
+        body: gain.descricao,
+        metadata: { gain_id: gain.id }
+      });
     }
 
     const { amount, description } = resolveCoinsAward(tamanho);

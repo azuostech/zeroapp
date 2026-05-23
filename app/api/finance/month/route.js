@@ -11,6 +11,7 @@ import { resolveImpersonationContext } from '@/src/modules/admin/application/adm
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { evaluateCoinsAfterToggle } from '@/src/modules/coins/application/coins-evaluator';
+import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 
 const SIMPLE_BLOCKS = new Set(['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute']);
 
@@ -237,6 +238,28 @@ export async function POST(request) {
             description: award.description
           }));
           coinsBalance = coinsResult?.balance || null;
+
+          const awardedActions = new Set((coinsResult?.awards || []).map((award) => String(award?.action_type || '')));
+
+          if (awardedActions.has('month_complete')) {
+            await publishFeedEvent(supabase, {
+              userId: context.targetUserId,
+              eventType: 'month_complete',
+              title: `Mes ${month}/${year} completo! 🎉`,
+              body: 'Todos os 6 blocos preenchidos e realizados.',
+              metadata: { month, year }
+            });
+          }
+
+          if (awardedActions.has('goal_reached')) {
+            await publishFeedEvent(supabase, {
+              userId: context.targetUserId,
+              eventType: 'goal_reached',
+              title: 'Meta de reserva atingida! 🏦',
+              body: null,
+              metadata: { month, year }
+            });
+          }
         } catch (coinsError) {
           coinsWarning = coinsError.message || 'coins_evaluation_failed';
         }
