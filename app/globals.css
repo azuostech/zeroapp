@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+:root {
+  --radius: 0.8rem;
+  --card-radius: 1rem;
+}
+
 html,
 body {
   margin: 0;

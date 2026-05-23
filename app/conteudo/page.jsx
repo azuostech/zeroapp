@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import ContentCard from '@/components/content/ContentCard';
@@ -12,16 +12,7 @@ import { useContent } from '@/hooks/useContent';
 export default function ConteudoPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const queryType = activeFilter === 'all' ? null : activeFilter;
-  const { content, bloqueado, tierUsuario, isLoading, refetch } = useContent(queryType);
-
-  const handleContentClick = useCallback((item, locked) => {
-    if (locked) return;
-
-    const url = String(item?.url || '').trim();
-    if (!url) return;
-
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, []);
+  const { content, bloqueado, tierUsuario, isLoading, error, warning, refetch } = useContent(queryType);
 
   const cards = useMemo(() => {
     const unlocked = (content || []).map((item) => ({ item, locked: false }));
@@ -54,10 +45,12 @@ export default function ConteudoPage() {
 
         <section className="content-list" aria-live="polite">
           {isLoading ? <div className="loading-inline">Carregando conteudos...</div> : null}
+          {!isLoading && error ? <div className="error-inline">{error}</div> : null}
+          {!isLoading && !error && warning ? <div className="warning-inline">Alguns conteúdos bloqueados não puderam ser carregados agora.</div> : null}
           {!isLoading && cards.length === 0 ? <ContentEmpty /> : null}
 
           {cards.map(({ item, locked }) => (
-            <ContentCard key={`${item.id}-${locked ? 'locked' : 'open'}`} item={item} locked={locked} onClick={() => handleContentClick(item, locked)} />
+            <ContentCard key={`${item.id}-${locked ? 'locked' : 'open'}`} item={item} locked={locked} />
           ))}
         </section>
       </main>
@@ -150,6 +143,24 @@ export default function ConteudoPage() {
           background: var(--conteudo-card, #141619);
           padding: 10px 12px;
           color: var(--conteudo-muted, #8e98a2);
+          font-size: 13px;
+        }
+
+        .error-inline {
+          border: 1px solid rgba(255, 90, 90, 0.28);
+          border-radius: 12px;
+          background: rgba(255, 90, 90, 0.08);
+          padding: 10px 12px;
+          color: #ff7f7f;
+          font-size: 13px;
+        }
+
+        .warning-inline {
+          border: 1px solid rgba(255, 215, 0, 0.32);
+          border-radius: 12px;
+          background: rgba(255, 215, 0, 0.1);
+          padding: 10px 12px;
+          color: #d7b900;
           font-size: 13px;
         }
 

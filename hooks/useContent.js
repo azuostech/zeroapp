@@ -13,24 +13,32 @@ export function useContent(tipo = null) {
   const [bloqueado, setBloqueado] = useState([]);
   const [tierUsuario, setTierUsuario] = useState('DESPERTAR');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [warning, setWarning] = useState(null);
 
   const fetchContent = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      setWarning(null);
 
       const normalized = normalizeTipo(tipo);
       const url = normalized ? `/api/content?tipo=${encodeURIComponent(normalized)}` : '/api/content';
       const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error('content_fetch_failed');
-
       const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(String(payload?.error || 'content_fetch_failed'));
+      }
+
       setContent(Array.isArray(payload?.content) ? payload.content : []);
       setBloqueado(Array.isArray(payload?.bloqueado) ? payload.bloqueado : []);
       setTierUsuario(String(payload?.tier_usuario || 'DESPERTAR').toUpperCase());
+      setWarning(payload?.blocked_warning ? String(payload.blocked_warning) : null);
     } catch (_) {
       setContent([]);
       setBloqueado([]);
       setTierUsuario('DESPERTAR');
+      setError('Não foi possível carregar os conteúdos agora.');
     } finally {
       setIsLoading(false);
     }
@@ -45,6 +53,8 @@ export function useContent(tipo = null) {
     bloqueado,
     tierUsuario,
     isLoading,
+    error,
+    warning,
     refetch: fetchContent
   };
 }

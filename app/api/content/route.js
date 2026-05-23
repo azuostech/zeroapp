@@ -54,32 +54,41 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message || 'content_query_failed' }, { status: 500 });
   }
 
-  const serviceSupabase = getServiceSupabase();
-  let blockedQuery = serviceSupabase
-    .from('member_area_content')
-    .select('id,title,description,content_type,tier_required,thumbnail_url,order_index,is_published')
-    .eq('is_published', true)
-    .order('order_index', { ascending: true });
+  let blocked = [];
+  let blockedWarning = null;
 
-  if (tipo) {
-    blockedQuery = blockedQuery.eq('content_type', tipo);
+  try {
+    const serviceSupabase = getServiceSupabase();
+    let blockedQuery = serviceSupabase
+      .from('member_area_content')
+      .select('id,title,description,content_type,tier_required,thumbnail_url,order_index,is_published')
+      .eq('is_published', true)
+      .order('order_index', { ascending: true });
+
+    if (tipo) {
+      blockedQuery = blockedQuery.eq('content_type', tipo);
+    }
+
+    const { data: allPublished, error: blockedError } = await blockedQuery;
+    if (blockedError) {
+      throw new Error(blockedError.message || 'blocked_content_query_failed');
+    }
+
+    blocked = (allPublished || [])
+      .filter((item) => !accessibleTiers.includes(String(item?.tier_required || '').toUpperCase()))
+      .map((item) => ({
+        ...item,
+        locked: true
+      }));
+  } catch (blockedErr) {
+    blockedWarning = blockedErr instanceof Error ? blockedErr.message : 'blocked_catalog_unavailable';
+    console.error('[api/content] blocked preview unavailable:', blockedWarning);
   }
-
-  const { data: allPublished, error: blockedError } = await blockedQuery;
-  if (blockedError) {
-    return NextResponse.json({ error: blockedError.message || 'blocked_content_query_failed' }, { status: 500 });
-  }
-
-  const blocked = (allPublished || [])
-    .filter((item) => !accessibleTiers.includes(String(item?.tier_required || '').toUpperCase()))
-    .map((item) => ({
-      ...item,
-      locked: true
-    }));
 
   return NextResponse.json({
     content: content || [],
     bloqueado: blocked,
-    tier_usuario: tierUsuario
+    tier_usuario: tierUsuario,
+    blocked_warning: blockedWarning
   });
 }

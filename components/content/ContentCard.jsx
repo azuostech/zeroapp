@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 const TIER_BADGES = {
   LIVRE: { label: 'Gratis', color: '#00c853', bg: 'rgba(0, 200, 83, 0.14)' },
   MOVIMENTO: { label: 'Mentorado', color: '#f4b400', bg: 'rgba(244, 180, 0, 0.16)' },
@@ -27,6 +29,8 @@ function resolveTypeMeta(contentType) {
 export default function ContentCard({ item, locked = false, onClick = null }) {
   const tier = resolveTierBadge(item?.tier_required);
   const type = resolveTypeMeta(item?.content_type);
+  const itemId = String(item?.id || '').trim();
+  const internalHref = itemId ? `/conteudo/${itemId}` : null;
 
   const cardBody = (
     <>
@@ -125,6 +129,36 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
     );
   }
 
+  const sharedStyles = (
+    <style jsx>{`
+      .content-card {
+        display: flex;
+        gap: 12px;
+        border: 1px solid var(--conteudo-border, #2f363d);
+        border-radius: 14px;
+        background: var(--conteudo-card, #141619);
+        padding: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+      }
+
+      .content-card:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 200, 83, 0.45);
+      }
+    `}</style>
+  );
+
+  if (internalHref) {
+    return (
+      <Link className="content-card" href={internalHref} onClick={onClick}>
+        {cardBody}
+        {sharedStyles}
+      </Link>
+    );
+  }
+
   if (typeof onClick === 'function') {
     return (
       <button type="button" className="content-card as-button" onClick={onClick}>
@@ -159,27 +193,9 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
   }
 
   return (
-    <a className="content-card" href={item.url} target="_blank" rel="noreferrer">
+    <article className="content-card">
       {cardBody}
-
-      <style jsx>{`
-        .content-card {
-          display: flex;
-          gap: 12px;
-          border: 1px solid var(--conteudo-border, #2f363d);
-          border-radius: 14px;
-          background: var(--conteudo-card, #141619);
-          padding: 12px;
-          text-decoration: none;
-          color: inherit;
-          transition: transform 0.15s ease, border-color 0.15s ease;
-        }
-
-        .content-card:hover {
-          transform: translateY(-1px);
-          border-color: rgba(0, 200, 83, 0.45);
-        }
-      `}</style>
-    </a>
+      {sharedStyles}
+    </article>
   );
 }
