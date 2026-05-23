@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export function useFeed() {
   const [events, setEvents] = useState([]);
+  const [turma, setTurma] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
@@ -19,11 +20,13 @@ export function useFeed() {
       const nextEvents = Array.isArray(data?.events) ? data.events : [];
 
       setEvents((prev) => (cursor ? [...prev, ...nextEvents] : nextEvents));
+      setTurma(String(data?.turma || '').trim() || null);
       setHasMore(Boolean(data?.has_more));
       setNextCursor(data?.next_cursor || null);
     } catch (_) {
       if (!cursor) {
         setEvents([]);
+        setTurma(null);
         setHasMore(false);
         setNextCursor(null);
       }
@@ -88,6 +91,7 @@ export function useFeed() {
 
   return {
     events,
+    turma,
     isLoading,
     hasMore,
     loadMore,

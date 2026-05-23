@@ -13,13 +13,16 @@ export async function publishFeedEvent(
   }
 ) {
   try {
+    const { data: profile } = await supabase.from('profiles').select('turma').eq('id', userId).maybeSingle();
+
     await supabase.from('feed_events').insert({
       user_id: userId,
       event_type: eventType,
       title,
       body,
       metadata,
-      is_visible: true
+      is_visible: true,
+      turma: profile?.turma || null
     });
   } catch (_) {
     // Falha silenciosa: feed nao pode quebrar a acao principal.

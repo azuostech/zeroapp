@@ -67,6 +67,7 @@ export default function AdminPage() {
     let modalUserFinData = [];
     let tierModalUser = null;
     let tierModalSelectedTier = 'DESPERTAR';
+    let tierModalTurma = '';
     const TIER_OPTIONS = [
       {
         id: 'DESPERTAR',
@@ -126,6 +127,14 @@ export default function AdminPage() {
       return `<span class="tier-badge ${cfg.cls}"><span class="tier-icon">${cfg.icon}</span><span>${cfg.label}</span></span>`;
     };
 
+    const turmaBadgeHtml = (turmaRaw) => {
+      const turma = String(turmaRaw || '').trim();
+      if (!turma) {
+        return '<span class="turma-badge turma-empty">Sem turma</span>';
+      }
+      return `<span class="turma-badge">${esc(turma)}</span>`;
+    };
+
     const showToast = (msg, type = '') => {
       const t = document.getElementById('toast');
       if (!t) return;
@@ -146,6 +155,7 @@ export default function AdminPage() {
               <th>Telefone</th>
               <th>Status</th>
               <th>Tier</th>
+              <th>Turma</th>
               <th>Cadastro</th>
               <th>Ações</th>
             </tr>
@@ -169,13 +179,14 @@ export default function AdminPage() {
                   <td>
                     ${tierBadgeHtml(u.tier)}
                   </td>
+                  <td>${turmaBadgeHtml(u.turma)}</td>
                   <td style="font-size:11px;color:var(--dim)">${fmtDate(u.created_at)}</td>
                   <td>
                     <div class="actions">
                       ${u.status === 'pending' ? `<button class="btn-action btn-approve" onclick="setStatus('${safeId}','active')">✓ Aprovar</button>` : ''}
                       ${u.status === 'active' ? `<button class="btn-action btn-disable" onclick="setStatus('${safeId}','disabled')">✗ Desativar</button>` : ''}
                       ${u.status === 'disabled' ? `<button class="btn-action btn-enable" onclick="setStatus('${safeId}','active')">↺ Reativar</button>` : ''}
-                      <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Alterar Tier</button>
+                      <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Tier + Turma</button>
                       <button class="btn-action btn-reset" onclick="resetPassword('${safeEmail}')">🔑 Senha</button>
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
                       <a class="btn-action btn-open" href="/admin/users/${safePathId}/dashboard">↗ Dashboard</a>
@@ -298,6 +309,7 @@ export default function AdminPage() {
       overlay?.classList.remove('open');
       tierModalUser = null;
       tierModalSelectedTier = 'DESPERTAR';
+      tierModalTurma = '';
     };
 
     const renderTierOptions = () => {
@@ -325,9 +337,24 @@ export default function AdminPage() {
       if (!tierModalUser || !alertEl || !alertTextEl || !confirmBtn) return;
 
       const currentTier = String(tierModalUser.tier || 'DESPERTAR').toUpperCase();
-      const changed = currentTier !== tierModalSelectedTier;
+      const currentTurma = String(tierModalUser.turma || '').trim();
+      const nextTurma = String(tierModalTurma || '').trim();
+      const changedTier = currentTier !== tierModalSelectedTier;
+      const changedTurma = currentTurma !== nextTurma;
+      const changed = changedTier || changedTurma;
       alertEl.style.display = changed ? 'flex' : 'none';
-      alertTextEl.textContent = `O usuário será atualizado de ${tierLabel(currentTier)} para ${tierLabel(tierModalSelectedTier)}.`;
+      if (changed) {
+        const parts = [];
+        if (changedTier) {
+          parts.push(`tier: ${tierLabel(currentTier)} -> ${tierLabel(tierModalSelectedTier)}`);
+        }
+        if (changedTurma) {
+          parts.push(`turma: ${currentTurma || 'Sem turma'} -> ${nextTurma || 'Sem turma'}`);
+        }
+        alertTextEl.textContent = `O usuário será atualizado (${parts.join(' | ')}).`;
+      } else {
+        alertTextEl.textContent = '';
+      }
       confirmBtn.disabled = !changed;
     };
 
@@ -344,16 +371,20 @@ export default function AdminPage() {
 
       tierModalUser = user;
       tierModalSelectedTier = String(user.tier || 'DESPERTAR').toUpperCase();
+      tierModalTurma = String(user.turma || '').trim();
       const displayName = user.full_name || 'Sem nome';
       const initial = (displayName || user.email || '?').trim().charAt(0).toUpperCase();
       setText('tier-user-initial', initial || '?');
       setText('tier-user-name', displayName);
       setText('tier-user-email', user.email || '—');
       currentBadge.innerHTML = tierBadgeHtml(user.tier);
+      const turmaInput = document.getElementById('tier-turma-input');
+      if (turmaInput) turmaInput.value = tierModalTurma;
+      setText('tier-current-turma', tierModalTurma || 'Sem turma');
 
       const confirmBtn = document.getElementById('tier-confirm-btn');
       if (confirmBtn) {
-        confirmBtn.textContent = 'Confirmar Alteração';
+        confirmBtn.textContent = 'Salvar Alterações';
       }
 
       renderTierOptions();
@@ -367,12 +398,21 @@ export default function AdminPage() {
       updateTierModalState();
     };
 
+    const handleTurmaInput = (value) => {
+      tierModalTurma = String(value || '');
+      updateTierModalState();
+    };
+
     const confirmTierChange = async () => {
       if (!tierModalUser) return;
 
       const nextTier = tierModalSelectedTier;
+      const nextTurma = String(tierModalTurma || '').trim() || null;
       const currentTier = String(tierModalUser.tier || 'DESPERTAR').toUpperCase();
-      if (!nextTier || nextTier === currentTier) return;
+      const currentTurma = String(tierModalUser.turma || '').trim() || null;
+      const changedTier = !!nextTier && nextTier !== currentTier;
+      const changedTurma = nextTurma !== currentTurma;
+      if (!changedTier && !changedTurma) return;
 
       const confirmBtn = document.getElementById('tier-confirm-btn');
       try {
@@ -381,18 +421,21 @@ export default function AdminPage() {
           confirmBtn.textContent = 'Salvando...';
         }
 
-        await apiRequest(`/api/admin/users/${tierModalUser.id}/tier`, {
+        await apiRequest(`/api/admin/users/${tierModalUser.id}`, {
           method: 'PATCH',
-          body: JSON.stringify({ tier: nextTier })
+          body: JSON.stringify({
+            tier: nextTier,
+            turma: nextTurma
+          })
         });
 
-        showToast(`Tier atualizado para ${nextTier}`, 'green');
+        showToast('Dados de acesso atualizados', 'green');
         closeTierModal();
         await loadAll();
       } catch (_) {
-        showToast('Erro ao atualizar tier', 'red');
+        showToast('Erro ao atualizar dados', 'red');
         if (confirmBtn) {
-          confirmBtn.textContent = 'Confirmar Alteração';
+          confirmBtn.textContent = 'Salvar Alterações';
         }
         updateTierModalState();
       }
@@ -590,6 +633,7 @@ export default function AdminPage() {
     window.openTierModal = openTierModal;
     window.closeTierModal = closeTierModal;
     window.selectTierOption = selectTierOption;
+    window.handleTurmaInput = handleTurmaInput;
     window.confirmTierChange = confirmTierChange;
     window.resetPassword = resetPassword;
     window.openFinModal = openFinModal;
@@ -606,6 +650,7 @@ export default function AdminPage() {
       delete window.openTierModal;
       delete window.closeTierModal;
       delete window.selectTierOption;
+      delete window.handleTurmaInput;
       delete window.confirmTierChange;
       delete window.resetPassword;
       delete window.openFinModal;
@@ -660,6 +705,9 @@ export default function AdminPage() {
           <a className="nav-item nav-item-link" href="/admin/mavf" id="nav-mavf">
             <span className="nav-icon">📊</span> MAVF — Sessões
             <span className="nav-badge" id="mavf-active-count" />
+          </a>
+          <a className="nav-item nav-item-link" href="/admin/conteudo" id="nav-content">
+            <span className="nav-icon">📚</span> Conteúdo
           </a>
           <div className="nav-sep" />
           <div className="nav-item" onClick={() => window.showView?.('stats')} id="nav-stats">
@@ -755,7 +803,7 @@ export default function AdminPage() {
       <div className="modal-overlay" id="tier-modal-overlay" onClick={(event) => window.closeTierModal?.(event)}>
         <div className="modal tier-modal" onClick={(event) => event.stopPropagation()}>
           <div className="tier-modal-header">
-            <div className="tier-modal-title">Alterar Tier de Acesso</div>
+            <div className="tier-modal-title">Editar Tier e Turma</div>
             <button className="modal-close" onClick={() => window.closeTierModal?.()}>
               ✕
             </button>
@@ -780,9 +828,28 @@ export default function AdminPage() {
             <div id="tier-current-badge" />
           </div>
 
+          <div className="tier-current-row">
+            <div className="tier-current-label">Turma Atual:</div>
+            <div className="tier-current-turma" id="tier-current-turma">
+              Sem turma
+            </div>
+          </div>
+
           <div className="tier-options-wrap">
             <div className="tier-options-label">Selecione o novo tier:</div>
             <div id="tier-options" className="tier-options-grid" />
+          </div>
+
+          <div className="tier-turma-wrap">
+            <div className="tier-options-label">Turma</div>
+            <input
+              type="text"
+              id="tier-turma-input"
+              className="tier-turma-input"
+              placeholder="Ex: Maio 2026"
+              onInput={(event) => window.handleTurmaInput?.(event.target.value)}
+            />
+            <div className="tier-turma-note">Nome da turma do mentorado. Determina qual feed ele vê.</div>
           </div>
 
           <div className="tier-change-alert" id="tier-change-alert">
@@ -1218,6 +1285,28 @@ export default function AdminPage() {
           color: #bb67cf;
         }
 
+        .turma-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          width: fit-content;
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          border: 1px solid rgba(68, 136, 255, 0.32);
+          background: rgba(68, 136, 255, 0.12);
+          color: #7db4ff;
+          text-transform: uppercase;
+        }
+
+        .turma-badge.turma-empty {
+          border-color: var(--border);
+          background: var(--bg3);
+          color: var(--dim);
+        }
+
         .badge {
           display: inline-flex;
           align-items: center;
@@ -1523,8 +1612,19 @@ export default function AdminPage() {
           font-weight: 600;
         }
 
+        .tier-current-turma {
+          font-size: 12px;
+          color: var(--text);
+          font-weight: 700;
+          letter-spacing: 0.2px;
+        }
+
         .tier-options-wrap {
           padding: 20px 24px;
+        }
+
+        .tier-turma-wrap {
+          padding: 0 24px 18px;
         }
 
         .tier-options-label {
@@ -1532,6 +1632,29 @@ export default function AdminPage() {
           color: var(--text);
           font-weight: 600;
           margin-bottom: 12px;
+        }
+
+        .tier-turma-input {
+          width: 100%;
+          background: var(--bg3);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          color: var(--text);
+          font-family: 'Sora', sans-serif;
+          font-size: 13px;
+          padding: 10px 12px;
+          outline: none;
+        }
+
+        .tier-turma-input:focus {
+          border-color: rgba(68, 136, 255, 0.42);
+          box-shadow: 0 0 0 2px rgba(68, 136, 255, 0.12);
+        }
+
+        .tier-turma-note {
+          margin-top: 7px;
+          color: var(--dim);
+          font-size: 11px;
         }
 
         .tier-options-grid {

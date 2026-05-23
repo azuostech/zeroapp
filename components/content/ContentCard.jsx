@@ -24,7 +24,7 @@ function resolveTypeMeta(contentType) {
   return TYPE_META[key] || { icon: '📚', label: 'Conteudo' };
 }
 
-export default function ContentCard({ item, locked = false }) {
+export default function ContentCard({ item, locked = false, onClick = null }) {
   const tier = resolveTierBadge(item?.tier_required);
   const type = resolveTypeMeta(item?.content_type);
 
@@ -122,6 +122,39 @@ export default function ContentCard({ item, locked = false }) {
           }
         `}</style>
       </article>
+    );
+  }
+
+  if (typeof onClick === 'function') {
+    return (
+      <button type="button" className="content-card as-button" onClick={onClick}>
+        {cardBody}
+
+        <style jsx>{`
+          .content-card {
+            display: flex;
+            gap: 12px;
+            border: 1px solid var(--conteudo-border, #2f363d);
+            border-radius: 14px;
+            background: var(--conteudo-card, #141619);
+            padding: 12px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+          }
+
+          .content-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(0, 200, 83, 0.45);
+          }
+
+          .as-button {
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+          }
+        `}</style>
+      </button>
     );
   }
 

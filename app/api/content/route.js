@@ -57,7 +57,7 @@ export async function GET(request) {
   const serviceSupabase = getServiceSupabase();
   let blockedQuery = serviceSupabase
     .from('member_area_content')
-    .select('id,title,description,content_type,tier_required,url,thumbnail_url,order_index,is_published')
+    .select('id,title,description,content_type,tier_required,thumbnail_url,order_index,is_published')
     .eq('is_published', true)
     .order('order_index', { ascending: true });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import ContentCard from '@/components/content/ContentCard';
@@ -13,6 +13,15 @@ export default function ConteudoPage() {
   const [activeFilter, setActiveFilter] = useState('all');
   const queryType = activeFilter === 'all' ? null : activeFilter;
   const { content, bloqueado, tierUsuario, isLoading, refetch } = useContent(queryType);
+
+  const handleContentClick = useCallback((item, locked) => {
+    if (locked) return;
+
+    const url = String(item?.url || '').trim();
+    if (!url) return;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
 
   const cards = useMemo(() => {
     const unlocked = (content || []).map((item) => ({ item, locked: false }));
@@ -48,7 +57,7 @@ export default function ConteudoPage() {
           {!isLoading && cards.length === 0 ? <ContentEmpty /> : null}
 
           {cards.map(({ item, locked }) => (
-            <ContentCard key={`${item.id}-${locked ? 'locked' : 'open'}`} item={item} locked={locked} />
+            <ContentCard key={`${item.id}-${locked ? 'locked' : 'open'}`} item={item} locked={locked} onClick={() => handleContentClick(item, locked)} />
           ))}
         </section>
       </main>

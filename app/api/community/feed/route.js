@@ -31,13 +31,18 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const limit = parsePositiveLimit(searchParams.get('limit'), 20, 50);
   const before = String(searchParams.get('before') || '').trim();
+  const turmaUsuario = String(profile?.turma || '').trim() || null;
 
   let query = supabase
     .from('feed_events')
-    .select('id,event_type,title,body,metadata,created_at,user_id')
+    .select('id,event_type,title,body,metadata,created_at,user_id,turma')
     .eq('is_visible', true)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (turmaUsuario) {
+    query = query.eq('turma', turmaUsuario);
+  }
 
   if (before) {
     query = query.lt('created_at', before);
@@ -98,6 +103,7 @@ export async function GET(request) {
       metadata: event.metadata || {},
       created_at: event.created_at,
       user_id: event.user_id,
+      turma: event.turma || null,
       reaction_count: userIds.length,
       user_reacted: userIds.includes(user.id),
       author_name: author.full_name,
@@ -107,6 +113,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     events: enriched,
+    turma: turmaUsuario,
     has_more: safeEvents.length === limit,
     next_cursor: safeEvents.length > 0 ? safeEvents[safeEvents.length - 1].created_at : null
   });

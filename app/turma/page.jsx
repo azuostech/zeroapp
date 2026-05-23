@@ -11,15 +11,8 @@ import { useFeed } from '@/hooks/useFeed';
 import { useCommunityStats } from '@/hooks/useCommunityStats';
 import { useChallenge } from '@/hooks/useChallenge';
 
-function turmaLabel() {
-  const now = new Date();
-  const month = now.toLocaleDateString('pt-BR', { month: 'long' });
-  const year = now.getFullYear();
-  return `Mentorados ativos · Turma ${month} ${year}`;
-}
-
 export default function TurmaPage() {
-  const { events, isLoading, hasMore, loadMore, react, refresh: refreshFeed } = useFeed();
+  const { events, turma, isLoading, hasMore, loadMore, react, refresh: refreshFeed } = useFeed();
   const { stats, isLoading: statsLoading } = useCommunityStats();
   const {
     challenge,
@@ -28,6 +21,9 @@ export default function TurmaPage() {
     progress_pct: progressPct,
     isLoading: challengeLoading
   } = useChallenge();
+
+  const hasTurma = Boolean(String(turma || '').trim());
+  const turmaNome = hasTurma ? String(turma).trim() : null;
 
   return (
     <div className="turma-screen">
@@ -40,7 +36,8 @@ export default function TurmaPage() {
               ← voltar
             </Link>
             <h1>Turma 💪</h1>
-            <p>{turmaLabel()}</p>
+            <p>{turmaNome ? `Turma ${turmaNome}` : 'Comunidade'}</p>
+            <span className="context-label">{turmaNome ? `Vendo eventos da Turma ${turmaNome}` : 'Vendo todos os eventos'}</span>
           </div>
           <button type="button" className="refresh-btn" onClick={refreshFeed}>
             Atualizar
@@ -66,7 +63,16 @@ export default function TurmaPage() {
 
         <section className="feed-list" aria-live="polite">
           {isLoading ? <div className="loading-inline">Carregando feed...</div> : null}
-          {!isLoading && events.length === 0 ? <FeedEmpty /> : null}
+          {!isLoading && events.length === 0 ? (
+            <FeedEmpty
+              title={hasTurma ? 'Sua turma ainda esta aquecendo!' : 'Nenhum evento no feed ainda.'}
+              description={
+                hasTurma
+                  ? 'Seja o primeiro a completar um mes ou registrar um grande ganho.'
+                  : 'Quando os mentorados comecarem a compartilhar conquistas, elas aparecem aqui.'
+              }
+            />
+          ) : null}
 
           {events.map((event) => (
             <FeedEventCard key={event.id} event={event} onReact={react} />
@@ -140,6 +146,16 @@ export default function TurmaPage() {
           margin: 0;
           color: var(--turma-muted, #98a0a8);
           font-size: 14px;
+        }
+
+        .context-label {
+          display: inline-block;
+          margin-top: 6px;
+          color: var(--turma-muted, #98a0a8);
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.7px;
+          font-weight: 700;
         }
 
         .refresh-btn,

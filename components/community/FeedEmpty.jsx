@@ -1,11 +1,14 @@
 'use client';
 
-export default function FeedEmpty() {
+export default function FeedEmpty({
+  title = 'O feed ainda esta vazio',
+  description = 'Seja o primeiro a registrar um ganho ou completar um mes!'
+}) {
   return (
     <div className="feed-empty">
       <div className="emoji">👥</div>
-      <h3>O feed ainda esta vazio</h3>
-      <p>Seja o primeiro a registrar um ganho ou completar um mes!</p>
+      <h3>{title}</h3>
+      <p>{description}</p>
 
       <style jsx>{`
         .feed-empty {
