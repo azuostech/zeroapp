@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { normalizeGoogleDriveImageUrl } from '@/src/lib/drive-image-url';
 
 const TYPE_OPTIONS = [
   { value: 'video', label: '🎬 Vídeo' },
@@ -158,10 +159,12 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
     setIsSaving(true);
 
     try {
+      const normalizedThumbnail = normalizeGoogleDriveImageUrl(form.thumbnail_url);
       const payload = {
         ...form,
         order_index: Number.parseInt(String(form.order_index || 0), 10) || 0,
         is_published: Boolean(publishValue),
+        thumbnail_url: normalizedThumbnail,
         turma_exclusiva: String(form.turma_exclusiva || '').trim() || null,
         disponivel_em: String(form.disponivel_em || '').trim() || null
       };
@@ -329,9 +332,18 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
               type="url"
               value={form.thumbnail_url}
               onChange={(event) => setField('thumbnail_url', event.target.value)}
+              onBlur={(event) => {
+                const normalized = normalizeGoogleDriveImageUrl(event.target.value);
+                if (normalized !== form.thumbnail_url) {
+                  setField('thumbnail_url', normalized);
+                }
+              }}
               placeholder="https://img.youtube.com/vi/VIDEO_ID/0.jpg"
             />
-            <span className="field-tip">Para vídeos do YouTube: https://img.youtube.com/vi/VIDEO_ID/0.jpg</span>
+            <span className="field-tip">
+              Tamanho recomendado: 1280x720 px (16:9). Para YouTube: https://img.youtube.com/vi/VIDEO_ID/0.jpg.
+              Links de imagem do Google Drive são convertidos automaticamente.
+            </span>
           </label>
 
           <label>

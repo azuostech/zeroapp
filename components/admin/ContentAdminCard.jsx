@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 function resolveType(contentType) {
   const key = String(contentType || '').toLowerCase();
@@ -71,7 +72,8 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
   const tier = resolveTier(item?.tier_required);
   const turmaExclusiva = String(item?.turma_exclusiva || '').trim();
   const releaseStatus = resolveReleaseStatus(item?.disponivel_em);
-  const thumbnailUrl = String(item?.thumbnail_url || '').trim();
+  const thumbnailUrlRaw = String(item?.thumbnail_url || '').trim();
+  const thumbnailUrl = useMemo(() => resolveImageUrlForDisplay(thumbnailUrlRaw), [thumbnailUrlRaw]);
   const [thumbFailed, setThumbFailed] = useState(false);
 
   useEffect(() => {
@@ -157,7 +159,7 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
           border-radius: 14px;
           background: var(--admin-surface, #1a1a1a);
           display: grid;
-          grid-template-columns: 88px 1fr auto;
+          grid-template-columns: 128px 1fr auto;
           gap: 14px;
           padding: 14px;
         }
@@ -167,8 +169,8 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         }
 
         .thumb {
-          width: 88px;
-          height: 88px;
+          width: 128px;
+          aspect-ratio: 16 / 9;
           border-radius: 12px;
           border: 1px solid var(--admin-border, #333);
           background: #121212;
@@ -176,7 +178,7 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 34px;
+          font-size: 30px;
         }
 
         .thumb img {
@@ -327,13 +329,12 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
 
         @media (max-width: 880px) {
           .content-admin-card {
-            grid-template-columns: 72px 1fr;
+            grid-template-columns: 96px 1fr;
           }
 
           .thumb {
-            width: 72px;
-            height: 72px;
-            font-size: 28px;
+            width: 96px;
+            font-size: 24px;
           }
 
           .actions {

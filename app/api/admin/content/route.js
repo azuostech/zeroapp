@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { normalizeGoogleDriveImageUrl } from '@/src/lib/drive-image-url';
 
 const ALLOWED_TYPES = new Set(['video', 'pdf', 'article', 'tool']);
 const ALLOWED_TIERS = new Set(['LIVRE', 'MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
@@ -110,7 +111,8 @@ export async function POST(request) {
   const contentType = normalizeType(body?.content_type);
   const tierRequired = normalizeTier(body?.tier_required);
   const url = normalizeNullableText(body?.url);
-  const thumbnailUrl = normalizeNullableText(body?.thumbnail_url);
+  const thumbnailUrlRaw = normalizeNullableText(body?.thumbnail_url);
+  const thumbnailUrl = thumbnailUrlRaw ? normalizeGoogleDriveImageUrl(thumbnailUrlRaw) : null;
   const orderIndex = normalizeOrderIndex(body?.order_index, 0);
   const isPublished = typeof body?.is_published === 'boolean' ? body.is_published : false;
   const turmaExclusiva = normalizeNullableText(body?.turma_exclusiva);

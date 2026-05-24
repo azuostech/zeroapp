@@ -6,6 +6,7 @@ import { ContentEmbed } from '@/components/ui/ContentEmbed';
 import styles from './player.module.css';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 function resolveTypeLabel(contentType) {
   const key = String(contentType || '').toLowerCase();
@@ -73,6 +74,7 @@ export default async function ConteudoPlayerPage({ params }) {
   }
   const typeLabel = resolveTypeLabel(conteudo.content_type);
   const tierLabel = resolveTierLabel(conteudo.tier_required);
+  const posterUrl = resolveImageUrlForDisplay(conteudo.thumbnail_url);
   const tierKey = String(conteudo.tier_required || '').toUpperCase();
   const tierClass =
     {
@@ -97,7 +99,7 @@ export default async function ConteudoPlayerPage({ params }) {
             url={conteudo.url}
             contentType={conteudo.content_type}
             title={conteudo.title}
-            poster={conteudo.thumbnail_url}
+            poster={posterUrl || null}
           />
         </div>
 

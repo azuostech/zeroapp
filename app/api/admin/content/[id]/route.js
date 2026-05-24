@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { normalizeGoogleDriveImageUrl } from '@/src/lib/drive-image-url';
 
 const ALLOWED_TYPES = new Set(['video', 'pdf', 'article', 'tool']);
 const ALLOWED_TIERS = new Set(['LIVRE', 'MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
@@ -162,7 +163,8 @@ export async function PATCH(request, { params }) {
     }
 
     if (field === 'thumbnail_url') {
-      updates.thumbnail_url = normalizeNullableText(value);
+      const normalized = normalizeNullableText(value);
+      updates.thumbnail_url = normalized ? normalizeGoogleDriveImageUrl(normalized) : null;
       continue;
     }
 

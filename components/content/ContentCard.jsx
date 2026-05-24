@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 const TIER_BADGES = {
   LIVRE: { label: 'Gratis', color: '#00c853', bg: 'rgba(0, 200, 83, 0.14)' },
@@ -34,7 +35,8 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
   const internalHref = itemId ? `/conteudo/${itemId}` : null;
   const lockedReason = String(item?.locked_reason || '').trim();
   const lockedDescription = lockedReason || 'Ainda não disponível';
-  const thumbnailUrl = String(item?.thumbnail_url || '').trim();
+  const thumbnailUrlRaw = String(item?.thumbnail_url || '').trim();
+  const thumbnailUrl = useMemo(() => resolveImageUrlForDisplay(thumbnailUrlRaw), [thumbnailUrlRaw]);
   const [thumbFailed, setThumbFailed] = useState(false);
 
   useEffect(() => {
@@ -65,19 +67,20 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
       <style jsx>{`
         .content-thumb {
-          width: 68px;
-          min-width: 68px;
-          height: 68px;
+          width: 128px;
+          min-width: 128px;
+          aspect-ratio: 16 / 9;
           border-radius: 12px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg, rgba(0, 200, 83, 0.2), rgba(0, 200, 83, 0.08));
           border: 1px solid rgba(0, 200, 83, 0.24);
+          overflow: hidden;
         }
 
         .content-thumb span {
-          font-size: 30px;
+          font-size: 28px;
         }
 
         .content-thumb img {
@@ -125,6 +128,13 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
           color: var(--conteudo-muted, #8e98a2);
           font-size: 14px;
           line-height: 1.4;
+        }
+
+        @media (max-width: 720px) {
+          .content-thumb {
+            width: 96px;
+            min-width: 96px;
+          }
         }
       `}</style>
     </>
