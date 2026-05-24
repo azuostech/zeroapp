@@ -21,6 +21,42 @@ function translateError(msg = '') {
   return msg || 'Não foi possível concluir a ação.';
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Checkpoint 2026-05-24: resiliencia no login para evitar falso erro de perfil.
+async function fetchProfileWithRetry({ attempts = 4, baseDelayMs = 220 } = {}) {
+  let lastError = { status: 0, error: 'profile_fetch_failed' };
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch('/api/profile/me', { cache: 'no-store' });
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        return { ok: true, payload };
+      }
+
+      const errorCode = String(payload?.error || 'profile_fetch_failed');
+      lastError = { status: response.status, error: errorCode };
+      const shouldRetry = attempt < attempts && (response.status === 401 || response.status === 429 || response.status >= 500);
+      if (!shouldRetry) {
+        return { ok: false, ...lastError };
+      }
+    } catch (error) {
+      lastError = { status: 0, error: error?.message || 'profile_fetch_failed' };
+      if (attempt >= attempts) {
+        return { ok: false, ...lastError };
+      }
+    }
+
+    await wait(baseDelayMs * attempt);
+  }
+
+  return { ok: false, ...lastError };
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -161,15 +197,22 @@ export default function LoginPage() {
       return;
     }
 
-    const res = await fetch('/api/profile/me', { cache: 'no-store' });
-    if (!res.ok) {
-      await sb.auth.signOut();
-      setMessage({ text: 'Não foi possível carregar o perfil da conta.', type: 'error' });
+    const profileResponse = await fetchProfileWithRetry();
+    if (!profileResponse.ok) {
+      const errorCode = String(profileResponse.error || '');
+
+      if (errorCode === 'forbidden') {
+        await sb.auth.signOut();
+        setMessage({ text: 'Sua conta ainda está aguardando aprovação. Entraremos em contato em breve.', type: 'error' });
+      } else {
+        setMessage({ text: 'Seu login foi aceito, mas o perfil ainda está sincronizando. Tente novamente em alguns segundos.', type: 'error' });
+      }
+
       setLoginLoading(false);
       return;
     }
 
-    const payload = await res.json();
+    const payload = profileResponse.payload;
     const profile = payload?.profile;
 
     if (!profile || profile.status === 'pending') {

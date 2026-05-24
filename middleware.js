@@ -49,9 +49,16 @@ export async function middleware(request) {
     }
   });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('[middleware] supabase.auth.getUser error:', error.message || error);
+    }
+    user = data?.user || null;
+  } catch (error) {
+    console.error('[middleware] supabase.auth.getUser fetch failed:', error);
+  }
 
   if (!user) {
     if (protectedPage) return redirect(request, ROOT_PATH);
@@ -60,11 +67,13 @@ export async function middleware(request) {
     return response;
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role,status')
-    .eq('id', user.id)
-    .maybeSingle();
+  let profile = null;
+  try {
+    const { data } = await supabase.from('profiles').select('role,status').eq('id', user.id).maybeSingle();
+    profile = data || null;
+  } catch (error) {
+    console.error('[middleware] profile query failed:', error);
+  }
 
   if (!profile) {
     if (protectedPage) return redirect(request, ROOT_PATH);

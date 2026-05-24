@@ -31,6 +31,27 @@ function normalizeOrderIndex(value, fallback = 0) {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+function normalizeDateOnly(value) {
+  if (value === undefined || value === null || value === '') {
+    return { ok: true, value: null };
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) return { ok: true, value: null };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return { ok: false, value: null };
+
+  const [year, month, day] = normalized.split('-').map((part) => Number.parseInt(part, 10));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  const isValid =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+
+  if (!isValid) return { ok: false, value: null };
+  return { ok: true, value: normalized };
+}
+
 async function requireAdmin() {
   const supabase = await createServerSupabase();
   const { user, profile } = await getCurrentProfile(supabase);
@@ -92,6 +113,8 @@ export async function POST(request) {
   const thumbnailUrl = normalizeNullableText(body?.thumbnail_url);
   const orderIndex = normalizeOrderIndex(body?.order_index, 0);
   const isPublished = typeof body?.is_published === 'boolean' ? body.is_published : false;
+  const turmaExclusiva = normalizeNullableText(body?.turma_exclusiva);
+  const disponivelEm = normalizeDateOnly(body?.disponivel_em);
 
   if (!title) {
     return NextResponse.json({ error: 'title_required' }, { status: 422 });
@@ -109,6 +132,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'url_required' }, { status: 422 });
   }
 
+  if (!disponivelEm.ok) {
+    return NextResponse.json({ error: 'invalid_disponivel_em' }, { status: 422 });
+  }
+
   const { data, error: insertError } = await supabase
     .from('member_area_content')
     .insert({
@@ -119,7 +146,9 @@ export async function POST(request) {
       url,
       thumbnail_url: thumbnailUrl,
       order_index: orderIndex,
-      is_published: isPublished
+      is_published: isPublished,
+      turma_exclusiva: turmaExclusiva,
+      disponivel_em: disponivelEm.value
     })
     .select('*')
     .single();

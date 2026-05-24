@@ -25,6 +25,24 @@ function resolveTierLabel(tierRequired) {
   return key || 'Sem nível';
 }
 
+function parseDateOnly(dateValue) {
+  const value = String(dateValue || '').trim();
+  if (!value) return null;
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function isLockedByReleaseDate(dateValue) {
+  const releaseDate = parseDateOnly(dateValue);
+  if (!releaseDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today < releaseDate;
+}
 export default async function ConteudoPlayerPage({ params }) {
   const resolvedParams = await params;
   const contentId = String(resolvedParams?.id || '').trim();
@@ -50,6 +68,9 @@ export default async function ConteudoPlayerPage({ params }) {
     redirect('/conteudo');
   }
 
+  if (isLockedByReleaseDate(conteudo?.disponivel_em)) {
+    redirect('/conteudo');
+  }
   const typeLabel = resolveTypeLabel(conteudo.content_type);
   const tierLabel = resolveTierLabel(conteudo.tier_required);
   const tierKey = String(conteudo.tier_required || '').toUpperCase();

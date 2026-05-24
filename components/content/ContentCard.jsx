@@ -31,6 +31,8 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
   const type = resolveTypeMeta(item?.content_type);
   const itemId = String(item?.id || '').trim();
   const internalHref = itemId ? `/conteudo/${itemId}` : null;
+  const lockedReason = String(item?.locked_reason || '').trim();
+  const lockedDescription = lockedReason || 'Ainda não disponível';
 
   const cardBody = (
     <>
@@ -47,7 +49,7 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
         </div>
 
         <h3>{item?.title || 'Conteudo'}</h3>
-        <p>{locked ? `Disponivel na fase ${item?.tier_required || 'superior'}` : item?.description || 'Conteudo da area do aluno.'}</p>
+        <p>{locked ? lockedDescription : item?.description || 'Conteudo da area do aluno.'}</p>
       </div>
 
       <style jsx>{`

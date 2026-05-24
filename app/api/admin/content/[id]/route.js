@@ -12,7 +12,9 @@ const ALLOWED_FIELDS = new Set([
   'url',
   'thumbnail_url',
   'order_index',
-  'is_published'
+  'is_published',
+  'turma_exclusiva',
+  'disponivel_em'
 ]);
 
 function normalizeNullableText(value) {
@@ -38,6 +40,27 @@ function normalizeTier(value) {
 function normalizeOrderIndex(value) {
   const parsed = Number.parseInt(String(value), 10);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+function normalizeDateOnly(value) {
+  if (value === undefined || value === null || value === '') {
+    return { ok: true, value: null };
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) return { ok: true, value: null };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return { ok: false, value: null };
+
+  const [year, month, day] = normalized.split('-').map((part) => Number.parseInt(part, 10));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  const isValid =
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day;
+
+  if (!isValid) return { ok: false, value: null };
+  return { ok: true, value: normalized };
 }
 
 async function requireAdmin() {
@@ -153,6 +176,18 @@ export async function PATCH(request, { params }) {
     if (field === 'is_published') {
       if (typeof value !== 'boolean') return NextResponse.json({ error: 'invalid_publish_value' }, { status: 422 });
       updates.is_published = value;
+      continue;
+    }
+
+    if (field === 'turma_exclusiva') {
+      updates.turma_exclusiva = normalizeNullableText(value);
+      continue;
+    }
+
+    if (field === 'disponivel_em') {
+      const normalized = normalizeDateOnly(value);
+      if (!normalized.ok) return NextResponse.json({ error: 'invalid_disponivel_em' }, { status: 422 });
+      updates.disponivel_em = normalized.value;
     }
   }
 

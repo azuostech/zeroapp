@@ -24,9 +24,51 @@ function truncateUrl(url) {
   return value.length > 60 ? `${value.slice(0, 57)}...` : value;
 }
 
+function parseDateOnly(dateValue) {
+  const value = String(dateValue || '').trim();
+  if (!value) return null;
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function formatDateLabel(dateValue) {
+  const parsed = parseDateOnly(dateValue);
+  if (!parsed) return '';
+  return parsed.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+function resolveReleaseStatus(disponivelEm) {
+  const releaseDate = parseDateOnly(disponivelEm);
+  if (!releaseDate) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (today < releaseDate) {
+    return {
+      kind: 'future',
+      label: `🔒 Libera em ${formatDateLabel(disponivelEm)}`
+    };
+  }
+
+  return {
+    kind: 'ready',
+    label: '✅ Disponível'
+  };
+}
+
 export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDelete, onUpdateOrder, isBusy = false }) {
   const type = resolveType(item?.content_type);
   const tier = resolveTier(item?.tier_required);
+  const turmaExclusiva = String(item?.turma_exclusiva || '').trim();
+  const releaseStatus = resolveReleaseStatus(item?.disponivel_em);
 
   const handleToggle = () => {
     onTogglePublish?.(item, !Boolean(item?.is_published));
@@ -57,7 +99,15 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
 
       <div className="main">
         <div className="head-row">
-          <h3>{item?.title || 'Sem título'}</h3>
+          <div className="title-wrap">
+            <h3>{item?.title || 'Sem título'}</h3>
+            {turmaExclusiva ? <span className="badge turma-badge">[{turmaExclusiva}]</span> : null}
+            {releaseStatus ? (
+              <span className={`badge release-badge ${releaseStatus.kind === 'future' ? 'future' : 'ready'}`}>
+                {releaseStatus.label}
+              </span>
+            ) : null}
+          </div>
           <label className="switch-wrap">
             <input type="checkbox" checked={Boolean(item?.is_published)} onChange={handleToggle} disabled={isBusy} />
             <span>{item?.is_published ? 'Publicado' : 'Rascunho'}</span>
@@ -138,6 +188,14 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
           gap: 10px;
         }
 
+        .title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          min-width: 0;
+        }
+
         h3 {
           margin: 0;
           font-size: 18px;
@@ -176,6 +234,24 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         .type-badge {
           border: 1px solid var(--admin-border, #333);
           color: var(--admin-dim, #a6a6a6);
+        }
+
+        .turma-badge {
+          background: rgba(255, 215, 0, 0.18);
+          color: #f9d24c;
+          border: 1px solid rgba(255, 215, 0, 0.38);
+        }
+
+        .release-badge.future {
+          background: rgba(158, 158, 158, 0.17);
+          color: #d7dde3;
+          border: 1px solid rgba(158, 158, 158, 0.34);
+        }
+
+        .release-badge.ready {
+          background: rgba(0, 200, 83, 0.16);
+          color: #7fe8aa;
+          border: 1px solid rgba(0, 200, 83, 0.34);
         }
 
         .order-input {

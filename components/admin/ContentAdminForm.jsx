@@ -41,7 +41,9 @@ const INITIAL_FORM = {
   url: '',
   thumbnail_url: '',
   order_index: 0,
-  is_published: false
+  is_published: false,
+  turma_exclusiva: '',
+  disponivel_em: ''
 };
 
 function parseDomain(url) {
@@ -77,6 +79,20 @@ function resolveError(response, payload, fallback) {
   return `${fallback} (${response.status})`;
 }
 
+function formatReleasePreview(dateValue) {
+  const value = String(dateValue || '').trim();
+  if (!value) return '';
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return parsed.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
 export default function ContentAdminForm({ mode = 'create', contentId = null }) {
   const router = useRouter();
   const [form, setForm] = useState(INITIAL_FORM);
@@ -87,6 +103,7 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
   const isEdit = mode === 'edit';
   const heading = isEdit ? 'Editar Conteúdo' : 'Novo Conteúdo';
   const domainMeta = useMemo(() => parseDomain(form.url), [form.url]);
+  const releasePreview = useMemo(() => formatReleasePreview(form.disponivel_em), [form.disponivel_em]);
 
   useEffect(() => {
     if (!isEdit || !contentId) return;
@@ -113,7 +130,9 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           url: String(content.url || ''),
           thumbnail_url: String(content.thumbnail_url || ''),
           order_index: Number(content.order_index || 0),
-          is_published: Boolean(content.is_published)
+          is_published: Boolean(content.is_published),
+          turma_exclusiva: String(content.turma_exclusiva || ''),
+          disponivel_em: String(content.disponivel_em || '')
         });
       } catch (err) {
         if (!active) return;
@@ -142,7 +161,9 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
       const payload = {
         ...form,
         order_index: Number.parseInt(String(form.order_index || 0), 10) || 0,
-        is_published: Boolean(publishValue)
+        is_published: Boolean(publishValue),
+        turma_exclusiva: String(form.turma_exclusiva || '').trim() || null,
+        disponivel_em: String(form.disponivel_em || '').trim() || null
       };
 
       const response = await fetch(isEdit ? `/api/admin/content/${contentId}` : '/api/admin/content', {
@@ -256,6 +277,33 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
               </p>
             ))}
           </div>
+
+          <label>
+            Exclusivo para turma
+            <input
+              type="text"
+              value={form.turma_exclusiva}
+              onChange={(event) => setField('turma_exclusiva', event.target.value)}
+              placeholder="Ex: Maio 2026 — deixe vazio para todos os mentorados"
+              maxLength={80}
+            />
+            <span className="field-tip">
+              Se preenchido, apenas alunos desta turma verão este conteúdo. Outras turmas não verão nem o card.
+            </span>
+          </label>
+
+          <label>
+            Data de liberação
+            <input
+              type="date"
+              value={form.disponivel_em}
+              onChange={(event) => setField('disponivel_em', event.target.value)}
+            />
+            <span className="field-tip">
+              Se preenchida, o card aparece bloqueado até esta data. Libera automaticamente quando a data chega.
+            </span>
+            {releasePreview ? <span className="field-tip release-preview">Liberará em {releasePreview}</span> : null}
+          </label>
 
           <label>
             URL do conteúdo *
@@ -399,6 +447,11 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           color: #8e9ca6;
           font-size: 11px;
           font-weight: 500;
+        }
+
+        .release-preview {
+          color: #f8d773;
+          font-weight: 700;
         }
 
         .tier-help {

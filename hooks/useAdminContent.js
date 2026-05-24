@@ -35,6 +35,33 @@ function resolveError(response, payload, fallback) {
   return `${fallback} (${response.status})`;
 }
 
+function normalizeNullableText(value) {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function normalizeDateOnly(value) {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function withContentOptionalFields(payload) {
+  const base = { ...(payload || {}) };
+  const hasOwn = (key) => Object.prototype.hasOwnProperty.call(payload || {}, key);
+
+  if (hasOwn('turma_exclusiva')) {
+    base.turma_exclusiva = normalizeNullableText(payload.turma_exclusiva);
+  }
+
+  if (hasOwn('disponivel_em')) {
+    base.disponivel_em = normalizeDateOnly(payload.disponivel_em);
+  }
+
+  return base;
+}
+
 export function useAdminContent() {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,10 +105,11 @@ export function useAdminContent() {
 
   const createContent = useCallback(
     async (payload) => {
+      const body = withContentOptionalFields(payload);
       const response = await fetch('/api/admin/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload || {})
+        body: JSON.stringify(body)
       });
       const parsed = await parsePayload(response);
 
@@ -101,10 +129,11 @@ export function useAdminContent() {
   );
 
   const updateContent = useCallback(async (id, updates) => {
+    const body = withContentOptionalFields(updates);
     const response = await fetch(`/api/admin/content/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates || {})
+      body: JSON.stringify(body)
     });
     const parsed = await parsePayload(response);
 
