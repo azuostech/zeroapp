@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const TIER_BADGES = {
   LIVRE: { label: 'Gratis', color: '#00c853', bg: 'rgba(0, 200, 83, 0.14)' },
@@ -33,11 +34,21 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
   const internalHref = itemId ? `/conteudo/${itemId}` : null;
   const lockedReason = String(item?.locked_reason || '').trim();
   const lockedDescription = lockedReason || 'Ainda não disponível';
+  const thumbnailUrl = String(item?.thumbnail_url || '').trim();
+  const [thumbFailed, setThumbFailed] = useState(false);
+
+  useEffect(() => {
+    setThumbFailed(false);
+  }, [item?.id, thumbnailUrl]);
 
   const cardBody = (
     <>
       <div className="content-thumb" aria-hidden="true">
-        <span>{type.icon}</span>
+        {thumbnailUrl && !thumbFailed ? (
+          <img src={thumbnailUrl} alt="" loading="lazy" onError={() => setThumbFailed(true)} />
+        ) : (
+          <span>{type.icon}</span>
+        )}
       </div>
 
       <div className="content-main">
@@ -67,6 +78,14 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
         .content-thumb span {
           font-size: 30px;
+        }
+
+        .content-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          border-radius: 11px;
         }
 
         .content-main {

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 function resolveType(contentType) {
   const key = String(contentType || '').toLowerCase();
   if (key === 'video') return { label: 'Vídeo', icon: '🎬' };
@@ -69,6 +71,12 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
   const tier = resolveTier(item?.tier_required);
   const turmaExclusiva = String(item?.turma_exclusiva || '').trim();
   const releaseStatus = resolveReleaseStatus(item?.disponivel_em);
+  const thumbnailUrl = String(item?.thumbnail_url || '').trim();
+  const [thumbFailed, setThumbFailed] = useState(false);
+
+  useEffect(() => {
+    setThumbFailed(false);
+  }, [item?.id, thumbnailUrl]);
 
   const handleToggle = () => {
     onTogglePublish?.(item, !Boolean(item?.is_published));
@@ -90,8 +98,8 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
   return (
     <article className={`content-admin-card ${item?.is_published ? '' : 'draft'}`}>
       <div className="thumb" aria-hidden="true">
-        {item?.thumbnail_url ? (
-          <img src={item.thumbnail_url} alt="" />
+        {thumbnailUrl && !thumbFailed ? (
+          <img src={thumbnailUrl} alt="" loading="lazy" onError={() => setThumbFailed(true)} />
         ) : (
           <span>{type.icon}</span>
         )}
