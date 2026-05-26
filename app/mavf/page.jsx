@@ -305,8 +305,77 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             onUpdate={refreshSummary}
             targetUserId={targetUserId}
           />
+
+          {!adminMode ? (
+            <Link href="/jackson-ia" className="mavf-ia-cta">
+              <span className="mavf-ia-emoji">🤖</span>
+              <div className="mavf-ia-copy">
+                <strong>Conversar com o Jackson IA</strong>
+                <small>Análise personalizada da sua jornada</small>
+              </div>
+              <span className="mavf-ia-arrow">›</span>
+            </Link>
+          ) : null}
         </div>
       </div>
+
+      <style jsx>{`
+        .mavf-ia-cta {
+          margin-top: 8px;
+          border: 1px solid rgba(0, 200, 83, 0.42);
+          border-radius: 14px;
+          background: linear-gradient(140deg, rgba(0, 200, 83, 0.14), rgba(0, 200, 83, 0.05));
+          padding: 12px 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .mavf-ia-cta:hover {
+          transform: translateY(-1px);
+          border-color: rgba(0, 200, 83, 0.65);
+        }
+
+        .mavf-ia-emoji {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 200, 83, 0.18);
+          border: 1px solid rgba(0, 200, 83, 0.3);
+          font-size: 21px;
+          flex-shrink: 0;
+        }
+
+        .mavf-ia-copy {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .mavf-ia-copy strong {
+          display: block;
+          color: #dbf7e5;
+          font-size: 15px;
+          line-height: 1.2;
+        }
+
+        .mavf-ia-copy small {
+          display: block;
+          margin-top: 3px;
+          color: #9cc5aa;
+          font-size: 12px;
+        }
+
+        .mavf-ia-arrow {
+          color: #75d89a;
+          font-size: 24px;
+          line-height: 1;
+        }
+      `}</style>
     </MAVFAppShell>
   );
 }

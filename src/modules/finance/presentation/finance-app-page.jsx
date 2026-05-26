@@ -1647,6 +1647,7 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           <section className="home-quick-access">
             <QuickAccessCard emoji="👥" title="Minha Turma" subtitle="Ver conquistas e desafios" href="/turma" />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
+            <QuickAccessCard emoji="🤖" title="Jackson IA" subtitle="Análise e orientação" href="/jackson-ia" />
           </section>
         ) : null}
 
@@ -3127,8 +3128,14 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
         .home-quick-access {
           margin-top: 14px;
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 10px;
+        }
+
+        @media (max-width: 1024px) {
+          .home-quick-access {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
 
         @media (max-width: 700px) {

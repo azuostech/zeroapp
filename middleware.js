@@ -25,7 +25,8 @@ export async function middleware(request) {
 
   const isAppArea = pathname.startsWith('/app');
   const isAdminArea = pathname.startsWith('/admin');
-  const protectedPage = isAppArea || isAdminArea;
+  const isJacksonArea = pathname.startsWith('/jackson-ia');
+  const protectedPage = isAppArea || isAdminArea || isJacksonArea;
   const protectedApi = isFinanceApi || isAdminApi;
 
   if (!hasSupabaseEnv()) {
