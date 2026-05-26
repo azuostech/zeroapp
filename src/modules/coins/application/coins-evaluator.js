@@ -1,9 +1,38 @@
+import { sendPushToUser } from '@/src/lib/push/push-service';
+
 const EVENT_AMOUNTS = {
   item_realized: 5,
   first_launch_month: 10,
   goal_reached: 150,
   month_complete: 100
 };
+
+async function notifyCoinsMilestone(userId, actionType) {
+  try {
+    if (actionType === 'month_complete') {
+      await sendPushToUser(userId, {
+        title: 'Mês completo! 🎉',
+        body: 'Todos os blocos realizados. +100 ZeroCoins!',
+        url: '/jornada'
+      });
+      return;
+    }
+
+    if (actionType === 'goal_reached') {
+      await sendPushToUser(userId, {
+        title: 'Meta de reserva atingida! 🏦',
+        body: '+150 ZeroCoins pela consistência.',
+        url: '/jornada'
+      });
+    }
+  } catch (error) {
+    console.error('[coins-evaluator] push notificação falhou:', {
+      userId,
+      actionType,
+      reason: error?.message || 'unknown_error'
+    });
+  }
+}
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -233,6 +262,7 @@ export async function evaluateCoinsAfterToggle({
     if (goalAward) {
       awards.push(goalAward);
       balance = goalAward.balance;
+      await notifyCoinsMilestone(userId, 'goal_reached');
     }
   }
 
@@ -251,6 +281,7 @@ export async function evaluateCoinsAfterToggle({
     if (monthAward) {
       awards.push(monthAward);
       balance = monthAward.balance;
+      await notifyCoinsMilestone(userId, 'month_complete');
     }
   }
 

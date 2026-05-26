@@ -1,5 +1,6 @@
 import './globals.css';
 import ThemeAssetSync from '@/components/layout/ThemeAssetSync';
+import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import StyledJsxRegistry from './registry';
 
@@ -102,6 +103,7 @@ export default function RootLayout({ children }) {
       <body>
         <StyledJsxRegistry>
           <ThemeAssetSync />
+          <ServiceWorkerRegistrar />
           {children}
           <ToastProvider />
         </StyledJsxRegistry>
