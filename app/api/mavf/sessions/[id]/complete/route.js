@@ -8,7 +8,7 @@ import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-se
 
 export async function POST(request, { params }) {
   const supabase = await createServerSupabase();
-  const { id } = params;
+  const { id } = await params;
   const context = await resolveImpersonationContext({
     supabase,
     requestedUserId: null

@@ -6,9 +6,14 @@ import { NextResponse } from 'next/server';
 import { resolveImpersonationContext } from '@/src/modules/admin/application/admin-impersonation-service';
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 
+function isMissingParticipantsTableError(error) {
+  const message = String(error?.message || '');
+  return error?.code === 'PGRST205' || message.includes("Could not find the table 'public.mavf_session_participants'");
+}
+
 export async function POST(request, { params }) {
   const supabase = await createServerSupabase();
-  const { id } = params;
+  const { id } = await params;
   const context = await resolveImpersonationContext({
     supabase,
     requestedUserId: null
@@ -57,6 +62,24 @@ export async function POST(request, { params }) {
     .single();
 
   if (currentSession?.status === 'draft') {
+    const { count: participantsCount, error: participantsError } = await supabase
+      .from('mavf_session_participants')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', id);
+
+    if (participantsError && !isMissingParticipantsTableError(participantsError)) {
+      return NextResponse.json({ error: participantsError.message }, { status: 500 });
+    }
+
+    if (!participantsError && Number(participantsCount || 0) === 0) {
+      return NextResponse.json(
+        {
+          error: 'Defina pelo menos um participante para ativar esta sessão.'
+        },
+        { status: 400 }
+      );
+    }
+
     updateData.status = 'active';
     updateData.started_at = new Date().toISOString();
   }

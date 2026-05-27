@@ -7,7 +7,7 @@ function normalizeUserId(input) {
 }
 
 export function isAdminProfile(profile) {
-  return Boolean(profile?.role === 'admin' || profile?.is_admin);
+  return Boolean(profile?.role === 'admin');
 }
 
 export async function resolveImpersonationContext({ supabase, requestedUserId }) {

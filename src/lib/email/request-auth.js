@@ -27,7 +27,7 @@ export async function authorizeCronOrAdmin(request) {
     };
   }
 
-  const isAdmin = Boolean(profile?.role === 'admin' || profile?.is_admin);
+  const isAdmin = Boolean(profile?.role === 'admin');
   if (!isAdmin) {
     return {
       ok: false,

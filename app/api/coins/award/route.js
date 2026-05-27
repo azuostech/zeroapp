@@ -151,7 +151,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'inactive_account' }, { status: 403 });
   }
 
-  const isAdmin = Boolean(profile?.is_admin || profile?.role === 'admin');
+  const isAdmin = Boolean(profile?.role === 'admin');
   if (!isAdmin && action_type === 'admin_adjustment') {
     return NextResponse.json(
       {

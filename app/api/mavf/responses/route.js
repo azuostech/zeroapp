@@ -21,6 +21,55 @@ const VALID_PILLARS = [
   'intelectual'
 ];
 
+function isMissingParticipantsTableError(error) {
+  const message = String(error?.message || '');
+  return error?.code === 'PGRST205' || message.includes("Could not find the table 'public.mavf_session_participants'");
+}
+
+async function validateSessionParticipantAccess({ supabase, sessionId, userId }) {
+  const { data: participants, error: participantsError } = await supabase
+    .from('mavf_session_participants')
+    .select('user_id')
+    .eq('session_id', sessionId);
+
+  if (participantsError) {
+    if (isMissingParticipantsTableError(participantsError)) {
+      return { ok: true, allowed: true };
+    }
+    return {
+      ok: false,
+      status: 500,
+      error: participantsError.message || 'Erro ao validar participantes da sessão.'
+    };
+  }
+
+  const safeParticipants = participants || [];
+  if (!safeParticipants.length) {
+    return { ok: true, allowed: true };
+  }
+
+  const assigned = safeParticipants.some((item) => item.user_id === userId);
+  if (assigned) {
+    return { ok: true, allowed: true };
+  }
+
+  const { count, error: existingResponseError } = await supabase
+    .from('mavf_responses')
+    .select('id', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('user_id', userId);
+
+  if (existingResponseError) {
+    return {
+      ok: false,
+      status: 500,
+      error: existingResponseError.message || 'Erro ao validar histórico da sessão.'
+    };
+  }
+
+  return { ok: true, allowed: Number(count || 0) > 0 };
+}
+
 export async function POST(request) {
   const supabase = await createServerSupabase();
 
@@ -75,6 +124,25 @@ export async function POST(request) {
         error: 'Session not found'
       },
       { status: 404 }
+    );
+  }
+
+  const access = await validateSessionParticipantAccess({
+    supabase,
+    sessionId: session_id,
+    userId: context.targetUserId
+  });
+
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  if (!access.allowed) {
+    return NextResponse.json(
+      {
+        error: 'Usuário não autorizado para responder esta sessão.'
+      },
+      { status: 403 }
     );
   }
 
@@ -180,6 +248,27 @@ export async function GET(request) {
 
   if (includeAll && (!context.isAdmin || context.impersonating)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  if (!includeAll) {
+    const access = await validateSessionParticipantAccess({
+      supabase,
+      sessionId: session_id,
+      userId: context.targetUserId
+    });
+
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
+
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Usuário não autorizado para visualizar respostas desta sessão.'
+        },
+        { status: 403 }
+      );
+    }
   }
 
   let query = supabase.from('mavf_responses').select('*').eq('session_id', session_id).order('created_at', { ascending: true });

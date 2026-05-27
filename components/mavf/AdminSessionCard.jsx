@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { MAVF_PILLARS } from '@/lib/mavf-config';
 import ProgressIndicator from '@/components/mavf/ProgressIndicator';
 
-export default function AdminSessionCard({ session, responseStats, onStartPillar, onComplete }) {
+export default function AdminSessionCard({ session, responseStats, onStartPillar, onComplete, onManageParticipants }) {
   const [expanded, setExpanded] = useState(session.status === 'active');
 
   const totalParticipants = responseStats?.participantsCount || 0;
@@ -39,6 +39,14 @@ export default function AdminSessionCard({ session, responseStats, onStartPillar
         </div>
 
         <div className="flex gap-2">
+          {typeof onManageParticipants === 'function' ? (
+            <button
+              onClick={() => onManageParticipants(session)}
+              className="px-3 py-2 rounded-[8px] border border-[#64b4ff] text-[#64b4ff] text-xs font-semibold"
+            >
+              Participantes
+            </button>
+          ) : null}
           <button
             onClick={() => setExpanded((value) => !value)}
             className="px-3 py-2 rounded-[8px] border border-[#00C853] text-[#00C853] text-xs font-semibold"
@@ -62,6 +70,17 @@ export default function AdminSessionCard({ session, responseStats, onStartPillar
             Pilar atual: <span className="text-[#fff] font-semibold">{session.current_pillar || 'nenhum'}</span>
           </div>
           <ProgressIndicator value={currentPillarResponses} max={totalParticipants || currentPillarResponses || 1} />
+        </div>
+      ) : null}
+
+      <div className="text-xs text-[#8da0b8] mb-4">
+        Participantes liberados: <span className="text-[#d3e5ff] font-semibold">{totalParticipants}</span>
+      </div>
+
+      {session.status === 'draft' ? (
+        <div className="bg-[rgba(255,215,0,0.08)] border border-[rgba(255,215,0,0.28)] rounded-[10px] p-3 mb-4 text-xs text-[#f0d87a]">
+          Esta sessão ainda está em rascunho e não aparece para os mentorados.
+          Libere o primeiro pilar para ativar.
         </div>
       ) : null}
 

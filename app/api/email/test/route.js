@@ -19,7 +19,7 @@ export async function POST() {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const isAdmin = Boolean(profile?.role === 'admin' || profile?.is_admin);
+  const isAdmin = Boolean(profile?.role === 'admin');
   if (!isAdmin) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }

@@ -13,7 +13,7 @@ function isValidIsoDate(value) {
 }
 
 function canAccessObjectives(profile) {
-  return Boolean(profile?.is_admin || profile?.role === 'admin') || MAVF_ALLOWED_TIERS.includes(profile?.tier);
+  return Boolean(profile?.role === 'admin') || MAVF_ALLOWED_TIERS.includes(profile?.tier);
 }
 
 function normalizeObjectivesError(error) {
