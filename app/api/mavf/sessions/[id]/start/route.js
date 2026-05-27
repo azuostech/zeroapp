@@ -55,13 +55,23 @@ export async function POST(request, { params }) {
   };
 
   // Se estava em draft, mudar para active e setar started_at
-  const { data: currentSession } = await supabase
+  const { data: currentSession, error: currentSessionError } = await supabase
     .from('mavf_sessions')
     .select('status')
     .eq('id', id)
     .single();
 
-  if (currentSession?.status === 'draft') {
+  if (currentSessionError) {
+    return NextResponse.json({ error: currentSessionError.message || 'Erro ao carregar sessão.' }, { status: 500 });
+  }
+
+  if (!currentSession) {
+    return NextResponse.json({ error: 'Sessão não encontrada.' }, { status: 404 });
+  }
+
+  const previousStatus = currentSession?.status || null;
+
+  if (previousStatus === 'draft' || previousStatus === 'completed') {
     const { count: participantsCount, error: participantsError } = await supabase
       .from('mavf_session_participants')
       .select('id', { count: 'exact', head: true })
@@ -74,13 +84,24 @@ export async function POST(request, { params }) {
     if (!participantsError && Number(participantsCount || 0) === 0) {
       return NextResponse.json(
         {
-          error: 'Defina pelo menos um participante para ativar esta sessão.'
+          error:
+            previousStatus === 'completed'
+              ? 'Defina pelo menos um participante para reativar esta sessão.'
+              : 'Defina pelo menos um participante para ativar esta sessão.'
         },
         { status: 400 }
       );
     }
+  }
 
+  if (previousStatus === 'draft') {
     updateData.status = 'active';
+    updateData.started_at = new Date().toISOString();
+  }
+
+  if (previousStatus === 'completed') {
+    updateData.status = 'active';
+    updateData.completed_at = null;
     updateData.started_at = new Date().toISOString();
   }
 
@@ -104,15 +125,20 @@ export async function POST(request, { params }) {
     resourceId: id,
     metadata: {
       action: 'start_pillar',
-      pillar
+      pillar,
+      previous_status: previousStatus
     }
   });
 
   // TODO: Enviar push notification para todos tier MOVIMENTO+
   // Quando implementar PWA, adicionar aqui
 
+  const reopened = previousStatus === 'completed';
+
   return NextResponse.json({ 
     session,
-    message: `Pilar ${pillar} liberado com sucesso!`
+    message: reopened
+      ? `Sessão reativada e pilar ${pillar} liberado com sucesso!`
+      : `Pilar ${pillar} liberado com sucesso!`
   });
 }

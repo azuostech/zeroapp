@@ -4,15 +4,24 @@ import { useEffect, useMemo, useState } from 'react';
 import AdminSessionCard from '@/components/mavf/AdminSessionCard';
 
 const MAVF_ALLOWED_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
+const SESSION_COLORS = ['#00C853', '#2196F3', '#FFD700', '#E91E63', '#9C27B0', '#FF9800', '#12B0A5', '#FF6B6B'];
 
 function isEligibleParticipant(user) {
   return Boolean(user?.status === 'active' && MAVF_ALLOWED_TIERS.includes(user?.tier));
 }
 
+function formatDateBR(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('pt-BR');
+}
+
+function pickRandomColor() {
+  return SESSION_COLORS[Math.floor(Math.random() * SESSION_COLORS.length)];
+}
+
 export default function AdminMAVFPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creatingSession, setCreatingSession] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [responseStats, setResponseStats] = useState({});
@@ -20,6 +29,12 @@ export default function AdminMAVFPage() {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState('');
+
+  const [sessionModal, setSessionModal] = useState({ open: false, mode: 'create', session: null });
+  const [sessionTitle, setSessionTitle] = useState('');
+  const [sessionColor, setSessionColor] = useState('#00C853');
+  const [sessionSubmitting, setSessionSubmitting] = useState(false);
+  const [sessionFormError, setSessionFormError] = useState('');
 
   const [participantsModalSession, setParticipantsModalSession] = useState(null);
   const [participantsLoading, setParticipantsLoading] = useState(false);
@@ -45,6 +60,10 @@ export default function AdminMAVFPage() {
       return name.includes(query) || email.includes(query);
     });
   }, [eligibleUsers, participantsQuery]);
+
+  const activeSessions = useMemo(() => sessions.filter((item) => item.status === 'active'), [sessions]);
+  const draftSessions = useMemo(() => sessions.filter((item) => item.status === 'draft'), [sessions]);
+  const completedSessions = useMemo(() => sessions.filter((item) => item.status === 'completed'), [sessions]);
 
   const fetchAdminUsers = async () => {
     try {
@@ -127,37 +146,84 @@ export default function AdminMAVFPage() {
     }
   };
 
-  const createSession = async () => {
-    const title = prompt('Nome da sessão MAVF:');
-    if (!title) return;
+  const openCreateSessionModal = () => {
+    setSessionModal({ open: true, mode: 'create', session: null });
+    setSessionFormError('');
+    setSessionTitle('');
+    setSessionColor(pickRandomColor());
+  };
 
-    const colors = ['#00C853', '#2196F3', '#FFD700', '#E91E63', '#9C27B0', '#FF9800'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+  const openEditSessionModal = (session) => {
+    setSessionModal({ open: true, mode: 'edit', session });
+    setSessionFormError('');
+    setSessionTitle(session?.title || '');
+    setSessionColor(session?.color_hex || '#00C853');
+  };
 
-    setCreatingSession(true);
+  const closeSessionModal = () => {
+    if (sessionSubmitting) return;
+    setSessionModal({ open: false, mode: 'create', session: null });
+    setSessionFormError('');
+    setSessionTitle('');
+    setSessionColor('#00C853');
+  };
+
+  const saveSession = async () => {
+    const title = String(sessionTitle || '').trim();
+    if (title.length < 3) {
+      setSessionFormError('Informe um título com pelo menos 3 caracteres.');
+      return;
+    }
+
+    if (!/^#[0-9A-F]{6}$/i.test(sessionColor)) {
+      setSessionFormError('Cor inválida. Use #RRGGBB.');
+      return;
+    }
+
+    setSessionSubmitting(true);
+    setSessionFormError('');
     setFeedback('');
+
     try {
-      const res = await fetch('/api/mavf/sessions', {
-        method: 'POST',
+      const isEditing = sessionModal.mode === 'edit' && sessionModal.session?.id;
+      const endpoint = isEditing ? `/api/mavf/sessions/${sessionModal.session.id}` : '/api/mavf/sessions';
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, color_hex: color })
+        body: JSON.stringify({
+          title,
+          color_hex: sessionColor
+        })
       });
       const data = await res.json();
 
-      if (res.ok) {
-        setFeedback('Sessão criada como rascunho. Defina os participantes e depois libere um pilar para ativar.');
-        await fetchSessions();
-      } else {
-        alert(data.error || 'Erro ao criar sessão');
+      if (!res.ok) {
+        throw new Error(data?.error || 'Erro ao salvar sessão.');
       }
-    } catch (_) {
-      alert('Erro ao criar sessão');
+
+      setFeedback(
+        isEditing
+          ? data?.message || 'Sessão atualizada com sucesso.'
+          : data?.message || 'Sessão criada como rascunho. Defina participantes e libere o pilar.'
+      );
+      closeSessionModal();
+      await fetchSessions();
+    } catch (error) {
+      setSessionFormError(error?.message || 'Erro ao salvar sessão.');
     } finally {
-      setCreatingSession(false);
+      setSessionSubmitting(false);
     }
   };
 
   const startPillar = async (sessionId, pillarId) => {
+    const target = sessions.find((item) => item.id === sessionId);
+    if (target?.status === 'completed') {
+      const ok = window.confirm('Reativar esta sessão finalizada e liberar este pilar?');
+      if (!ok) return;
+    }
+
     setFeedback('');
     try {
       const res = await fetch(`/api/mavf/sessions/${sessionId}/start`, {
@@ -179,7 +245,7 @@ export default function AdminMAVFPage() {
   };
 
   const completeSession = async (sessionId) => {
-    if (!confirm('Finalizar esta sessão? Não poderá ser reaberta.')) return;
+    if (!confirm('Finalizar esta sessão? Não poderá ser reaberta sem reativação manual.')) return;
 
     setFeedback('');
     try {
@@ -196,6 +262,30 @@ export default function AdminMAVFPage() {
       }
     } catch (_) {
       alert('Erro ao finalizar sessão');
+    }
+  };
+
+  const deleteSession = async (session) => {
+    const ok = window.confirm(
+      `Excluir a sessão "${session?.title || 'sem título'}"?\n\nAs respostas vinculadas serão removidas e esta ação é irreversível.`
+    );
+    if (!ok) return;
+
+    setFeedback('');
+    try {
+      const res = await fetch(`/api/mavf/sessions/${session.id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setFeedback(data?.message || 'Sessão excluída com sucesso.');
+        await fetchSessions();
+      } else {
+        alert(data?.error || 'Erro ao excluir sessão');
+      }
+    } catch (_) {
+      alert('Erro ao excluir sessão');
     }
   };
 
@@ -280,146 +370,209 @@ export default function AdminMAVFPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a]">
-        <div className="text-[#888]">Carregando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0f141c] text-[#c3cedd]">
+        Carregando painel MAVF...
       </div>
     );
   }
 
   if (accessDenied) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] text-[#fff] flex items-center justify-center p-6">
-        <div className="bg-[#222222] border border-[#333] rounded-[12px] p-7 max-w-md text-center">
+      <div className="min-h-screen bg-[#0f141c] text-[#fff] flex items-center justify-center p-6">
+        <div className="bg-[#1a212c] border border-[#2e3947] rounded-[14px] p-7 max-w-md text-center">
           <div className="text-4xl mb-4">⛔</div>
           <h2 className="text-xl font-semibold mb-2">Acesso restrito</h2>
-          <p className="text-[#888] text-sm">Esta página é exclusiva para administradores.</p>
+          <p className="text-[#91a1b7] text-sm">Esta página é exclusiva para administradores.</p>
         </div>
       </div>
     );
   }
 
-  const activeSessions = sessions.filter((item) => item.status === 'active');
-  const completedSessions = sessions.filter((item) => item.status === 'completed');
-  const draftSessions = sessions.filter((item) => item.status === 'draft');
+  const renderSessionSection = (title, subtitle, list, accentClass) => (
+    <section className="rounded-[14px] border border-[#263343] bg-[#141b24] p-4 md:p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className={`text-lg md:text-xl font-bold ${accentClass}`}>{title}</h2>
+          <p className="text-xs md:text-sm text-[#8ea1b7]">{subtitle}</p>
+        </div>
+        <div className="text-xs text-[#8ea1b7]">{list.length} sessão(ões)</div>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="rounded-[10px] border border-dashed border-[#324355] bg-[#111823] p-5 text-sm text-[#8ea1b7]">
+          Nenhuma sessão nesta categoria.
+        </div>
+      ) : (
+        list.map((session) => (
+          <AdminSessionCard
+            key={session.id}
+            session={session}
+            responseStats={responseStats[session.id]}
+            onStartPillar={startPillar}
+            onComplete={completeSession}
+            onManageParticipants={openParticipantsModal}
+            onEditSession={openEditSessionModal}
+            onDeleteSession={deleteSession}
+          />
+        ))
+      )}
+    </section>
+  );
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 md:p-8 text-[#fff]">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF — Painel do Mentor</h1>
-            <p className="text-[#888]">Crie a sessão, selecione os participantes e depois libere os pilares.</p>
+    <div className="min-h-screen bg-[#0f141c] p-4 md:p-8 text-[#f4f7fb]">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <header className="relative overflow-hidden rounded-[16px] border border-[#324a68] bg-gradient-to-r from-[#142335] via-[#1a2f48] to-[#173f3a] p-5 md:p-7">
+          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[rgba(101,184,255,0.13)] blur-2xl" />
+          <div className="absolute -left-16 -bottom-16 h-44 w-44 rounded-full bg-[rgba(0,200,131,0.1)] blur-2xl" />
+          <div className="relative flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.9px] text-[#9ab9da] mb-2">Painel Operacional</p>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF Admin</h1>
+              <p className="text-sm text-[#bbd0e8] max-w-2xl">
+                Gerencie sessões, participantes e pilares em um único fluxo. Reative sessões finalizadas quando necessário.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openCreateSessionModal}
+              className="px-5 py-3 rounded-[10px] bg-[#3dd598] text-[#06311f] font-bold text-sm shadow-[0_10px_30px_rgba(61,213,152,0.25)] hover:brightness-105"
+            >
+              + Nova Sessão
+            </button>
           </div>
-          <button
-            onClick={createSession}
-            disabled={creatingSession}
-            className="bg-[#00C853] text-[#000] font-bold px-6 py-3 rounded-[8px] disabled:opacity-50"
-          >
-            {creatingSession ? 'Criando...' : '+ Nova Sessão'}
-          </button>
-        </div>
+        </header>
 
         {feedback ? (
-          <div className="mb-6 bg-[rgba(0,200,83,0.12)] border border-[rgba(0,200,83,0.28)] text-[#00C853] rounded-[10px] p-3 text-sm">
+          <div className="rounded-[10px] border border-[rgba(61,213,152,0.35)] bg-[rgba(61,213,152,0.12)] text-[#95f5cb] px-4 py-3 text-sm">
             {feedback}
           </div>
         ) : null}
 
         {usersError ? (
-          <div className="mb-6 bg-[rgba(255,82,82,0.12)] border border-[rgba(255,82,82,0.28)] text-[#ff8e8e] rounded-[10px] p-3 text-sm">
+          <div className="rounded-[10px] border border-[rgba(255,82,82,0.35)] bg-[rgba(255,82,82,0.12)] text-[#ff9f9f] px-4 py-3 text-sm">
             {usersError}
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-            <div className="text-xs text-[#888] mb-1">Total de Sessões</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="bg-[#141b24] border border-[#2b394b] rounded-[12px] p-4">
+            <div className="text-xs text-[#8ea1b7] mb-1">Total de Sessões</div>
             <div className="text-3xl font-bold">{sessions.length}</div>
           </div>
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-            <div className="text-xs text-[#888] mb-1">Ativas</div>
-            <div className="text-3xl font-bold text-[#00C853]">{activeSessions.length}</div>
+          <div className="bg-[#141b24] border border-[#245747] rounded-[12px] p-4">
+            <div className="text-xs text-[#8ea1b7] mb-1">Ativas</div>
+            <div className="text-3xl font-bold text-[#3dd598]">{activeSessions.length}</div>
           </div>
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-            <div className="text-xs text-[#888] mb-1">Rascunhos</div>
-            <div className="text-3xl font-bold text-[#FFD700]">{draftSessions.length}</div>
+          <div className="bg-[#141b24] border border-[#5a4a26] rounded-[12px] p-4">
+            <div className="text-xs text-[#8ea1b7] mb-1">Rascunhos</div>
+            <div className="text-3xl font-bold text-[#ffd166]">{draftSessions.length}</div>
           </div>
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-            <div className="text-xs text-[#888] mb-1">Finalizadas</div>
-            <div className="text-3xl font-bold text-[#888]">{completedSessions.length}</div>
+          <div className="bg-[#141b24] border border-[#3c4655] rounded-[12px] p-4">
+            <div className="text-xs text-[#8ea1b7] mb-1">Finalizadas</div>
+            <div className="text-3xl font-bold text-[#b4bfce]">{completedSessions.length}</div>
           </div>
         </div>
 
-        {activeSessions.length > 0 ? (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 bg-[#00C853] rounded-full" />
-              Sessões Ativas
-            </h2>
-            {activeSessions.map((session) => (
-              <AdminSessionCard
-                key={session.id}
-                session={session}
-                responseStats={responseStats[session.id]}
-                onStartPillar={startPillar}
-                onComplete={completeSession}
-                onManageParticipants={openParticipantsModal}
-              />
-            ))}
-          </div>
-        ) : null}
+        <div className="space-y-5">
+          {renderSessionSection(
+            'Sessões Ativas',
+            'Responder em tempo real e acompanhar volume de respostas por pilar.',
+            activeSessions,
+            'text-[#5fe5ad]'
+          )}
+          {renderSessionSection(
+            'Rascunhos',
+            'Defina participantes e configure os pilares antes de ativar.',
+            draftSessions,
+            'text-[#ffd166]'
+          )}
+          {renderSessionSection(
+            'Sessões Finalizadas',
+            'Você pode editar, excluir ou reativar selecionando um novo pilar.',
+            completedSessions,
+            'text-[#c4cfde]'
+          )}
+        </div>
+      </div>
 
-        {draftSessions.length > 0 ? (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 text-[#FFD700]">Rascunhos (ainda não visíveis para mentorados)</h2>
-            {draftSessions.map((session) => (
-              <AdminSessionCard
-                key={session.id}
-                session={session}
-                responseStats={responseStats[session.id]}
-                onStartPillar={startPillar}
-                onComplete={completeSession}
-                onManageParticipants={openParticipantsModal}
-              />
-            ))}
-          </div>
-        ) : null}
+      {sessionModal.open ? (
+        <div className="fixed inset-0 z-50 bg-[rgba(6,10,14,0.78)] flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-[#121a24] border border-[#2a3c50] rounded-[14px] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2a3c50]">
+              <h3 className="text-lg font-semibold">{sessionModal.mode === 'edit' ? 'Editar Sessão' : 'Nova Sessão MAVF'}</h3>
+              <p className="text-xs text-[#8ea1b7] mt-1">
+                {sessionModal.mode === 'edit'
+                  ? 'Atualize nome e identidade visual da sessão.'
+                  : 'Crie a sessão e depois selecione participantes para liberar acesso.'}
+              </p>
+            </div>
 
-        {completedSessions.length > 0 ? (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 text-[#888]">Sessões Finalizadas</h2>
-            <div className="space-y-3">
-              {completedSessions.map((session) => (
-                <div key={session.id} className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full border border-[#333]" style={{ background: session.color_hex }} />
-                      <div>
-                        <div className="font-semibold">{session.title}</div>
-                        <div className="text-xs text-[#888]">
-                          Finalizada em {session.completed_at ? new Date(session.completed_at).toLocaleDateString('pt-BR') : '—'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs text-[#888]">
-                        {Number(session?.participants_count || responseStats[session.id]?.participantsCount || 0)} participantes liberados
-                      </div>
+            <div className="px-5 py-4 space-y-4">
+              <label className="block">
+                <span className="text-xs text-[#8ea1b7]">Título da sessão</span>
+                <input
+                  type="text"
+                  value={sessionTitle}
+                  onChange={(event) => setSessionTitle(event.target.value)}
+                  placeholder="Ex.: Sessão de abril - turma A"
+                  className="mt-1 w-full bg-[#0f151e] border border-[#314255] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#64b4ff]"
+                />
+              </label>
+
+              <div>
+                <div className="text-xs text-[#8ea1b7] mb-2">Cor da sessão</div>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {SESSION_COLORS.map((color) => {
+                    const active = sessionColor.toLowerCase() === color.toLowerCase();
+                    return (
                       <button
+                        key={color}
                         type="button"
-                        onClick={() => openParticipantsModal(session)}
-                        className="px-3 py-2 rounded-[8px] border border-[#64b4ff] text-[#64b4ff] text-xs font-semibold"
-                      >
-                        Participantes
-                      </button>
-                    </div>
-                  </div>
+                        onClick={() => setSessionColor(color)}
+                        className={`h-8 w-8 rounded-full border-2 ${active ? 'border-[#fff]' : 'border-[#2d3d52]'}`}
+                        style={{ background: color }}
+                        aria-label={`Selecionar cor ${color}`}
+                      />
+                    );
+                  })}
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <input type="color" value={sessionColor} onChange={(event) => setSessionColor(event.target.value)} className="h-9 w-12 rounded border border-[#314255] bg-transparent" />
+                  <input
+                    type="text"
+                    value={sessionColor}
+                    onChange={(event) => setSessionColor(event.target.value)}
+                    className="w-full bg-[#0f151e] border border-[#314255] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#64b4ff]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-[#2a3c50]">
+              {sessionFormError ? <div className="mb-3 text-sm text-[#ff9f9f]">{sessionFormError}</div> : null}
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeSessionModal}
+                  disabled={sessionSubmitting}
+                  className="px-3 py-2 text-xs border border-[#3a4a5e] rounded-[8px] text-[#afbbc9] disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={saveSession}
+                  disabled={sessionSubmitting}
+                  className="px-4 py-2 text-xs rounded-[8px] bg-[#64b4ff] text-[#08253d] font-bold disabled:opacity-60"
+                >
+                  {sessionSubmitting ? 'Salvando...' : sessionModal.mode === 'edit' ? 'Salvar Alterações' : 'Criar Sessão'}
+                </button>
+              </div>
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {participantsModalSession ? (
         <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.72)] flex items-center justify-center p-4">
@@ -427,7 +580,9 @@ export default function AdminMAVFPage() {
             <div className="px-5 py-4 border-b border-[#2c2c2c] flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Participantes da Sessão</h3>
-                <p className="text-xs text-[#9aa1ad] mt-1">{participantsModalSession.title}</p>
+                <p className="text-xs text-[#9aa1ad] mt-1">
+                  {participantsModalSession.title} • {formatDateBR(participantsModalSession.created_at)}
+                </p>
               </div>
               <button
                 type="button"
