@@ -84,9 +84,10 @@ export default function ChatBubble({ message, role, isLoading = false }) {
           }
 
           .user-bubble {
-            background: #00c853;
-            color: #09130d;
+            background: var(--green-2);
+            color: #000000;
             border: 1px solid rgba(0, 0, 0, 0.08);
+            border-top-right-radius: var(--radius-xs);
           }
 
           :global(.user-bubble p),
@@ -102,6 +103,10 @@ export default function ChatBubble({ message, role, isLoading = false }) {
 
           :global(.spacer) {
             height: 6px;
+          }
+
+          :global(.user-bubble strong) {
+            color: #001d0d;
           }
         `}</style>
       </div>
@@ -128,9 +133,10 @@ export default function ChatBubble({ message, role, isLoading = false }) {
         }
 
         .assistant-bubble {
-          background: var(--bg3, #1c1c1c);
-          border: 1px solid var(--border2, #2b2b2b);
-          color: #e7eee9;
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-2);
+          color: var(--text);
+          border-top-left-radius: var(--radius-xs);
         }
 
         :global(.assistant-bubble p),
@@ -146,6 +152,11 @@ export default function ChatBubble({ message, role, isLoading = false }) {
 
         :global(.spacer) {
           height: 6px;
+        }
+
+        :global(.assistant-bubble strong) {
+          color: var(--text);
+          font-weight: 700;
         }
       `}</style>
     </div>

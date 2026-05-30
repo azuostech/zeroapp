@@ -111,10 +111,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
     return (
       <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-5xl mx-auto">
-          <div className="min-h-[50vh] flex items-center justify-center text-[#fff]">
+          <div className="min-h-[50vh] flex items-center justify-center text-[var(--text)]">
             <div className="text-center">
               <div className="text-4xl mb-3">⏳</div>
-              <p className="text-[#888]">Carregando MAVF...</p>
+              <p className="text-[var(--text-2)]">Carregando MAVF...</p>
             </div>
           </div>
         </div>
@@ -143,20 +143,20 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
   if (!activeSession && !lastCompletedSession) {
     mapContent = (
-      <div className="max-w-lg text-center bg-[#222222] border border-[#333333] rounded-[12px] p-8 mx-auto">
+      <div className="max-w-lg text-center bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-8 mx-auto">
         <div className="text-6xl mb-6">💤</div>
         <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
-        <p className="text-[#888]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
+        <p className="text-[var(--text-2)]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
       </div>
     );
   } else if (!activeSession && lastCompletedSession) {
     mapContent = (
       <>
-        <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-6 mb-6">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 mb-6">
           <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
         </div>
         <div className="text-center">
-          <Link href={mavfHistoryHref} className="inline-flex bg-[#00C853] text-[#000] font-bold px-5 py-3 rounded-[8px]">
+          <Link href={mavfHistoryHref} className="inline-flex bg-[var(--green)] text-[#000] font-bold px-5 py-3 rounded-[8px]">
             Comparar sessões anteriores
           </Link>
         </div>
@@ -165,14 +165,14 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   } else {
     mapContent = (
       <>
-        <div className="mb-8 bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-          <div className="flex justify-between text-xs text-[#888] uppercase tracking-[0.5px] mb-2">
+        <div className="mb-8 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-4">
+          <div className="flex justify-between text-xs text-[var(--text-3)] uppercase tracking-[0.5px] mb-2">
             <span>Progresso</span>
             <span>{progress.completed}/11 pilares</span>
           </div>
-          <div className="bg-[#333] h-2 rounded-full overflow-hidden">
+          <div className="bg-[var(--bg-surface)] h-2 rounded-full overflow-hidden">
             <div
-              className="bg-gradient-to-r from-[#00C853] to-[#69f0ae] h-full transition-all duration-500"
+              className="bg-gradient-to-r from-[var(--green)] to-[var(--green-2)] h-full transition-all duration-500"
               style={{ width: `${progress.percentage}%` }}
             />
           </div>
@@ -191,18 +191,18 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         ) : null}
 
         {!progress.all_completed && !currentPillar ? (
-          <div className="mb-10 bg-[#222222] border border-[#333333] rounded-[12px] p-6 text-center">
+          <div className="mb-10 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 text-center">
             <div className="text-4xl mb-2">🎯</div>
             <h2 className="text-xl font-semibold mb-2">Aguardando próximo pilar</h2>
-            <p className="text-[#888]">O mentor ainda vai liberar o próximo passo da sessão.</p>
+            <p className="text-[var(--text-2)]">O mentor ainda vai liberar o próximo passo da sessão.</p>
           </div>
         ) : null}
 
         {progress.all_completed ? (
-          <div className="mb-10 bg-[#222222] border border-[#333333] rounded-[12px] p-6 text-center">
+          <div className="mb-10 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 text-center">
             <div className="text-5xl mb-3">✅</div>
             <h2 className="text-2xl font-bold mb-2">Respostas concluídas</h2>
-            <p className="text-[#888]">Aguarde o mentor finalizar a sessão para revelar a roda.</p>
+            <p className="text-[var(--text-2)]">Aguarde o mentor finalizar a sessão para revelar a roda.</p>
           </div>
         ) : null}
 
@@ -213,13 +213,13 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             return (
               <div
                 key={pillar.id}
-                className={`bg-[#222222] border rounded-[10px] p-3 text-center ${
-                  isCurrent ? 'border-[#00C853]' : 'border-[#333333]'
+                className={`bg-[var(--bg-card)] border rounded-[10px] p-3 text-center ${
+                  isCurrent ? 'border-[var(--green)]' : 'border-[var(--border-2)]'
                 }`}
               >
                 <div className="text-2xl mb-1">{pillar.emoji}</div>
-                <div className="text-[11px] text-[#888] uppercase tracking-[0.5px] mb-1">{pillar.label}</div>
-                <div className={`text-lg font-bold ${response ? 'text-[#00C853]' : 'text-[#555]'}`}>
+                <div className="text-[11px] text-[var(--text-3)] uppercase tracking-[0.5px] mb-1">{pillar.label}</div>
+                <div className={`text-lg font-bold ${response ? 'text-[var(--green)]' : 'text-[var(--text-3)]'}`}>
                   {response?.score ?? '—'}
                 </div>
               </div>
@@ -232,19 +232,19 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
   return (
     <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-      <div className="max-w-5xl mx-auto text-[#fff]">
+      <div className="max-w-5xl mx-auto text-[var(--text)]">
         {adminMode ? (
-          <div className="mb-4 rounded-[10px] border border-[rgba(68,136,255,0.35)] bg-[rgba(68,136,255,0.1)] px-4 py-3 text-sm">
-            <span className="font-semibold text-[#64b4ff]">Modo admin:</span>{' '}
+          <div className="mb-4 rounded-[10px] border border-[var(--blue)] bg-[var(--blue-dim)] px-4 py-3 text-sm">
+            <span className="font-semibold text-[var(--blue)]">Modo admin:</span>{' '}
             {adminClientLabel || 'visualizando MAVF do cliente'}.
-            <Link href="/admin" className="ml-3 underline text-[#9ec2ff]">
+            <Link href="/admin" className="ml-3 underline text-[var(--blue)]">
               Voltar ao painel
             </Link>
           </div>
         ) : null}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">{mapTitle}</h1>
-          <p className="text-[#888]">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-display">{mapTitle}</h1>
+          <p className="text-[var(--text-2)]">
             {activeTab === 'mapa'
               ? 'Responda com sinceridade e acompanhe sua evolução ao longo das sessões.'
               : 'Transforme a autoavaliação em metas práticas e mensuráveis.'}
@@ -264,20 +264,20 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         )}
 
         <div className="mt-10">
-          <div className="text-[11px] uppercase tracking-[1.2px] text-[#7f7f7f] mb-2">Práticas Diárias</div>
+          <div className="text-[11px] uppercase tracking-[1.2px] text-[var(--text-3)] mb-2">Práticas Diárias</div>
           <h2 className="text-[22px] md:text-[26px] font-bold mb-2">Consistência que transforma</h2>
-          <p className="text-[#8f8f8f] text-sm mb-5">
+          <p className="text-[var(--text-2)] text-sm mb-5">
             Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
           </p>
 
           {summaryError ? (
-            <div className="mb-3 rounded-[10px] border border-[rgba(255,95,95,0.35)] bg-[rgba(255,95,95,0.12)] px-4 py-3 text-sm text-[#ff9f9f]">
+            <div className="mb-3 rounded-[10px] border border-[var(--red)] bg-[var(--red-dim)] px-4 py-3 text-sm text-[var(--red)]">
               {summaryError}
             </div>
           ) : null}
 
           {isSummaryLoading && !summary ? (
-            <div className="mb-3 rounded-[10px] border border-[#333333] bg-[#181818] px-4 py-3 text-sm text-[#999]">
+            <div className="mb-3 rounded-[10px] border border-[var(--border-2)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-2)]">
               Carregando resumo das práticas...
             </div>
           ) : null}
@@ -322,20 +322,20 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
       <style jsx>{`
         .mavf-ia-cta {
           margin-top: 8px;
-          border: 1px solid rgba(0, 200, 83, 0.42);
+          border: 1px solid var(--green-mid);
           border-radius: 14px;
-          background: linear-gradient(140deg, rgba(0, 200, 83, 0.14), rgba(0, 200, 83, 0.05));
+          background: linear-gradient(140deg, var(--green-dim), color-mix(in srgb, var(--green-dim) 40%, transparent));
           padding: 12px 14px;
           display: flex;
           align-items: center;
           gap: 10px;
           text-decoration: none;
-          transition: transform 0.15s ease, border-color 0.15s ease;
+          transition: var(--transition);
         }
 
         .mavf-ia-cta:hover {
           transform: translateY(-1px);
-          border-color: rgba(0, 200, 83, 0.65);
+          border-color: var(--green);
         }
 
         .mavf-ia-emoji {
@@ -345,8 +345,8 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: rgba(0, 200, 83, 0.18);
-          border: 1px solid rgba(0, 200, 83, 0.3);
+          background: var(--green-dim);
+          border: 1px solid var(--green-mid);
           font-size: 21px;
           flex-shrink: 0;
         }
@@ -358,7 +358,9 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
         .mavf-ia-copy strong {
           display: block;
-          color: #dbf7e5;
+          color: var(--text);
+          font-family: var(--font-display);
+          font-weight: 700;
           font-size: 15px;
           line-height: 1.2;
         }
@@ -366,12 +368,12 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         .mavf-ia-copy small {
           display: block;
           margin-top: 3px;
-          color: #9cc5aa;
+          color: var(--text-2);
           font-size: 12px;
         }
 
         .mavf-ia-arrow {
-          color: #75d89a;
+          color: var(--green);
           font-size: 24px;
           line-height: 1;
         }

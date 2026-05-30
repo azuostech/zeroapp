@@ -13,6 +13,29 @@ function getAvatarInitial(profile) {
   return base.trim().charAt(0).toUpperCase() || 'U';
 }
 
+function toTitleCase(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const lower = text.toLocaleLowerCase('pt-BR');
+  return lower.charAt(0).toLocaleUpperCase('pt-BR') + lower.slice(1);
+}
+
+function getFirstName(profile) {
+  const fullName = String(profile?.full_name || '').trim();
+  if (fullName) {
+    const [first] = fullName.split(/\s+/);
+    return toTitleCase(first);
+  }
+
+  const email = String(profile?.email || '').trim();
+  if (email.includes('@')) {
+    const [local] = email.split('@');
+    return toTitleCase(local.replace(/[._-]+/g, ' ')).split(' ')[0] || 'Você';
+  }
+
+  return 'Você';
+}
+
 export default function AppHeader() {
   const [profile, setProfile] = useState(null);
   const [theme, setTheme] = useState('light');
@@ -101,6 +124,10 @@ export default function AppHeader() {
 
   const avatarInitial = useMemo(() => getAvatarInitial(profile), [profile]);
   const displayName = profile?.full_name || profile?.email || 'Usuário';
+  const shortName = displayName.split(' ')[0] || displayName;
+  const firstName = useMemo(() => getFirstName(profile), [profile]);
+  const profileTier = String(profile?.tier || 'DESPERTAR').toUpperCase();
+  const tierClass = `tier-${profileTier.toLowerCase()}`;
   const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
   return (
@@ -108,7 +135,7 @@ export default function AppHeader() {
       <div className="header-content">
         <Link href="/app" className="header-logo" aria-label="Ir para início do app">
           <Image src={logoSrc} alt="Logo ZeroApp" width={36} height={36} priority className="header-logo-img" />
-          <span className="header-logo-text">ZEROAPP</span>
+          <span className="header-logo-text">{firstName}</span>
         </Link>
 
         <div className="header-actions">
@@ -116,10 +143,14 @@ export default function AppHeader() {
             <TierDisplay size="sm" showName={false} />
           </Link>
           <Link href="/jornada" className="jornada-shortcut-link" aria-label="Abrir jornada (coins)">
-            <CoinsDisplay size="sm" className="header-coins" />
+            <CoinsDisplay size="sm" className="header-coins" clickable={false} />
           </Link>
 
-          <div className="user-avatar" title={displayName} aria-label={`Avatar de ${displayName}`}>
+          <span className="user-name" title={displayName}>
+            {shortName}
+          </span>
+
+          <div className={`user-avatar avatar ${tierClass}`} title={displayName} aria-label={`Avatar de ${displayName}`}>
             {avatarInitial}
           </div>
         </div>
@@ -128,8 +159,8 @@ export default function AppHeader() {
       {faseProgress ? (
         <div className="fase-progress-mobile">
           <span className="fase-progress-emoji">{faseProgress.emoji}</span>
-          <div className="fase-progress-track">
-            <div className="fase-progress-fill" style={{ width: `${Math.max(0, Math.min(100, faseProgress.progressoPct))}%` }} />
+          <div className="fase-progress-track progress-track">
+            <div className="fase-progress-fill progress-fill" style={{ width: `${Math.max(0, Math.min(100, faseProgress.progressoPct))}%` }} />
           </div>
           <span className="fase-progress-label">
             {faseProgress.coinsParaProxima > 0 && faseProgress.nextName
@@ -140,30 +171,15 @@ export default function AppHeader() {
       ) : null}
 
       <style jsx>{`
-        :global(html[data-theme='dark']) {
-          --app-header-bg: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
-          --app-header-border: #2d2d2d;
-          --app-header-shadow: 0 8px 30px rgba(0, 200, 83, 0.08);
-          --app-header-logo: #00c853;
-          --app-header-avatar-text: #07130c;
-        }
-
-        :global(html[data-theme='light']) {
-          --app-header-bg: linear-gradient(135deg, #f8fafb 0%, #eef2f4 100%);
-          --app-header-border: #d5dde2;
-          --app-header-shadow: 0 8px 26px rgba(5, 18, 35, 0.08);
-          --app-header-logo: #0b8a46;
-          --app-header-avatar-text: #ffffff;
-        }
-
         .app-header {
           position: sticky;
           top: 0;
           z-index: 140;
-          background: var(--app-header-bg, linear-gradient(135deg, #121212 0%, #1a1a1a 100%));
-          border-bottom: 1px solid var(--app-header-border, #2d2d2d);
-          box-shadow: var(--app-header-shadow, 0 8px 30px rgba(0, 200, 83, 0.08));
-          backdrop-filter: blur(8px);
+          background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
+          border-bottom: 1px solid var(--border-2);
+          box-shadow: var(--shadow-sm);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
         }
 
         .header-content {
@@ -189,17 +205,17 @@ export default function AppHeader() {
         }
 
         .header-logo-text {
-          font-family: 'Space Mono', monospace;
+          font-family: var(--font-display);
           font-size: 18px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          color: var(--app-header-logo, #00c853);
+          font-weight: 800;
+          letter-spacing: 0.8px;
+          color: var(--green);
         }
 
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 10px;
         }
 
         :global(.header-coins) {
@@ -214,22 +230,49 @@ export default function AppHeader() {
         }
 
         :global(.jornada-shortcut-link:focus-visible) {
-          outline: 2px solid var(--app-header-logo, #00c853);
+          outline: 2px solid var(--green);
           outline-offset: 2px;
+        }
+
+        .user-name {
+          font-family: var(--font-display);
+          font-weight: 800;
+          font-size: 14px;
+          color: var(--text);
+          max-width: 92px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .user-avatar {
           width: 36px;
           height: 36px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #00c853, #ffd700);
+          background: linear-gradient(135deg, var(--bg-surface), var(--bg-elevated));
+          border: 2px solid var(--green-mid);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           font-size: 13px;
           font-weight: 700;
-          color: var(--app-header-avatar-text, #07130c);
+          color: var(--text);
           text-transform: uppercase;
+        }
+
+        .tier-despertar {
+          border-color: var(--green-mid);
+        }
+
+        .tier-movimento {
+          border-color: rgba(255, 215, 0, 0.6);
+        }
+
+        .tier-aceleracao {
+          border-color: rgba(100, 181, 255, 0.7);
+        }
+
+        .tier-autogoverno {
+          border-color: rgba(179, 157, 219, 0.72);
         }
 
         .fase-progress-mobile {
@@ -252,20 +295,20 @@ export default function AppHeader() {
           .fase-progress-track {
             flex: 1;
             height: 6px;
-            border-radius: 999px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.12);
           }
 
           .fase-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ffd700, #00c853);
+            background: linear-gradient(90deg, var(--gold), var(--green));
           }
 
           .fase-progress-label {
             font-size: 10px;
-            color: #a8b1aa;
+            color: var(--text-3);
             white-space: nowrap;
+          }
+
+          .user-name {
+            display: none;
           }
         }
       `}</style>

@@ -3,9 +3,9 @@
 import { formatShortDateLabel } from '@/src/modules/mavf/application/practices-format';
 
 const SIZE_CONFIG = {
-  pequeno: { label: '🌱 Pequeno', className: 'size-small', coins: 10 },
-  medio: { label: '⚡ Médio', className: 'size-medium', coins: 10 },
-  grande: { label: '🏆 Grande', className: 'size-large', coins: 20 }
+  pequeno: { label: '🌱 Pequeno', className: 'badge-green', coins: 10 },
+  medio: { label: '⚡ Médio', className: 'badge-gold', coins: 10 },
+  grande: { label: '🏆 Grande', className: 'badge-blue', coins: 20 }
 };
 
 export default function GanhoItem({ gain, onRemove }) {
@@ -14,10 +14,10 @@ export default function GanhoItem({ gain, onRemove }) {
   const dateLabel = formatShortDateLabel(gain?.created_at);
 
   return (
-    <article className="gain-item">
+    <article className="gain-item card">
       <div className="gain-main">
         <div className="gain-top">
-          <span className={`size-badge ${cfg.className}`}>{cfg.label}</span>
+          <span className={`size-badge badge ${cfg.className}`}>{cfg.label}</span>
           <span className="gain-date">{dateLabel}</span>
         </div>
         <p className="gain-text">{gain?.descricao}</p>
@@ -36,9 +36,6 @@ export default function GanhoItem({ gain, onRemove }) {
           align-items: flex-start;
           justify-content: space-between;
           gap: 10px;
-          border: 1px solid #2f3a32;
-          background: #131a16;
-          border-radius: 12px;
           padding: 10px 12px;
         }
 
@@ -55,41 +52,20 @@ export default function GanhoItem({ gain, onRemove }) {
         }
 
         .size-badge {
-          border-radius: 999px;
           font-size: 11px;
           font-weight: 700;
-          padding: 4px 8px;
-          border: 1px solid transparent;
           white-space: nowrap;
-        }
-
-        .size-small {
-          background: rgba(0, 200, 83, 0.15);
-          border-color: rgba(0, 200, 83, 0.35);
-          color: #8cffb4;
-        }
-
-        .size-medium {
-          background: rgba(255, 193, 7, 0.14);
-          border-color: rgba(255, 193, 7, 0.32);
-          color: #ffe073;
-        }
-
-        .size-large {
-          background: rgba(33, 150, 243, 0.14);
-          border-color: rgba(33, 150, 243, 0.32);
-          color: #84c9ff;
         }
 
         .gain-date {
           font-size: 11px;
-          color: #7f8c83;
+          color: var(--text-3);
         }
 
         .gain-text {
           margin: 0;
           font-size: 14px;
-          color: #e6efe8;
+          color: var(--text);
           line-height: 1.4;
           word-break: break-word;
         }
@@ -102,21 +78,22 @@ export default function GanhoItem({ gain, onRemove }) {
         }
 
         .gain-coins {
-          color: #00c853;
+          color: var(--green);
           font-size: 13px;
+          font-family: var(--font-mono);
           white-space: nowrap;
         }
 
         .remove-btn {
           opacity: 0;
-          border: 1px solid #37433b;
-          background: #191f1b;
-          color: #97a69d;
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
+          color: var(--text-2);
           border-radius: 8px;
           width: 24px;
           height: 24px;
           cursor: pointer;
-          transition: all 0.18s ease;
+          transition: var(--transition);
         }
 
         .gain-item:hover .remove-btn,
@@ -125,8 +102,8 @@ export default function GanhoItem({ gain, onRemove }) {
         }
 
         .remove-btn:hover {
-          border-color: #d96a6a;
-          color: #ff8a8a;
+          border-color: var(--red);
+          color: var(--red);
         }
 
         @media (max-width: 768px) {

@@ -35,7 +35,7 @@ export default function TurmaPage() {
             <Link href="/app" className="back-link">
               ← voltar
             </Link>
-            <h1>Turma 💪</h1>
+            <h1 className="text-display">Turma 💪</h1>
             <p>{turmaNome ? `Turma ${turmaNome}` : 'Comunidade'}</p>
             <span className="context-label">{turmaNome ? `Vendo eventos da Turma ${turmaNome}` : 'Vendo todos os eventos'}</span>
           </div>
@@ -89,34 +89,16 @@ export default function TurmaPage() {
       <BottomNav activeTab="inicio" />
 
       <style jsx>{`
-        :global(html[data-theme='dark']) {
-          --turma-bg: #0b0d0f;
-          --turma-text: #f3f3f3;
-          --turma-muted: #98a0a8;
-          --turma-card: #141619;
-          --turma-border: #2f363d;
-          --turma-positive: #00c853;
-        }
-
-        :global(html[data-theme='light']) {
-          --turma-bg: #f3f6f8;
-          --turma-text: #182129;
-          --turma-muted: #62707c;
-          --turma-card: #ffffff;
-          --turma-border: #d3dde6;
-          --turma-positive: #0b8a46;
-        }
-
         .turma-screen {
           min-height: 100vh;
-          background: var(--turma-bg, #0b0d0f);
-          color: var(--turma-text, #f3f3f3);
+          background: var(--bg-deep);
+          color: var(--text);
         }
 
         .turma-shell {
           max-width: 920px;
           margin: 0 auto;
-          padding: 20px 14px calc(98px + env(safe-area-inset-bottom));
+          padding: 20px 14px calc(114px + env(safe-area-inset-bottom));
         }
 
         .turma-header {
@@ -128,7 +110,7 @@ export default function TurmaPage() {
         }
 
         .back-link {
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
           text-decoration: none;
           font-size: 12px;
           text-transform: uppercase;
@@ -138,20 +120,20 @@ export default function TurmaPage() {
 
         h1 {
           margin: 4px 0 4px;
-          font-size: 30px;
+          font-size: 28px;
           line-height: 1.1;
         }
 
         p {
           margin: 0;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
           font-size: 14px;
         }
 
         .context-label {
           display: inline-block;
           margin-top: 6px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-3);
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
@@ -160,14 +142,15 @@ export default function TurmaPage() {
 
         .refresh-btn,
         .load-more-btn {
-          border: 1px solid var(--turma-border, #2f363d);
-          border-radius: 11px;
-          background: var(--turma-card, #141619);
-          color: var(--turma-text, #f3f3f3);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface);
+          color: var(--text);
           font-size: 13px;
           font-weight: 700;
           padding: 9px 13px;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .turma-section {
@@ -181,11 +164,11 @@ export default function TurmaPage() {
         }
 
         .loading-inline {
-          border: 1px solid var(--turma-border, #2f363d);
-          border-radius: 12px;
-          background: var(--turma-card, #141619);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
+          background: var(--bg-card);
           padding: 10px 12px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
           font-size: 13px;
         }
 

@@ -40,7 +40,7 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
   };
 
   return (
-    <section className={`practice-card gains ${expanded ? 'expanded' : ''}`}>
+    <section className={`practice-card gains card ${expanded ? 'expanded' : ''}`}>
       <button type="button" className="card-head" onClick={onToggle}>
         <div>
           <div className="head-title">⚡ Meus Ganhos</div>
@@ -89,16 +89,13 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
       <style jsx>{`
         .practice-card {
-          border: 1px solid #2d3330;
-          background: #151816;
-          border-radius: 14px;
           margin-bottom: 12px;
           overflow: hidden;
         }
 
         .practice-card.expanded {
-          border-color: rgba(0, 200, 83, 0.45);
-          box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.2) inset;
+          border-color: var(--green-mid);
+          box-shadow: 0 0 0 1px var(--green-dim) inset;
         }
 
         .card-head {
@@ -112,35 +109,38 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           gap: 10px;
           padding: 14px;
           cursor: pointer;
+          border-left: 3px solid var(--green);
         }
 
         .head-title {
-          color: #00c853;
+          color: var(--green);
           font-size: 17px;
           font-weight: 800;
           margin-bottom: 4px;
+          filter: drop-shadow(0 3px 8px var(--green-glow));
         }
 
         .head-meta {
-          color: #8ea195;
+          color: var(--text-2);
           font-size: 12px;
           margin-bottom: 4px;
+          font-family: var(--font-mono);
         }
 
         .head-preview {
-          color: #c2d0c8;
+          color: var(--text);
           font-size: 13px;
           line-height: 1.4;
         }
 
         .chevron {
-          color: #85b194;
+          color: var(--green);
           font-size: 18px;
           padding-top: 2px;
         }
 
         .card-body {
-          border-top: 1px solid #2b332f;
+          border-top: 1px solid var(--border-2);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -149,32 +149,33 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
         .primary-btn,
         .ghost-btn {
-          border-radius: 10px;
-          border: 1px solid #00c853;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--green-mid);
           padding: 10px 12px;
           font-size: 13px;
           font-weight: 800;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .primary-btn {
-          background: #00c853;
+          background: var(--green);
           color: #06220f;
         }
 
         .ghost-btn {
-          background: transparent;
-          color: #9df0be;
-          border-color: rgba(0, 200, 83, 0.45);
+          background: var(--green-dim);
+          color: var(--green);
+          border-color: var(--green-mid);
         }
 
         .feedback {
           font-size: 13px;
-          color: #9daf9f;
+          color: var(--text-2);
         }
 
         .feedback.error {
-          color: #ff8f8f;
+          color: var(--red);
         }
 
         .items {
@@ -186,13 +187,14 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         .more {
           text-align: center;
           font-size: 11px;
-          color: #88a193;
+          color: var(--text-3);
+          font-family: var(--font-mono);
         }
 
         .empty {
-          border: 1px dashed #2f3a32;
-          border-radius: 12px;
-          background: #111612;
+          border: 1px dashed var(--border-3);
+          border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--bg-card) 80%, transparent);
           padding: 14px;
           text-align: center;
         }
@@ -204,12 +206,12 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
         .empty h4 {
           margin: 0 0 6px;
-          color: #d8e6de;
+          color: var(--text);
         }
 
         .empty p {
           margin: 0 0 10px;
-          color: #9eb1a7;
+          color: var(--text-3);
           font-size: 13px;
           line-height: 1.4;
         }

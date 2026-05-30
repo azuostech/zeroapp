@@ -3,40 +3,43 @@
 import { getTierInfo } from '@/src/modules/profile/domain/tier-config';
 
 const SIZE_CLASS = {
-  sm: { wrap: '28px', icon: '14px', label: '11px' },
-  md: { wrap: '36px', icon: '18px', label: '12px' },
-  lg: { wrap: '52px', icon: '26px', label: '13px' }
+  sm: { icon: '13px', label: '11px', padding: '4px 8px' },
+  md: { icon: '15px', label: '12px', padding: '5px 10px' },
+  lg: { icon: '17px', label: '13px', padding: '7px 12px' }
+};
+
+const TIER_CLASS = {
+  DESPERTAR: 'badge-green',
+  MOVIMENTO: 'badge-gold',
+  ACELERACAO: 'badge-blue',
+  AUTOGOVERNO: 'badge-purple'
 };
 
 export function TierBadge({ tier = 'DESPERTAR', size = 'md', showName = true, className = '' }) {
   const safeSize = size === 'sm' || size === 'lg' ? size : 'md';
   const cfg = getTierInfo(tier);
   const sz = SIZE_CLASS[safeSize];
+  const badgeClass = TIER_CLASS[cfg.tier] || 'badge-green';
 
   return (
-    <div className={`tier-badge-wrap ${className}`} title={`Tier ${cfg.name}`}>
-      <div className="tier-badge-circle">
+    <div className={`tier-badge-wrap ${className}`} title={`Tier ${cfg.name}`} aria-label={`Tier ${cfg.name}`}>
+      <span className={`tier-badge badge ${badgeClass}`}>
         <span className="tier-badge-icon">{cfg.icon}</span>
-      </div>
-      {showName ? <span className="tier-badge-name">{cfg.name}</span> : null}
+        {showName ? <span className="tier-badge-name">{cfg.name}</span> : null}
+      </span>
 
       <style jsx>{`
         .tier-badge-wrap {
           display: inline-flex;
           align-items: center;
-          gap: 7px;
         }
 
-        .tier-badge-circle {
-          width: ${sz.wrap};
-          height: ${sz.wrap};
-          border-radius: 999px;
+        .tier-badge {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: ${cfg.gradient};
-          box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
-          flex-shrink: 0;
+          gap: 5px;
+          padding: ${sz.padding};
         }
 
         .tier-badge-icon {
@@ -46,13 +49,12 @@ export function TierBadge({ tier = 'DESPERTAR', size = 'md', showName = true, cl
 
         .tier-badge-name {
           font-size: ${sz.label};
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: 0.2px;
-          color: var(--dim, #4a5e52);
+          line-height: 1;
           white-space: nowrap;
         }
       `}</style>
     </div>
   );
 }
-

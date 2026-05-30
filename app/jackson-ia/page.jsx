@@ -106,7 +106,7 @@ export default function JacksonIAPage() {
               align-items: center;
               justify-content: center;
               gap: 10px;
-              color: #9fb8a7;
+              color: var(--text-2);
             }
 
             p {
@@ -131,7 +131,7 @@ export default function JacksonIAPage() {
             <JacksonIAAvatar size="md" isLoading={isLoading} showStatus />
             <div>
               <strong>Jackson IA</strong>
-              <small>Mentor financeiro com contexto real</small>
+              <small>● Online</small>
             </div>
           </div>
 
@@ -202,7 +202,7 @@ export default function JacksonIAPage() {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          color: #eff7f2;
+          color: var(--text);
         }
 
         .chat-header {
@@ -210,14 +210,13 @@ export default function JacksonIAPage() {
           grid-template-columns: auto 1fr auto;
           align-items: center;
           gap: 10px;
-          border: 1px solid #2a312d;
-          border-radius: 14px;
+          border-bottom: 1px solid var(--border-2);
           padding: 11px;
-          background: linear-gradient(145deg, #121713, #151b17);
+          background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
         }
 
         .back-link {
-          color: #9dc7ac;
+          color: var(--text-2);
           font-size: 13px;
           text-decoration: none;
           white-space: nowrap;
@@ -232,19 +231,21 @@ export default function JacksonIAPage() {
         .agent-head strong {
           display: block;
           font-size: 16px;
+          font-family: var(--font-display);
+          font-weight: 700;
           line-height: 1.1;
         }
 
         .agent-head small {
-          color: #8ca596;
-          font-size: 12px;
+          color: var(--green);
+          font-size: 11px;
         }
 
         .clear-btn {
-          border: 1px solid #37533f;
-          border-radius: 9px;
-          background: #172119;
-          color: #b8d6c3;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-sm);
+          background: var(--bg-surface);
+          color: var(--text-2);
           font-size: 12px;
           font-weight: 700;
           padding: 8px 9px;
@@ -257,10 +258,8 @@ export default function JacksonIAPage() {
         }
 
         .chat-area {
-          border: 1px solid #2a312d;
-          border-radius: 14px;
-          background: #0e1210;
-          padding: 12px;
+          background: var(--bg-deep);
+          padding: 0 16px;
           min-height: 360px;
           max-height: 58vh;
           overflow-y: auto;
@@ -284,13 +283,13 @@ export default function JacksonIAPage() {
 
         .empty-state p {
           margin: 0;
-          color: #9ab3a2;
+          color: var(--text-2);
           line-height: 1.5;
           max-width: 540px;
         }
 
         .empty-cta {
-          color: #d6ebdd;
+          color: var(--text);
           font-weight: 700;
         }
 
@@ -301,10 +300,10 @@ export default function JacksonIAPage() {
 
         .error-box {
           margin-top: 10px;
-          border: 1px solid rgba(255, 112, 112, 0.45);
-          background: rgba(255, 80, 80, 0.1);
-          color: #ffc5c5;
-          border-radius: 10px;
+          border: 1px solid var(--red);
+          background: var(--red-dim);
+          color: var(--red);
+          border-radius: var(--radius-sm);
           padding: 9px 10px;
           font-size: 12px;
           display: flex;
@@ -314,9 +313,9 @@ export default function JacksonIAPage() {
         }
 
         .error-box button {
-          border: 1px solid rgba(255, 142, 142, 0.7);
+          border: 1px solid var(--red);
           background: transparent;
-          color: #ffd7d7;
+          color: var(--red);
           border-radius: 8px;
           padding: 5px 8px;
           cursor: pointer;
@@ -324,45 +323,46 @@ export default function JacksonIAPage() {
         }
 
         .chips-wrap {
-          border: 1px solid #29332d;
-          border-radius: 12px;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
           padding: 8px;
-          background: #121814;
+          background: var(--bg-card);
         }
 
         .composer {
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 8px;
-          border: 1px solid #314037;
-          border-radius: 12px;
-          background: #131b16;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
+          background: var(--bg-card);
           padding: 8px;
         }
 
         .composer input {
-          border: 1px solid #2d3b32;
-          background: #0f1511;
-          color: #f2faf4;
-          border-radius: 10px;
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
+          color: var(--text);
+          border-radius: var(--radius-md);
           padding: 10px 12px;
           outline: none;
         }
 
         .composer input::placeholder {
-          color: #7f9888;
+          color: var(--text-3);
         }
 
         .composer input:focus {
-          border-color: #00c853;
+          border-color: var(--green-mid);
+          box-shadow: 0 0 0 3px var(--green-dim);
         }
 
         .composer button {
           min-width: 52px;
-          border: 1px solid #00c853;
-          border-radius: 10px;
-          background: #00c853;
-          color: #05170b;
+          border: 1px solid var(--green-mid);
+          border-radius: 999px;
+          background: var(--green);
+          color: #000;
           font-size: 20px;
           font-weight: 700;
           cursor: pointer;

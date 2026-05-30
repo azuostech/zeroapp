@@ -6,7 +6,7 @@ export default function QuickChips({ onSelect, disabled = false, layout = 'scrol
   return (
     <div className={`quick-chips ${layout}`}>
       {QUICK_CHIPS.map((chip) => (
-        <button key={chip.id} type="button" className="chip" onClick={() => onSelect?.(chip.message)} disabled={disabled}>
+        <button key={chip.id} type="button" className="chip badge badge-neutral" onClick={() => onSelect?.(chip.message)} disabled={disabled}>
           {chip.label}
         </button>
       ))}
@@ -30,19 +30,15 @@ export default function QuickChips({ onSelect, disabled = false, layout = 'scrol
         }
 
         .chip {
-          border: 1px solid rgba(0, 200, 83, 0.22);
-          background: var(--bg3, #1c1c1c);
-          color: #d7e9dd;
-          border-radius: 999px;
           padding: 8px 11px;
           font-size: 12px;
           white-space: nowrap;
           cursor: pointer;
-          transition: border-color 0.18s ease, transform 0.18s ease;
+          transition: var(--transition);
         }
 
         .quick-chips.grid .chip {
-          border-radius: 12px;
+          border-radius: var(--radius-md);
           text-align: left;
           white-space: normal;
           line-height: 1.3;
@@ -50,7 +46,8 @@ export default function QuickChips({ onSelect, disabled = false, layout = 'scrol
         }
 
         .chip:hover {
-          border-color: rgba(0, 200, 83, 0.6);
+          border-color: var(--green-mid);
+          color: var(--green);
           transform: translateY(-1px);
         }
 

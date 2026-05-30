@@ -39,11 +39,11 @@ export function TierDisplay({ size = 'md', showName = false, className = '', use
       <div className={`tier-display-skeleton ${className}`} aria-busy="true">
         <style jsx>{`
           .tier-display-skeleton {
-            width: ${size === 'sm' ? '28px' : size === 'lg' ? '52px' : '36px'};
-            height: ${size === 'sm' ? '28px' : size === 'lg' ? '52px' : '36px'};
+            width: ${size === 'sm' ? '48px' : size === 'lg' ? '124px' : '72px'};
+            height: ${size === 'sm' ? '24px' : size === 'lg' ? '32px' : '28px'};
             border-radius: 999px;
-            background: rgba(120, 120, 120, 0.28);
-            border: 1px solid rgba(120, 120, 120, 0.26);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-2);
             animation: pulse 1.25s ease-in-out infinite;
           }
 

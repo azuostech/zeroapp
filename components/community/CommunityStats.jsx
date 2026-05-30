@@ -23,7 +23,7 @@ export default function CommunityStats({ stats }) {
       {items.map((item) => (
         <div key={item.label} className="stat-pill" role="listitem">
           <strong>{item.value}</strong>
-          <span>{item.label}</span>
+          <span className="text-label">{item.label}</span>
         </div>
       ))}
 
@@ -37,9 +37,9 @@ export default function CommunityStats({ stats }) {
         }
 
         .stat-pill {
-          border: 1px solid var(--turma-border, #2f363d);
-          background: var(--turma-card, #141619);
-          border-radius: 999px;
+          border: 1px solid var(--border-2);
+          background: var(--bg-elevated);
+          border-radius: var(--radius-full);
           padding: 10px 14px;
           min-width: 150px;
           display: inline-flex;
@@ -49,16 +49,15 @@ export default function CommunityStats({ stats }) {
         }
 
         .stat-pill strong {
-          color: var(--turma-positive, #00c853);
+          color: var(--green);
           font-size: 16px;
           line-height: 1.1;
+          font-family: var(--font-mono);
         }
 
         .stat-pill span {
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-3);
           font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.6px;
         }
       `}</style>
     </div>

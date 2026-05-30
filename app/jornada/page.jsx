@@ -63,7 +63,7 @@ export default function JornadaPage() {
       <main className="jornada-shell">
         <header className="jornada-header">
           <div>
-            <h1>Minha Jornada 🎯</h1>
+            <h1 className="text-display">Minha Jornada 🎯</h1>
             <p>Desbloqueie recompensas conforme avança</p>
           </div>
           <button type="button" className="btn-refresh" onClick={refresh}>
@@ -73,14 +73,18 @@ export default function JornadaPage() {
 
         <section className="coins-strip">
           <div className="strip-main">
-            <span>🪙 {formatCoins(coinsAtual)} saldo atual</span>
-            <strong>{formatCoins(coinsTotal)} ZeroCoins totais</strong>
+            <span className="strip-balance">🪙 {formatCoins(coinsAtual)} saldo atual</span>
+            <strong className="strip-total">{formatCoins(coinsTotal)} ZeroCoins totais</strong>
           </div>
           <div className="strip-phase">
-            <span>
+            <span className="badge badge-gold">
               Fase: {faseAtual?.emoji} {faseAtual?.nome || 'Bombeiro'}
             </span>
-            {proximaFase ? <small>{coinsParaProxima} 🪙 para {proximaFase.nome}</small> : <small>Fase máxima alcançada</small>}
+            {proximaFase ? (
+              <small>{coinsParaProxima} 🪙 para {proximaFase.nome}</small>
+            ) : (
+              <small>Fase máxima alcançada</small>
+            )}
           </div>
         </section>
 
@@ -93,10 +97,13 @@ export default function JornadaPage() {
               const isCurrent = faseAtual?.id === fase.id;
               const isDone = Number.isFinite(fase.max) ? coinsTotal > fase.max : coinsTotal >= fase.min;
               const unlocked = coinsTotal >= fase.min;
+              const isLocked = !unlocked;
 
               return (
-                <article key={fase.id} className={`fase-card ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''}`}>
-                  <div className="fase-icon">{isDone ? '✓' : fase.emoji}</div>
+                <article key={fase.id} className={`fase-card ${isCurrent ? 'current' : ''} ${isDone ? 'done' : ''} ${isLocked ? 'locked' : ''}`}>
+                  <div className={`fase-icon ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`}>
+                    {isDone ? '✓' : fase.emoji}
+                  </div>
                   <div className="fase-body">
                     <h2>{fase.nome}</h2>
                     <p>{fase.descricao}</p>
@@ -114,7 +121,7 @@ export default function JornadaPage() {
                       {fase.recompensas.map((reward) => {
                         const rewardUnlocked = unlocked;
                         return (
-                          <span key={reward} className={`chip ${rewardUnlocked ? 'on' : 'off'}`}>
+                          <span key={reward} className={`chip badge ${rewardUnlocked ? 'on badge-gold' : 'off badge-neutral'}`}>
                             {rewardUnlocked ? '✓ ' : '🔒 '}
                             {reward}
                           </span>
@@ -160,40 +167,16 @@ export default function JornadaPage() {
       <BottomNav activeTab="jornada" />
 
       <style jsx>{`
-        :global(html[data-theme='dark']) {
-          --j-bg: #0b0d0f;
-          --j-text: #f3f3f3;
-          --j-muted: #a0a5aa;
-          --j-surface: #141619;
-          --j-surface-2: #171a1e;
-          --j-border: #2f363d;
-          --j-positive: #00c853;
-          --j-positive-soft: rgba(0, 200, 83, 0.12);
-          --j-chip-off: rgba(255, 255, 255, 0.04);
-        }
-
-        :global(html[data-theme='light']) {
-          --j-bg: #f4f6f8;
-          --j-text: #1a1e23;
-          --j-muted: #636e78;
-          --j-surface: #ffffff;
-          --j-surface-2: #f8fafb;
-          --j-border: #d5dde4;
-          --j-positive: #0b8a46;
-          --j-positive-soft: rgba(11, 138, 70, 0.1);
-          --j-chip-off: rgba(25, 36, 48, 0.05);
-        }
-
         .jornada-screen {
           min-height: 100vh;
-          background: var(--j-bg, #0b0d0f);
-          color: var(--j-text, #f3f3f3);
+          background: var(--bg-deep);
+          color: var(--text);
         }
 
         .jornada-shell {
           max-width: 980px;
           margin: 0 auto;
-          padding: 20px 14px calc(98px + env(safe-area-inset-bottom));
+          padding: 20px 14px calc(116px + env(safe-area-inset-bottom));
         }
 
         .jornada-header {
@@ -206,31 +189,33 @@ export default function JornadaPage() {
 
         h1 {
           margin: 0;
-          font-size: 30px;
+          font-size: 22px;
           line-height: 1.1;
         }
 
         .jornada-header p {
           margin: 6px 0 0;
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
+          font-size: 14px;
         }
 
         .btn-refresh,
         .btn-upgrade {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 12px;
-          background: var(--j-surface-2, #171a1e);
-          color: var(--j-text, #f3f3f3);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface);
+          color: var(--text);
           padding: 9px 14px;
           text-decoration: none;
           font-weight: 700;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .coins-strip {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 16px;
-          background: var(--j-surface, #141619);
+          border: 1px solid rgba(255, 213, 79, 0.22);
+          border-radius: var(--radius-lg);
+          background: var(--gold-dim);
           padding: 13px;
           margin-bottom: 14px;
         }
@@ -242,14 +227,16 @@ export default function JornadaPage() {
           flex-wrap: wrap;
         }
 
-        .strip-main span {
-          color: color-mix(in srgb, var(--j-positive, #00c853) 75%, var(--j-text, #f3f3f3));
+        .strip-balance {
+          color: var(--text-2);
           font-weight: 700;
+          font-family: var(--font-mono);
         }
 
-        .strip-main strong {
-          color: var(--j-positive, #00c853);
-          font-size: 20px;
+        .strip-total {
+          color: var(--gold);
+          font-size: 24px;
+          font-family: var(--font-mono);
         }
 
         .strip-phase {
@@ -258,15 +245,21 @@ export default function JornadaPage() {
           justify-content: space-between;
           gap: 8px;
           flex-wrap: wrap;
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
+        }
+
+        .strip-phase small {
+          color: var(--text-3);
+          font-size: 10px;
+          font-family: var(--font-mono);
         }
 
         .feedback {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 10px;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
           padding: 10px;
           margin-bottom: 12px;
-          background: var(--j-surface-2, #171a1e);
+          background: var(--bg-surface);
         }
 
         .feedback.error {
@@ -276,26 +269,41 @@ export default function JornadaPage() {
 
         .timeline {
           display: grid;
-          gap: 10px;
+          gap: 12px;
           margin-bottom: 14px;
         }
 
         .fase-card {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 16px;
-          background: var(--j-surface, #141619);
+          position: relative;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-lg);
+          background: var(--bg-card);
           padding: 12px;
           display: flex;
           gap: 10px;
         }
 
+        .fase-card:not(:last-child)::after {
+          content: '';
+          position: absolute;
+          left: 29px;
+          bottom: -14px;
+          width: 2px;
+          height: 14px;
+          background: var(--border-2);
+        }
+
+        .fase-card.done:not(:last-child)::after {
+          background: var(--green);
+        }
+
         .fase-card.current {
-          border-color: rgba(255, 215, 0, 0.55);
-          box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.24);
+          border-color: rgba(255, 213, 79, 0.6);
+          box-shadow: 0 0 0 1px rgba(255, 213, 79, 0.28);
         }
 
         .fase-card.done {
-          border-color: rgba(0, 200, 83, 0.45);
+          border-color: var(--green-mid);
         }
 
         .fase-icon {
@@ -305,24 +313,49 @@ export default function JornadaPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: var(--j-surface-2, #171a1e);
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-2);
           font-weight: 700;
           flex-shrink: 0;
+          filter: grayscale(0);
         }
 
-        .fase-card.done .fase-icon {
-          background: var(--j-positive, #00c853);
+        .fase-icon.locked {
+          filter: grayscale(1);
+        }
+
+        .fase-icon.done {
+          background: var(--green);
+          border-color: var(--green);
           color: #05230f;
+        }
+
+        .fase-icon.current {
+          background: var(--gold-dim);
+          border-color: var(--gold);
+          animation: pulseCurrent 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseCurrent {
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 rgba(255, 213, 79, 0.25);
+          }
+          50% {
+            box-shadow: 0 0 0 7px rgba(255, 213, 79, 0);
+          }
         }
 
         .fase-body h2 {
           margin: 0;
           font-size: 18px;
+          font-family: var(--font-display);
+          font-weight: 700;
         }
 
         .fase-body p {
           margin: 4px 0 8px;
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
         }
 
         .progress-wrap {
@@ -331,20 +364,17 @@ export default function JornadaPage() {
 
         .progress-track {
           height: 8px;
-          border-radius: 999px;
-          background: color-mix(in srgb, var(--j-muted, #a0a5aa) 22%, transparent);
-          overflow: hidden;
         }
 
         .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #ffd700, var(--j-positive, #00c853));
+          background: linear-gradient(90deg, var(--gold), var(--green));
         }
 
         .progress-wrap small {
           display: inline-block;
           margin-top: 5px;
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-3);
+          font-size: 10px;
         }
 
         .chips {
@@ -354,28 +384,23 @@ export default function JornadaPage() {
         }
 
         .chip {
-          border-radius: 999px;
           padding: 5px 9px;
           font-size: 12px;
-          border: 1px solid var(--j-border, #2f363d);
         }
 
         .chip.on {
-          background: var(--j-positive-soft, rgba(0, 200, 83, 0.12));
-          border-color: color-mix(in srgb, var(--j-positive, #00c853) 52%, transparent);
-          color: color-mix(in srgb, var(--j-positive, #00c853) 82%, var(--j-text, #f3f3f3));
+          color: var(--gold);
         }
 
         .chip.off {
-          color: var(--j-muted, #a0a5aa);
-          background: var(--j-chip-off, rgba(255, 255, 255, 0.04));
+          color: var(--text-2);
         }
 
         .premium-card,
         .history {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 14px;
-          background: var(--j-surface, #141619);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-lg);
+          background: var(--bg-card);
           padding: 12px;
           margin-bottom: 12px;
         }
@@ -384,26 +409,24 @@ export default function JornadaPage() {
         .history h3 {
           margin: 0 0 8px;
           font-size: 18px;
+          font-family: var(--font-display);
+          font-weight: 700;
         }
 
         .premium-card p {
           margin: 0 0 10px;
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
         }
 
         .btn-upgrade {
           display: inline-block;
-          border-color: rgba(255, 215, 0, 0.5);
-          background: rgba(255, 215, 0, 0.12);
-          color: #9c7f00;
-        }
-
-        :global(html[data-theme='dark']) .btn-upgrade {
-          color: #ffd700;
+          border-color: rgba(255, 213, 79, 0.45);
+          background: var(--gold-dim);
+          color: var(--gold);
         }
 
         .premium-ok {
-          color: var(--j-positive, #00c853);
+          color: var(--green);
           font-weight: 700;
         }
 
@@ -416,29 +439,30 @@ export default function JornadaPage() {
         }
 
         .history li {
-          border: 1px solid var(--j-border, #2f363d);
-          border-radius: 10px;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
           padding: 8px;
           display: flex;
           justify-content: space-between;
           gap: 8px;
           font-size: 14px;
-          background: var(--j-surface-2, #171a1e);
+          background: var(--bg-elevated);
         }
 
         .amount {
-          color: var(--j-positive, #00c853);
+          color: var(--green);
           font-weight: 700;
+          font-family: var(--font-mono);
           white-space: nowrap;
         }
 
         .desc {
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
           text-align: right;
         }
 
         .empty {
-          color: var(--j-muted, #a0a5aa);
+          color: var(--text-2);
           margin: 0;
         }
 

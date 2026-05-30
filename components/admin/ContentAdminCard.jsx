@@ -14,11 +14,11 @@ function resolveType(contentType) {
 
 function resolveTier(tier) {
   const key = String(tier || '').toUpperCase();
-  if (key === 'LIVRE') return { label: 'Livre', bg: 'rgba(0,200,83,0.14)', color: '#00c853' };
-  if (key === 'MOVIMENTO') return { label: 'Mentorado', bg: 'rgba(255,215,0,0.16)', color: '#e1b500' };
-  if (key === 'ACELERACAO') return { label: 'Aceleração', bg: 'rgba(66,165,245,0.16)', color: '#42a5f5' };
-  if (key === 'AUTOGOVERNO') return { label: 'Autogoverno', bg: 'rgba(171,71,188,0.16)', color: '#ab47bc' };
-  return { label: key || 'Livre', bg: 'rgba(0,200,83,0.14)', color: '#00c853' };
+  if (key === 'LIVRE') return { label: 'Livre', className: 'badge-green' };
+  if (key === 'MOVIMENTO') return { label: 'Mentorado', className: 'badge-gold' };
+  if (key === 'ACELERACAO') return { label: 'Aceleração', className: 'badge-blue' };
+  if (key === 'AUTOGOVERNO') return { label: 'Autogoverno', className: 'badge-purple' };
+  return { label: key || 'Livre', className: 'badge-green' };
 }
 
 function truncateUrl(url) {
@@ -98,7 +98,7 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
   };
 
   return (
-    <article className={`content-admin-card ${item?.is_published ? '' : 'draft'}`}>
+    <article className={`content-admin-card card ${item?.is_published ? '' : 'draft'}`}>
       <div className="thumb" aria-hidden="true">
         {thumbnailUrl && !thumbFailed ? (
           <img src={thumbnailUrl} alt="" loading="lazy" onError={() => setThumbFailed(true)} />
@@ -118,7 +118,7 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
               </span>
             ) : null}
           </div>
-          <label className="switch-wrap">
+          <label className={`switch-wrap ${item?.is_published ? 'on' : ''}`}>
             <input type="checkbox" checked={Boolean(item?.is_published)} onChange={handleToggle} disabled={isBusy} />
             <span>{item?.is_published ? 'Publicado' : 'Rascunho'}</span>
           </label>
@@ -127,10 +127,10 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         <p className="description">{item?.description || 'Sem descrição.'}</p>
 
         <div className="meta-row">
-          <span className="badge type-badge">
+          <span className="badge type-badge badge-neutral">
             {type.icon} {type.label}
           </span>
-          <span className="badge tier-badge" style={{ color: tier.color, background: tier.bg }}>
+          <span className={`badge tier-badge ${tier.className}`}>
             {tier.label}
           </span>
           <label className="order-input">
@@ -155,9 +155,6 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
 
       <style jsx>{`
         .content-admin-card {
-          border: 1px solid var(--admin-border, #333);
-          border-radius: 14px;
-          background: var(--admin-surface, #1a1a1a);
           display: grid;
           grid-template-columns: 128px 1fr auto;
           gap: 14px;
@@ -171,9 +168,9 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         .thumb {
           width: 128px;
           aspect-ratio: 16 / 9;
-          border-radius: 12px;
-          border: 1px solid var(--admin-border, #333);
-          background: #121212;
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
           overflow: hidden;
           display: flex;
           align-items: center;
@@ -209,6 +206,8 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         h3 {
           margin: 0;
           font-size: 18px;
+          font-family: var(--font-display);
+          font-weight: 700;
           line-height: 1.2;
         }
 
@@ -217,12 +216,21 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
           align-items: center;
           gap: 8px;
           font-size: 12px;
-          color: var(--admin-dim, #a6a6a6);
+          color: var(--text-2);
+          font-weight: 700;
+        }
+
+        .switch-wrap.on {
+          color: var(--green);
+        }
+
+        .switch-wrap input {
+          accent-color: var(--green);
         }
 
         .description {
           margin: 6px 0 10px;
-          color: var(--admin-dim, #a6a6a6);
+          color: var(--text-2);
           font-size: 13px;
           line-height: 1.35;
         }
@@ -235,33 +243,26 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         }
 
         .badge {
-          border-radius: 999px;
-          padding: 4px 10px;
           font-size: 11px;
           font-weight: 700;
         }
 
-        .type-badge {
-          border: 1px solid var(--admin-border, #333);
-          color: var(--admin-dim, #a6a6a6);
-        }
-
         .turma-badge {
-          background: rgba(255, 215, 0, 0.18);
-          color: #f9d24c;
+          background: var(--gold-dim);
+          color: var(--gold);
           border: 1px solid rgba(255, 215, 0, 0.38);
         }
 
         .release-badge.future {
-          background: rgba(158, 158, 158, 0.17);
-          color: #d7dde3;
-          border: 1px solid rgba(158, 158, 158, 0.34);
+          background: rgba(255, 255, 255, 0.06);
+          color: var(--text-2);
+          border: 1px solid var(--border-2);
         }
 
         .release-badge.ready {
-          background: rgba(0, 200, 83, 0.16);
-          color: #7fe8aa;
-          border: 1px solid rgba(0, 200, 83, 0.34);
+          background: var(--green-dim);
+          color: var(--green);
+          border: 1px solid var(--green-mid);
         }
 
         .order-input {
@@ -270,23 +271,24 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
           align-items: center;
           gap: 6px;
           font-size: 11px;
-          color: var(--admin-dim, #a6a6a6);
+          color: var(--text-2);
         }
 
         .order-input input {
           width: 64px;
-          border: 1px solid var(--admin-border, #333);
+          border: 1px solid var(--border-2);
           border-radius: 8px;
-          background: transparent;
-          color: var(--admin-text, #fff);
+          background: var(--bg-surface);
+          color: var(--text);
           padding: 5px 7px;
           font-size: 12px;
+          font-family: var(--font-mono);
         }
 
         .url {
           margin-top: 10px;
           display: inline-block;
-          color: #42a5f5;
+          color: var(--blue);
           text-decoration: none;
           font-size: 12px;
           word-break: break-all;
@@ -294,7 +296,7 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
 
         .url.disabled {
           pointer-events: none;
-          color: var(--admin-dim, #a6a6a6);
+          color: var(--text-3);
         }
 
         .actions {
@@ -305,10 +307,10 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         }
 
         .btn {
-          border: 1px solid var(--admin-border, #333);
+          border: 1px solid var(--border-2);
           border-radius: 9px;
-          background: transparent;
-          color: var(--admin-text, #fff);
+          background: var(--bg-surface);
+          color: var(--text);
           font-size: 12px;
           font-weight: 700;
           padding: 8px 10px;
@@ -316,15 +318,16 @@ export default function ContentAdminCard({ item, onTogglePublish, onEdit, onDele
         }
 
         .btn.ghost:hover {
-          border-color: #42a5f5;
+          border-color: var(--blue);
+          color: var(--blue);
         }
 
         .btn.danger {
-          color: #ff5f5f;
+          color: var(--red);
         }
 
         .btn.danger:hover {
-          border-color: #ff5f5f;
+          border-color: var(--red);
         }
 
         @media (max-width: 880px) {

@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 const TIER_BADGES = {
-  LIVRE: { label: 'Gratis', color: '#00c853', bg: 'rgba(0, 200, 83, 0.14)' },
-  MOVIMENTO: { label: 'Mentorado', color: '#f4b400', bg: 'rgba(244, 180, 0, 0.16)' },
-  ACELERACAO: { label: 'Aceleracao', color: '#42a5f5', bg: 'rgba(66, 165, 245, 0.16)' },
-  AUTOGOVERNO: { label: 'Autogoverno', color: '#ab47bc', bg: 'rgba(171, 71, 188, 0.16)' }
+  LIVRE: { label: 'Grátis', className: 'badge-green' },
+  MOVIMENTO: { label: 'Mentorado', className: 'badge-gold' },
+  ACELERACAO: { label: 'Aceleração', className: 'badge-blue' },
+  AUTOGOVERNO: { label: 'Autogoverno', className: 'badge-purple' }
 };
 
 const TYPE_META = {
@@ -55,14 +55,15 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
       <div className="content-main">
         <div className="content-top-row">
-          <span className="tier-badge" style={{ color: tier.color, background: tier.bg }}>
+          <span className={`tier-badge badge ${locked ? 'badge-neutral' : tier.className}`}>
             {locked ? '🔒 Bloqueado' : tier.label}
           </span>
-          <span className="type-badge">{type.label}</span>
+          <span className="type-badge badge badge-neutral">{type.label}</span>
+          {locked ? <span className="type-badge badge badge-neutral">{lockedDescription}</span> : null}
         </div>
 
         <h3>{item?.title || 'Conteudo'}</h3>
-        <p>{locked ? lockedDescription : item?.description || 'Conteudo da area do aluno.'}</p>
+        <p>{locked ? 'Conteúdo bloqueado para seu tier atual.' : item?.description || 'Conteudo da area do aluno.'}</p>
       </div>
 
       <style jsx>{`
@@ -70,12 +71,12 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
           width: 128px;
           min-width: 128px;
           aspect-ratio: 16 / 9;
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, rgba(0, 200, 83, 0.2), rgba(0, 200, 83, 0.08));
-          border: 1px solid rgba(0, 200, 83, 0.24);
+          background: linear-gradient(135deg, var(--green-dim), color-mix(in srgb, var(--bg-surface) 80%, transparent));
+          border: 1px solid var(--green-mid);
           overflow: hidden;
         }
 
@@ -88,7 +89,7 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
           height: 100%;
           object-fit: cover;
           display: block;
-          border-radius: 11px;
+          border-radius: calc(var(--radius-lg) - 1px);
         }
 
         .content-main {
@@ -105,27 +106,22 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
         .tier-badge,
         .type-badge {
-          border-radius: 999px;
           padding: 3px 8px;
           font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.2px;
-        }
-
-        .type-badge {
-          border: 1px solid var(--conteudo-border, #2f363d);
-          color: var(--conteudo-muted, #8e98a2);
         }
 
         h3 {
           margin: 0 0 4px;
           font-size: 18px;
+          font-family: var(--font-display);
+          font-weight: 700;
           line-height: 1.15;
         }
 
         p {
           margin: 0;
-          color: var(--conteudo-muted, #8e98a2);
+          color: var(--text-2);
           font-size: 14px;
           line-height: 1.4;
         }
@@ -142,18 +138,16 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
   if (locked || !item?.url) {
     return (
-      <article className="content-card locked">
+      <article className="content-card card locked">
         {cardBody}
 
         <style jsx>{`
           .content-card {
             display: flex;
             gap: 12px;
-            border: 1px solid var(--conteudo-border, #2f363d);
-            border-radius: 14px;
-            background: var(--conteudo-card, #141619);
             padding: 12px;
-            opacity: 0.58;
+            opacity: 0.5;
+            cursor: default;
           }
         `}</style>
       </article>
@@ -165,25 +159,26 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
       .content-card {
         display: flex;
         gap: 12px;
-        border: 1px solid var(--conteudo-border, #2f363d);
-        border-radius: 14px;
-        background: var(--conteudo-card, #141619);
         padding: 12px;
         text-decoration: none;
         color: inherit;
-        transition: transform 0.15s ease, border-color 0.15s ease;
+      }
+
+      :global(a.content-card),
+      :global(button.content-card) {
+        transition: var(--transition);
+        cursor: pointer;
       }
 
       .content-card:hover {
-        transform: translateY(-1px);
-        border-color: rgba(0, 200, 83, 0.45);
+        border-color: var(--green-mid);
       }
     `}</style>
   );
 
   if (internalHref) {
     return (
-      <Link className="content-card" href={internalHref} onClick={onClick}>
+      <Link className="content-card card card-interactive" href={internalHref} onClick={onClick}>
         {cardBody}
         {sharedStyles}
       </Link>
@@ -192,25 +187,21 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
 
   if (typeof onClick === 'function') {
     return (
-      <button type="button" className="content-card as-button" onClick={onClick}>
+      <button type="button" className="content-card card card-interactive as-button" onClick={onClick}>
         {cardBody}
 
         <style jsx>{`
           .content-card {
             display: flex;
             gap: 12px;
-            border: 1px solid var(--conteudo-border, #2f363d);
-            border-radius: 14px;
-            background: var(--conteudo-card, #141619);
             padding: 12px;
             text-decoration: none;
             color: inherit;
-            transition: transform 0.15s ease, border-color 0.15s ease;
+            transition: var(--transition);
           }
 
           .content-card:hover {
-            transform: translateY(-1px);
-            border-color: rgba(0, 200, 83, 0.45);
+            border-color: var(--green-mid);
           }
 
           .as-button {
@@ -224,7 +215,7 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
   }
 
   return (
-    <article className="content-card">
+    <article className="content-card card card-interactive">
       {cardBody}
       {sharedStyles}
     </article>

@@ -26,8 +26,8 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
 
       <p>{challenge.descricao}</p>
 
-      <div className="challenge-progress-track" aria-hidden="true">
-        <div className="challenge-progress-fill" style={{ width: `${pct}%` }} />
+      <div className="challenge-progress-track progress-track" aria-hidden="true">
+        <div className="challenge-progress-fill progress-fill" style={{ width: `${pct}%` }} />
       </div>
 
       <div className="challenge-meta">
@@ -46,17 +46,17 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
 
       <style jsx>{`
         .challenge-empty {
-          border: 1px dashed var(--turma-border, #2f363d);
-          border-radius: 14px;
+          border: 1px dashed var(--border-3);
+          border-radius: var(--radius-lg);
           padding: 12px 14px;
-          color: var(--turma-muted, #98a0a8);
-          background: color-mix(in srgb, var(--turma-card, #141619) 72%, transparent);
+          color: var(--text-2);
+          background: color-mix(in srgb, var(--bg-card) 72%, transparent);
         }
 
         .challenge-card {
-          border: 1px solid rgba(255, 184, 0, 0.35);
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(255, 184, 0, 0.11), rgba(12, 12, 12, 0.36));
+          border: 1px solid var(--green-mid);
+          border-radius: var(--radius-xl);
+          background: var(--green-dim);
           padding: 14px;
         }
 
@@ -78,20 +78,16 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
 
         p {
           margin: 0 0 10px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
           font-size: 14px;
         }
 
         .challenge-progress-track {
           height: 8px;
-          border-radius: 999px;
-          overflow: hidden;
-          background: rgba(255, 255, 255, 0.12);
         }
 
         .challenge-progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #ffd700, #00c853);
+          background: linear-gradient(90deg, var(--green), var(--green-2));
         }
 
         .challenge-meta {
@@ -100,26 +96,28 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
           flex-direction: column;
           gap: 2px;
           font-size: 12px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
+          font-family: var(--font-mono);
         }
 
         .challenge-done {
           margin-top: 10px;
           display: inline-flex;
           padding: 5px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(0, 200, 83, 0.35);
-          color: var(--turma-positive, #00c853);
+          border-radius: var(--radius-full);
+          border: 1px solid var(--green-mid);
+          color: var(--green);
+          background: var(--green-dim);
           font-size: 12px;
           font-weight: 700;
         }
 
         .challenge-btn {
           margin-top: 10px;
-          border: 1px solid rgba(255, 215, 0, 0.4);
-          border-radius: 10px;
-          background: rgba(255, 215, 0, 0.16);
-          color: var(--turma-text, #f3f3f3);
+          border: 1px solid var(--green-mid);
+          border-radius: var(--radius-md);
+          background: var(--green);
+          color: #05200f;
           font-size: 13px;
           font-weight: 700;
           padding: 8px 12px;

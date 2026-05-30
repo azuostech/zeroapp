@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCoins } from '@/hooks/useCoins';
 import { CoinAnimation } from '@/components/gamification/CoinAnimation';
 import { FirstLaunchDetector } from '@/components/gamification/FirstLaunchDetector';
 
-export function CoinsDisplay({ size = 'md', showTotal = false, className = '', enableFirstLaunchDetector = false }) {
+export function CoinsDisplay({ size = 'md', showTotal = false, className = '', enableFirstLaunchDetector = false, clickable = true }) {
   const { coins, coinsTotal, loading, showAnimation, lastAwardAmount, clearAnimation, awardCoins } = useCoins();
+  const router = useRouter();
   const safeSize = size === 'sm' || size === 'lg' ? size : 'md';
 
   const formattedCoins = useMemo(() => new Intl.NumberFormat('pt-BR').format(coins), [coins]);
@@ -14,7 +16,7 @@ export function CoinsDisplay({ size = 'md', showTotal = false, className = '', e
 
   if (loading) {
     return (
-      <div className={`coins-display coins-display--loading coins-display--${safeSize} ${className}`} aria-busy="true">
+      <div className={`coins-display coin-chip gold coins-display--loading coins-display--${safeSize} ${className}`} aria-busy="true">
         <span className="coin-icon">🪙</span>
         <span className="coin-value">...</span>
         <style jsx>{baseStyles}</style>
@@ -22,17 +24,33 @@ export function CoinsDisplay({ size = 'md', showTotal = false, className = '', e
     );
   }
 
+  const handleClick = () => {
+    if (!clickable) return;
+    router.push('/jornada');
+  };
+
+  const sharedProps = {
+    className: `coins-display coin-chip gold coins-display--${safeSize} ${className}`,
+    title: showTotal ? `Total histórico: ${formattedCoinsTotal} coins` : 'Saldo atual de coins'
+  };
+
   return (
     <>
-      <div
-        className={`coins-display coins-display--${safeSize} ${className}`}
-        title={showTotal ? `Total histórico: ${formattedCoinsTotal} coins` : 'Saldo atual de coins'}
-      >
-        <span className="coin-icon">🪙</span>
-        <span className="coin-value">{formattedCoins}</span>
-        {showTotal ? <span className="coin-total">/ {formattedCoinsTotal}</span> : null}
-        <style jsx>{baseStyles}</style>
-      </div>
+      {clickable ? (
+        <button type="button" {...sharedProps} onClick={handleClick} aria-label="Abrir jornada de coins">
+          <span className="coin-icon">🪙</span>
+          <span className="coin-value">{formattedCoins}</span>
+          {showTotal ? <span className="coin-total">/ {formattedCoinsTotal}</span> : null}
+          <style jsx>{baseStyles}</style>
+        </button>
+      ) : (
+        <div {...sharedProps}>
+          <span className="coin-icon">🪙</span>
+          <span className="coin-value">{formattedCoins}</span>
+          {showTotal ? <span className="coin-total">/ {formattedCoinsTotal}</span> : null}
+          <style jsx>{baseStyles}</style>
+        </div>
+      )}
 
       {enableFirstLaunchDetector ? <FirstLaunchDetector onFirstLaunch={awardCoins} /> : null}
       {showAnimation && lastAwardAmount > 0 ? <CoinAnimation amount={lastAwardAmount} onComplete={clearAnimation} /> : null}
@@ -45,13 +63,13 @@ const baseStyles = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(0, 200, 83, 0.28);
-    background: rgba(0, 200, 83, 0.12);
-    color: var(--green, #00c853);
-    border-radius: 999px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: transparent;
     font-weight: 700;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.1px;
     white-space: nowrap;
+    font-family: var(--font-mono);
   }
 
   .coins-display--loading {
@@ -60,7 +78,7 @@ const baseStyles = `
 
   .coins-display--sm {
     font-size: 12px;
-    padding: 4px 8px;
+    padding: 4px 9px;
   }
 
   .coins-display--md {
@@ -73,19 +91,29 @@ const baseStyles = `
     padding: 7px 12px;
   }
 
+  button.coins-display {
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  button.coins-display:hover {
+    box-shadow: var(--shadow-green);
+    transform: translateY(-1px);
+  }
+
   .coin-icon {
     line-height: 1;
     font-size: 1.1em;
   }
 
   .coin-value {
-    font-family: 'Space Mono', monospace;
-    color: var(--green, #00c853);
+    font-family: var(--font-mono);
+    color: currentColor;
   }
 
   .coin-total {
     font-size: 0.8em;
-    color: var(--muted, #8ba296);
+    color: var(--text-3);
     font-weight: 600;
   }
 `;

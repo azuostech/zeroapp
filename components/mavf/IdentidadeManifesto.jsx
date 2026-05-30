@@ -12,9 +12,9 @@ export default function IdentidadeManifesto({ declarations = [] }) {
 
         <style jsx>{`
           .manifest-empty {
-            border: 1px dashed #62528a;
-            border-radius: 14px;
-            background: rgba(167, 139, 250, 0.09);
+            border: 1px dashed var(--border-3);
+            border-radius: var(--radius-lg);
+            background: var(--purple-dim);
             padding: 16px;
             text-align: center;
           }
@@ -26,13 +26,13 @@ export default function IdentidadeManifesto({ declarations = [] }) {
 
           h4 {
             margin: 0 0 6px;
-            color: #dacfff;
+            color: var(--text);
             font-size: 16px;
           }
 
           p {
             margin: 0;
-            color: #b9afd8;
+            color: var(--text-3);
             font-size: 13px;
             line-height: 1.4;
           }
@@ -59,15 +59,15 @@ export default function IdentidadeManifesto({ declarations = [] }) {
 
       <style jsx>{`
         .manifest {
-          border: 1px solid #4f4371;
-          border-radius: 14px;
-          background: linear-gradient(180deg, #161222 0%, #110f1a 100%);
+          border: 1px solid rgba(179, 157, 219, 0.5);
+          border-radius: var(--radius-lg);
+          background: var(--purple-dim);
           padding: 14px;
         }
 
         .manifest-title {
           margin-bottom: 10px;
-          color: #d5c7ff;
+          color: var(--purple);
           font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.3px;
@@ -84,28 +84,29 @@ export default function IdentidadeManifesto({ declarations = [] }) {
         }
 
         .manifest-item {
-          border: 1px solid #372f4f;
-          border-radius: 10px;
-          background: #19142a;
+          border: 1px solid rgba(179, 157, 219, 0.35);
+          border-radius: var(--radius-sm);
+          background: color-mix(in srgb, var(--bg-surface) 84%, transparent);
           padding: 10px;
         }
 
         .manifest-text {
           margin: 0;
-          color: #f4f0ff;
+          color: var(--text);
+          font-family: var(--font-display);
           font-weight: 700;
           line-height: 1.4;
         }
 
         .manifest-meta {
           margin-top: 6px;
-          color: #a698ca;
+          color: var(--text-3);
           font-size: 11px;
         }
 
         .manifest-context {
           margin: 6px 0 0;
-          color: #c1b4e2;
+          color: var(--text-2);
           font-size: 12px;
           line-height: 1.4;
         }

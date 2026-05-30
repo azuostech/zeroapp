@@ -37,16 +37,30 @@ function avatarColorFromName(name) {
   return palette[Math.abs(hash) % palette.length];
 }
 
+function getEventTypeBadge(eventType) {
+  const key = String(eventType || '').toLowerCase();
+
+  if (key === 'month_complete') return { label: 'Mês completo', className: 'badge-green' };
+  if (key === 'goal_reached') return { label: 'Meta atingida', className: 'badge-gold' };
+  if (key === 'gain_grande') return { label: 'Ganho grande', className: 'badge-blue' };
+  if (key === 'gratitude_streak') return { label: 'Streak gratidão', className: 'badge-rose' };
+  if (key === 'tier_upgrade') return { label: 'Tier upgrade', className: 'badge-purple' };
+  if (key === 'workshop_redeemed') return { label: 'Workshop', className: 'badge-gold' };
+  return { label: 'Evento', className: 'badge-neutral' };
+}
+
 export default function FeedEventCard({ event, onReact }) {
   const authorName = event?.author_name || 'Mentorado';
   const authorTier = event?.author_tier || 'DESPERTAR';
   const initial = authorName.trim().charAt(0).toUpperCase() || 'M';
   const avatarColor = avatarColorFromName(authorName);
+  const typeBadge = getEventTypeBadge(event?.event_type);
+  const reactionCount = Number(event?.reaction_count || 0);
 
   return (
-    <article className="feed-card">
+    <article className="feed-card card">
       <div className="feed-card-top">
-        <div className="feed-author-avatar" style={{ background: avatarColor }} aria-hidden="true">
+        <div className="feed-author-avatar avatar" style={{ background: avatarColor }} aria-hidden="true">
           {initial}
         </div>
 
@@ -59,22 +73,20 @@ export default function FeedEventCard({ event, onReact }) {
         </div>
       </div>
 
+      <span className={`feed-event-type badge ${typeBadge.className}`}>{typeBadge.label}</span>
       <h3 className="feed-title">{event?.title || 'Evento da turma'}</h3>
       {event?.body ? <p className="feed-body">{event.body}</p> : null}
 
       <button
         type="button"
-        className={`feed-react-btn ${event?.user_reacted ? 'active' : ''}`}
+        className={`feed-react-btn badge badge-neutral ${event?.user_reacted ? 'active badge-green' : ''}`}
         onClick={() => onReact?.(event?.id)}
       >
-        💪 Dar forca ({Number(event?.reaction_count || 0)})
+        💪 Dar força <span className="reaction-count">({reactionCount})</span>
       </button>
 
       <style jsx>{`
         .feed-card {
-          border: 1px solid var(--turma-border, #2f363d);
-          border-radius: 14px;
-          background: var(--turma-card, #141619);
           padding: 14px;
         }
 
@@ -86,16 +98,16 @@ export default function FeedEventCard({ event, onReact }) {
         }
 
         .feed-author-avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 999px;
+          width: 36px;
+          height: 36px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           font-size: 14px;
           font-weight: 800;
-          color: #05120a;
+          color: #041109;
           flex-shrink: 0;
+          border: 1px solid var(--border-3);
         }
 
         .feed-author-meta {
@@ -116,37 +128,45 @@ export default function FeedEventCard({ event, onReact }) {
 
         .feed-time {
           font-size: 11px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-3);
+        }
+
+        .feed-event-type {
+          margin-bottom: 8px;
+          width: fit-content;
         }
 
         .feed-title {
           margin: 0 0 4px;
           font-size: 18px;
+          font-family: var(--font-display);
+          font-weight: 700;
           line-height: 1.15;
         }
 
         .feed-body {
           margin: 0 0 12px;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--text-2);
           font-size: 14px;
           line-height: 1.4;
         }
 
         .feed-react-btn {
-          border: 1px solid var(--turma-border, #2f363d);
-          background: transparent;
-          color: var(--turma-text, #f3f3f3);
-          border-radius: 999px;
           font-size: 13px;
           font-weight: 700;
-          padding: 8px 12px;
+          padding: 8px 11px;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .feed-react-btn.active {
-          border-color: rgba(0, 200, 83, 0.45);
-          background: rgba(0, 200, 83, 0.14);
-          color: var(--turma-positive, #00c853);
+          border-color: var(--green-mid);
+          background: var(--green-dim);
+          color: var(--green);
+        }
+
+        .reaction-count {
+          font-family: var(--font-mono);
         }
       `}</style>
     </article>

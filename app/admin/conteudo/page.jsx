@@ -200,8 +200,8 @@ export default function AdminConteudoPage() {
       <style jsx>{`
         .admin-content-screen {
           min-height: 100vh;
-          background: radial-gradient(circle at 20% 0, rgba(0, 200, 83, 0.15), transparent 42%), #0f1113;
-          color: #f3f3f3;
+          background: radial-gradient(circle at 20% 0, var(--green-dim), transparent 42%), var(--bg-deep);
+          color: var(--text);
           padding: 18px 14px 36px;
         }
 
@@ -219,7 +219,7 @@ export default function AdminConteudoPage() {
         }
 
         .back-link {
-          color: #9aa8b3;
+          color: var(--text-2);
           text-decoration: none;
           font-size: 12px;
           font-weight: 700;
@@ -228,12 +228,14 @@ export default function AdminConteudoPage() {
         h1 {
           margin: 6px 0 4px;
           font-size: 30px;
+          font-family: var(--font-display);
+          font-weight: 700;
           line-height: 1.15;
         }
 
         p {
           margin: 0;
-          color: #9aa8b3;
+          color: var(--text-2);
           font-size: 13px;
         }
 
@@ -245,10 +247,10 @@ export default function AdminConteudoPage() {
         }
 
         .btn {
-          border: 1px solid #2f363d;
-          border-radius: 10px;
-          background: #171c21;
-          color: #f3f3f3;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface);
+          color: var(--text);
           font-size: 13px;
           font-weight: 700;
           padding: 10px 12px;
@@ -256,8 +258,8 @@ export default function AdminConteudoPage() {
         }
 
         .btn.solid {
-          border-color: #00c853;
-          background: #00c853;
+          border-color: var(--green-mid);
+          background: var(--green);
           color: #051208;
         }
 
@@ -274,10 +276,10 @@ export default function AdminConteudoPage() {
         }
 
         .pill {
-          border: 1px solid #2f363d;
+          border: 1px solid var(--border-2);
           border-radius: 999px;
-          background: #171c21;
-          color: #c6d2db;
+          background: var(--bg-surface);
+          color: var(--text-2);
           font-size: 12px;
           font-weight: 700;
           padding: 7px 10px;
@@ -285,29 +287,31 @@ export default function AdminConteudoPage() {
         }
 
         .pill.active {
-          border-color: #00c853;
-          color: #00c853;
+          border-color: var(--green-mid);
+          color: var(--green);
+          background: var(--green-dim);
         }
 
         .pill.active.tier {
-          border-color: #ffd700;
-          color: #ffd700;
+          border-color: rgba(255, 213, 79, 0.4);
+          color: var(--gold);
+          background: var(--gold-dim);
         }
 
         .feedback {
-          border: 1px solid rgba(0, 200, 83, 0.35);
-          background: rgba(0, 200, 83, 0.11);
-          color: #8ff0b7;
-          border-radius: 10px;
+          border: 1px solid var(--green-mid);
+          background: var(--green-dim);
+          color: var(--green);
+          border-radius: var(--radius-md);
           padding: 9px 10px;
           font-size: 13px;
           margin-bottom: 10px;
         }
 
         .feedback.error {
-          border-color: rgba(255, 95, 95, 0.35);
-          background: rgba(255, 95, 95, 0.1);
-          color: #ff9f9f;
+          border-color: var(--red);
+          background: var(--red-dim);
+          color: var(--red);
         }
 
         .list {
@@ -316,11 +320,11 @@ export default function AdminConteudoPage() {
         }
 
         .state-inline {
-          border: 1px solid #2f363d;
-          background: #171c21;
-          border-radius: 12px;
+          border: 1px solid var(--border-2);
+          background: var(--bg-card);
+          border-radius: var(--radius-md);
           padding: 12px;
-          color: #9aa8b3;
+          color: var(--text-2);
           font-size: 13px;
         }
 

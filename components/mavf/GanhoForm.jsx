@@ -92,7 +92,7 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
         </label>
         <textarea
           id="gain-description"
-          className="textarea"
+          className="textarea input"
           rows={4}
           value={descricao}
           onChange={(event) => setDescricao(event.target.value)}
@@ -107,7 +107,7 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
               <button
                 key={option.key}
                 type="button"
-                className={`size-btn ${active ? 'active' : ''}`}
+                className={`size-btn badge badge-neutral ${active ? 'active' : ''}`}
                 onClick={() => setTamanho(option.key)}
               >
                 <span>{option.icon}</span>
@@ -117,7 +117,7 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
           })}
         </div>
 
-        <button type="submit" className="submit-btn" disabled={!canSubmit}>
+        <button type="submit" className="submit-btn btn-primary" disabled={!canSubmit}>
           {isSaving ? 'Registrando...' : 'Registrar Ganho'}
         </button>
       </form>
@@ -137,11 +137,11 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
         .sheet {
           width: 100%;
           max-width: 560px;
-          background: #141915;
-          border: 1px solid #2f3932;
-          border-radius: 16px;
+          background: var(--bg-card);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-lg);
           padding: 14px;
-          box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+          box-shadow: var(--shadow-lg);
         }
 
         .sheet-header {
@@ -154,17 +154,18 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
 
         h3 {
           margin: 0;
-          color: #00c853;
+          color: var(--green);
+          font-family: var(--font-display);
           font-size: 18px;
         }
 
         .close-btn {
           width: 30px;
           height: 30px;
-          border-radius: 8px;
-          border: 1px solid #334039;
-          background: #18201b;
-          color: #9daf9f;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
+          color: var(--text-2);
           font-size: 18px;
           line-height: 1;
           cursor: pointer;
@@ -172,36 +173,27 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
 
         .subtitle {
           margin: 0 0 12px;
-          color: #96a79d;
+          color: var(--text-2);
           font-size: 13px;
         }
 
         .label {
           display: block;
           margin-bottom: 6px;
-          font-size: 12px;
-          color: #a9b8af;
-          font-weight: 600;
+          font-size: 11px;
+          color: var(--text-3);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
         }
 
         .textarea {
-          width: 100%;
-          border-radius: 10px;
-          border: 1px solid #334039;
-          background: #0f1411;
-          color: #ecf4ef;
-          padding: 10px;
-          font-family: inherit;
-          font-size: 14px;
-          resize: vertical;
-          min-height: 92px;
           margin-bottom: 10px;
         }
 
         .textarea:focus {
-          outline: none;
-          border-color: rgba(0, 200, 83, 0.6);
-          box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.12);
+          border-color: var(--green-mid);
+          box-shadow: 0 0 0 3px var(--green-dim);
         }
 
         .size-grid {
@@ -212,10 +204,6 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
         }
 
         .size-btn {
-          border: 1px solid #324039;
-          border-radius: 10px;
-          background: #17201b;
-          color: #b7c6bd;
           padding: 10px 8px;
           cursor: pointer;
           display: flex;
@@ -228,20 +216,14 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
         }
 
         .size-btn.active {
-          border-color: rgba(0, 200, 83, 0.7);
-          background: rgba(0, 200, 83, 0.16);
-          color: #90ffbd;
+          border-color: var(--green-mid);
+          background: var(--green-dim);
+          color: var(--green);
         }
 
         .submit-btn {
           width: 100%;
-          border: none;
-          border-radius: 10px;
           padding: 12px;
-          background: #00c853;
-          color: #03210f;
-          font-weight: 800;
-          cursor: pointer;
           font-size: 14px;
         }
 

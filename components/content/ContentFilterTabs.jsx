@@ -18,7 +18,7 @@ export default function ContentFilterTabs({ active = 'all', onChange }) {
             type="button"
             role="tab"
             aria-selected={isActive}
-            className={`tab-btn ${isActive ? 'active' : ''}`}
+            className={`tab-btn badge ${isActive ? 'badge-green active' : 'badge-neutral'}`}
             onClick={() => onChange?.(tab.id)}
           >
             {tab.label}
@@ -36,21 +36,18 @@ export default function ContentFilterTabs({ active = 'all', onChange }) {
         }
 
         .tab-btn {
-          border: 1px solid var(--conteudo-border, #2f363d);
-          border-radius: 999px;
-          background: var(--conteudo-card, #141619);
-          color: var(--conteudo-muted, #8e98a2);
           font-size: 12px;
           font-weight: 700;
           padding: 8px 12px;
           white-space: nowrap;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .tab-btn.active {
-          border-color: rgba(0, 200, 83, 0.45);
-          color: var(--conteudo-positive, #00c853);
-          background: rgba(0, 200, 83, 0.14);
+          border-color: var(--green-mid);
+          color: var(--green);
+          background: var(--green-dim);
         }
       `}</style>
     </div>

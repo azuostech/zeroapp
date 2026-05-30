@@ -462,47 +462,29 @@ export default function LoginPage() {
 
       <style jsx>{`
         :global(:root) {
-          --bg: #0a0a0a;
-          --bg2: #111111;
-          --bg3: #181818;
-          --border: #222;
-          --green: #00c853;
-          --green-dim: rgba(0, 200, 83, 0.1);
-          --green-glow: rgba(0, 200, 83, 0.2);
-          --text: #f0f0f0;
-          --muted: #555;
-          --dim: #888;
-          --red: #ff4444;
-          --theme-pill: #141414;
-          --theme-pill-border: #2a2a2a;
+          --theme-pill: var(--bg-surface);
+          --theme-pill-border: var(--border-2);
           --theme-pill-btn: transparent;
-          --theme-pill-active-bg: #00c853;
+          --theme-pill-active-bg: var(--green);
           --theme-pill-active-text: #04110a;
-          --theme-pill-text: #b2c7ba;
+          --theme-pill-text: var(--text-2);
         }
 
         :global(:root[data-theme='light']) {
-          --bg: #eef4f0;
-          --bg2: #ffffff;
-          --bg3: #e6eee8;
-          --border: #cddad1;
-          --green: #00a54a;
-          --green-dim: rgba(0, 165, 74, 0.12);
-          --green-glow: rgba(0, 165, 74, 0.16);
-          --text: #16261d;
-          --muted: #637a6f;
-          --dim: #41564c;
-          --red: #d53f3f;
           --theme-pill: #f6faf7;
           --theme-pill-border: #c6d6cb;
-          --theme-pill-btn: transparent;
-          --theme-pill-active-bg: #00a54a;
+          --theme-pill-active-bg: #00c853;
           --theme-pill-active-text: #ffffff;
           --theme-pill-text: #385146;
         }
 
         .login-shell {
-          background: var(--bg);
+          background: var(--bg-deep);
+          background-image: radial-gradient(
+            ellipse 80% 40% at 50% -10%,
+            rgba(0, 200, 83, 0.08) 0%,
+            transparent 60%
+          );
           color: var(--text);
           min-height: 100vh;
           display: flex;
@@ -517,9 +499,7 @@ export default function LoginPage() {
           content: '';
           position: fixed;
           inset: 0;
-          background-image: linear-gradient(rgba(0, 200, 83, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 200, 83, 0.03) 1px, transparent 1px);
-          background-size: 48px 48px;
+          background: transparent;
           pointer-events: none;
         }
 
@@ -528,7 +508,7 @@ export default function LoginPage() {
           width: 600px;
           height: 600px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 200, 83, 0.06) 0%, transparent 70%);
+          background: radial-gradient(circle, var(--green-dim) 0%, transparent 70%);
           pointer-events: none;
           top: 50%;
           left: 50%;
@@ -552,7 +532,7 @@ export default function LoginPage() {
           position: relative;
           z-index: 10;
           width: 100%;
-          max-width: 420px;
+          max-width: 380px;
           padding: 20px;
           animation: fadeUp 0.5s ease both;
         }
@@ -609,22 +589,23 @@ export default function LoginPage() {
         .brand-logo {
           display: inline-flex;
           border-radius: 28px;
-          box-shadow: 0 8px 30px rgba(0, 200, 83, 0.2);
+          box-shadow: var(--shadow-glow);
         }
 
         .form-box {
-          background: var(--bg2);
-          border: 1px solid var(--border);
-          border-radius: 20px;
+          background: var(--bg-card);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-xl);
           padding: 32px 28px;
           backdrop-filter: blur(10px);
+          box-shadow: var(--shadow-md);
         }
 
         .tabs {
           display: flex;
           gap: 0;
-          background: var(--bg3);
-          border-radius: 10px;
+          background: var(--bg-surface);
+          border-radius: var(--radius-md);
           padding: 4px;
           margin-bottom: 28px;
         }
@@ -635,7 +616,7 @@ export default function LoginPage() {
           padding: 9px;
           font-size: 13px;
           font-weight: 500;
-          color: var(--dim);
+          color: var(--text-2);
           border-radius: 8px;
           cursor: pointer;
           transition: all 0.2s;
@@ -643,9 +624,9 @@ export default function LoginPage() {
         }
 
         .tab.active {
-          background: var(--bg2);
+          background: var(--bg-card);
           color: var(--text);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+          box-shadow: var(--shadow-sm);
         }
 
         .form-group {
@@ -655,10 +636,10 @@ export default function LoginPage() {
         label {
           display: block;
           font-size: 11px;
-          font-weight: 500;
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: var(--muted);
+          color: var(--text-3);
           margin-bottom: 7px;
         }
 
@@ -666,9 +647,9 @@ export default function LoginPage() {
         input[type='email'],
         input[type='password'] {
           width: 100%;
-          background: var(--bg3);
-          border: 1px solid var(--border);
-          border-radius: 10px;
+          background: var(--bg-surface);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
           color: var(--text);
           font-family: 'Sora', sans-serif;
           font-size: 14px;
@@ -678,12 +659,12 @@ export default function LoginPage() {
         }
 
         input:focus {
-          border-color: rgba(0, 200, 83, 0.4);
-          box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.07);
+          border-color: var(--green-mid);
+          box-shadow: 0 0 0 3px var(--green-dim);
         }
 
         input::placeholder {
-          color: var(--muted);
+          color: var(--text-3);
         }
 
         .btn-main {
@@ -698,16 +679,16 @@ export default function LoginPage() {
           padding: 13px;
           cursor: pointer;
           margin-top: 8px;
-          transition: all 0.2s;
+          transition: var(--transition);
           position: relative;
           overflow: hidden;
           letter-spacing: 0.3px;
         }
 
         .btn-main:hover {
-          background: #00df5e;
+          background: var(--green-2);
           transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(0, 200, 83, 0.25);
+          box-shadow: var(--shadow-green);
         }
 
         .btn-main:active {
@@ -744,7 +725,7 @@ export default function LoginPage() {
         }
 
         .forgot-sub {
-          color: var(--dim);
+          color: var(--text-2);
           font-size: 13px;
           line-height: 1.5;
           margin-bottom: 18px;
@@ -752,10 +733,10 @@ export default function LoginPage() {
 
         .back-link-btn {
           width: 100%;
-          border: 1px solid var(--border);
-          border-radius: 10px;
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-md);
           background: transparent;
-          color: var(--dim);
+          color: var(--text-2);
           font-size: 13px;
           padding: 11px;
           margin-top: 10px;
@@ -826,7 +807,7 @@ export default function LoginPage() {
 
         .pending-text {
           font-size: 13px;
-          color: var(--dim);
+          color: var(--text-2);
           line-height: 1.6;
         }
 
@@ -834,7 +815,7 @@ export default function LoginPage() {
           text-align: center;
           margin-top: 20px;
           font-size: 11px;
-          color: var(--muted);
+          color: var(--text-3);
         }
       `}</style>
     </div>

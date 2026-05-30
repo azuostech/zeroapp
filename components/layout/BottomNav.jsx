@@ -24,30 +24,14 @@ export default function BottomNav({ activeTab = '' }) {
       {TABS.map((tab) => {
         const isActive = tab.id === current;
         return (
-          <Link key={tab.id} href={tab.href} className={`bottom-nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-icon">{tab.icon}</span>
-            <span className="tab-label">{tab.label}</span>
+          <Link key={tab.id} href={tab.href} className={`nav-item ${isActive ? 'active' : ''}`}>
+            <span className="nav-icon">{tab.icon}</span>
+            <span className="nav-label">{tab.label}</span>
           </Link>
         );
       })}
 
       <style jsx>{`
-        :global(html[data-theme='dark']) {
-          --bottom-nav-bg: #1d1d1d;
-          --bottom-nav-border: #2f2f2f;
-          --bottom-nav-item: #909090;
-          --bottom-nav-item-active: #00c853;
-          --bottom-nav-active-bg: rgba(0, 200, 83, 0.12);
-        }
-
-        :global(html[data-theme='light']) {
-          --bottom-nav-bg: rgba(255, 255, 255, 0.96);
-          --bottom-nav-border: #d9dde1;
-          --bottom-nav-item: #5c6470;
-          --bottom-nav-item-active: #068b44;
-          --bottom-nav-active-bg: rgba(6, 139, 68, 0.11);
-        }
-
         .bottom-nav {
           position: fixed;
           left: 0;
@@ -57,42 +41,44 @@ export default function BottomNav({ activeTab = '' }) {
           display: flex;
           justify-content: space-around;
           gap: 6px;
-          background: var(--bottom-nav-bg, #1d1d1d);
-          border-top: 1px solid var(--bottom-nav-border, #2f2f2f);
-          padding: 8px 10px max(8px, env(safe-area-inset-bottom));
-          backdrop-filter: blur(10px);
+          background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
+          border-top: 1px solid var(--border-2);
+          padding: 8px 10px calc(24px + env(safe-area-inset-bottom));
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
         }
 
-        :global(.bottom-nav-tab) {
+        :global(.nav-item) {
           flex: 1;
           min-width: 0;
           max-width: 120px;
-          border-radius: 10px;
+          border-radius: 12px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           gap: 4px;
-          color: var(--bottom-nav-item, #909090);
+          color: var(--text-2);
           text-decoration: none;
           padding: 8px 4px;
-          transition: all 0.2s ease;
+          transition: var(--transition);
         }
 
-        :global(.bottom-nav-tab.active) {
-          color: var(--bottom-nav-item-active, #00c853);
-          background: var(--bottom-nav-active-bg, rgba(0, 200, 83, 0.12));
+        :global(.nav-item.active) {
+          color: var(--green);
+          background: var(--green-dim);
         }
 
-        .tab-icon {
-          font-size: 19px;
+        .nav-icon {
+          font-size: 20px;
           line-height: 1;
         }
 
-        .tab-label {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.1px;
+        .nav-label {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
           line-height: 1;
         }
       `}</style>

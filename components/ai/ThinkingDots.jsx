@@ -24,23 +24,21 @@ export default function ThinkingDots() {
         }
 
         .thinking-dots span:nth-child(2) {
-          animation-delay: 0.15s;
+          animation-delay: 0.2s;
         }
 
         .thinking-dots span:nth-child(3) {
-          animation-delay: 0.3s;
+          animation-delay: 0.4s;
         }
 
         @keyframes dotPulse {
           0%,
           100% {
-            opacity: 0.25;
-            transform: translateY(0);
+            opacity: 0.3;
           }
 
           50% {
             opacity: 1;
-            transform: translateY(-2px);
           }
         }
       `}</style>

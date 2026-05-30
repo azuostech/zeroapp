@@ -15,11 +15,11 @@ export default function GratidaoItem({ entry, onRemove }) {
   const categoryLabel = CATEGORY_LABELS[categoryKey] || '✨ Outro';
 
   return (
-    <article className="grat-item">
+    <article className="grat-item card">
       <div className="grat-main">
         <div className="grat-top">
           <span className="grat-date">{formatShortDateLabel(entry?.created_at)}</span>
-          <span className="grat-category">{categoryLabel}</span>
+          <span className="grat-category badge badge-rose">{categoryLabel}</span>
         </div>
         <p className="grat-text">{entry?.descricao}</p>
       </div>
@@ -30,10 +30,8 @@ export default function GratidaoItem({ entry, onRemove }) {
 
       <style jsx>{`
         .grat-item {
-          border-left: 4px solid #fb7185;
-          background: #181418;
-          border-radius: 12px;
-          border: 1px solid #3d2f35;
+          border-left: 3px solid var(--rose);
+          border-radius: var(--radius-md);
           padding: 10px 12px;
           display: flex;
           align-items: flex-start;
@@ -56,22 +54,18 @@ export default function GratidaoItem({ entry, onRemove }) {
 
         .grat-date {
           font-size: 11px;
-          color: #9a8f95;
+          color: var(--text-3);
         }
 
         .grat-category {
           font-size: 11px;
-          border-radius: 999px;
-          border: 1px solid rgba(251, 113, 133, 0.4);
-          background: rgba(251, 113, 133, 0.15);
-          color: #ffc8d1;
           padding: 3px 8px;
           font-weight: 700;
         }
 
         .grat-text {
           margin: 0;
-          color: #f7edf0;
+          color: var(--text);
           line-height: 1.4;
           font-size: 14px;
           word-break: break-word;
@@ -79,14 +73,14 @@ export default function GratidaoItem({ entry, onRemove }) {
 
         .remove-btn {
           opacity: 0;
-          border: 1px solid #4a3b41;
-          background: #21191d;
-          color: #b8a1a8;
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
+          color: var(--text-2);
           border-radius: 8px;
           width: 24px;
           height: 24px;
           cursor: pointer;
-          transition: all 0.18s ease;
+          transition: var(--transition);
         }
 
         .grat-item:hover .remove-btn,
@@ -95,8 +89,8 @@ export default function GratidaoItem({ entry, onRemove }) {
         }
 
         .remove-btn:hover {
-          border-color: #ff8a9d;
-          color: #ffb7c2;
+          border-color: var(--rose);
+          color: var(--rose);
         }
 
         @media (max-width: 768px) {

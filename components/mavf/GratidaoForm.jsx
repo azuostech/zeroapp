@@ -83,7 +83,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         </label>
         <textarea
           id="grat-description"
-          className="textarea"
+          className="textarea input"
           rows={4}
           value={descricao}
           onChange={(event) => setDescricao(event.target.value)}
@@ -96,7 +96,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
             <button
               key={item.key}
               type="button"
-              className={`chip ${item.key === categoria ? 'active' : ''}`}
+              className={`chip badge badge-neutral ${item.key === categoria ? 'active' : ''}`}
               onClick={() => setCategoria(item.key)}
             >
               {item.label}
@@ -107,7 +107,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         {currentStreak > 1 ? <div className="streak">🔥 {currentStreak} dias seguidos</div> : null}
         {bonusPreview ? <div className="bonus">{bonusPreview}</div> : null}
 
-        <button type="submit" className="submit-btn" disabled={!canSubmit}>
+        <button type="submit" className="submit-btn btn-primary" disabled={!canSubmit}>
           {isSaving ? 'Registrando...' : 'Registrar Gratidão'}
         </button>
       </form>
@@ -127,11 +127,11 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         .sheet {
           width: 100%;
           max-width: 560px;
-          background: #1a1418;
-          border: 1px solid #44303a;
-          border-radius: 16px;
+          background: var(--bg-card);
+          border: 1px solid rgba(251, 113, 133, 0.32);
+          border-radius: var(--radius-lg);
           padding: 14px;
-          box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+          box-shadow: var(--shadow-lg);
         }
 
         .sheet-header {
@@ -143,17 +143,18 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
 
         h3 {
           margin: 0;
-          color: #fb7185;
+          color: var(--rose);
+          font-family: var(--font-display);
           font-size: 18px;
         }
 
         .close-btn {
           width: 30px;
           height: 30px;
-          border-radius: 8px;
-          border: 1px solid #4e3742;
-          background: #241b20;
-          color: #c7a8b2;
+          border-radius: var(--radius-sm);
+          border: 1px solid rgba(251, 113, 133, 0.28);
+          background: color-mix(in srgb, var(--rose-dim) 35%, var(--bg-surface));
+          color: var(--text-2);
           font-size: 18px;
           cursor: pointer;
           line-height: 1;
@@ -162,28 +163,16 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         .label {
           display: block;
           margin-bottom: 6px;
-          font-size: 12px;
-          color: #c6b4bb;
-          font-weight: 600;
-        }
-
-        .textarea {
-          width: 100%;
-          border-radius: 10px;
-          border: 1px solid #4b3842;
-          background: #120d11;
-          color: #fff4f7;
-          padding: 10px;
-          font-family: inherit;
-          font-size: 14px;
-          resize: vertical;
-          min-height: 92px;
+          font-size: 11px;
+          color: var(--text-3);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
         }
 
         .textarea:focus {
-          outline: none;
-          border-color: rgba(251, 113, 133, 0.75);
-          box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.15);
+          border-color: rgba(251, 113, 133, 0.7);
+          box-shadow: 0 0 0 3px var(--rose-dim);
         }
 
         .chips {
@@ -195,10 +184,6 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         }
 
         .chip {
-          border-radius: 999px;
-          border: 1px solid #4b3842;
-          background: #1b1318;
-          color: #d4bcc5;
           padding: 7px 10px;
           white-space: nowrap;
           font-size: 12px;
@@ -207,33 +192,30 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         }
 
         .chip.active {
-          border-color: rgba(251, 113, 133, 0.8);
-          background: rgba(251, 113, 133, 0.2);
-          color: #ffd5dd;
+          border-color: rgba(251, 113, 133, 0.7);
+          background: var(--rose-dim);
+          color: var(--rose);
         }
 
         .streak {
           font-size: 12px;
-          color: #ffb5c2;
+          color: var(--rose);
           margin-bottom: 4px;
           font-weight: 700;
         }
 
         .bonus {
           font-size: 12px;
-          color: #ffd9df;
+          color: var(--text-2);
           margin-bottom: 10px;
         }
 
         .submit-btn {
           width: 100%;
-          border: none;
-          border-radius: 10px;
           padding: 12px;
-          background: #fb7185;
+          background: var(--rose);
+          border-color: rgba(251, 113, 133, 0.6);
           color: #2b1118;
-          font-weight: 800;
-          cursor: pointer;
           font-size: 14px;
         }
 

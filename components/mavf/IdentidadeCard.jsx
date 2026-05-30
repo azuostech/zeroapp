@@ -39,7 +39,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
   };
 
   return (
-    <section className={`practice-card identity ${expanded ? 'expanded' : ''}`}>
+    <section className={`practice-card identity card ${expanded ? 'expanded' : ''}`}>
       <button type="button" className="card-head" onClick={onToggle}>
         <div>
           <div className="head-title">💎 Minha Identidade</div>
@@ -107,16 +107,13 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
       <style jsx>{`
         .practice-card {
-          border: 1px solid #403a52;
-          background: #171422;
-          border-radius: 14px;
           margin-bottom: 12px;
           overflow: hidden;
         }
 
         .practice-card.expanded {
-          border-color: rgba(167, 139, 250, 0.55);
-          box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.22) inset;
+          border-color: rgba(179, 157, 219, 0.62);
+          box-shadow: 0 0 0 1px var(--purple-dim) inset;
         }
 
         .card-head {
@@ -130,35 +127,37 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           gap: 10px;
           padding: 14px;
           cursor: pointer;
+          border-left: 3px solid var(--purple);
         }
 
         .head-title {
-          color: #a78bfa;
+          color: var(--purple);
           font-size: 17px;
           font-weight: 800;
           margin-bottom: 4px;
         }
 
         .head-meta {
-          color: #b2a6d0;
+          color: var(--text-2);
           font-size: 12px;
           margin-bottom: 4px;
+          font-family: var(--font-mono);
         }
 
         .head-preview {
-          color: #d7ceef;
+          color: var(--text);
           font-size: 13px;
           line-height: 1.4;
         }
 
         .chevron {
-          color: #bfaeff;
+          color: var(--purple);
           font-size: 18px;
           padding-top: 2px;
         }
 
         .card-body {
-          border-top: 1px solid #433b58;
+          border-top: 1px solid var(--border-2);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -167,8 +166,8 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .primary-btn,
         .ghost-btn {
-          border-radius: 10px;
-          border: 1px solid #a78bfa;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(179, 157, 219, 0.6);
           padding: 10px 12px;
           font-size: 13px;
           font-weight: 800;
@@ -176,35 +175,34 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .primary-btn {
-          background: #a78bfa;
+          background: var(--purple);
           color: #22144a;
         }
 
         .ghost-btn {
-          background: transparent;
-          color: #d8c8ff;
-          border-color: rgba(167, 139, 250, 0.45);
+          background: var(--purple-dim);
+          color: var(--purple);
         }
 
         .feedback {
           font-size: 13px;
-          color: #b2a6cf;
+          color: var(--text-2);
         }
 
         .feedback.error {
-          color: #ff9f9f;
+          color: var(--red);
         }
 
         .timeline {
-          border: 1px solid #42395a;
-          border-radius: 12px;
-          background: #151223;
+          border: 1px solid rgba(179, 157, 219, 0.35);
+          border-radius: var(--radius-md);
+          background: var(--purple-dim);
           padding: 10px;
         }
 
         .timeline-title {
           font-size: 12px;
-          color: #c8b8f1;
+          color: var(--purple);
           margin-bottom: 8px;
           font-weight: 700;
           text-transform: uppercase;
@@ -221,9 +219,9 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .timeline li {
-          border: 1px solid #37304c;
-          border-radius: 10px;
-          background: #1a1530;
+          border: 1px solid rgba(179, 157, 219, 0.28);
+          border-radius: var(--radius-sm);
+          background: color-mix(in srgb, var(--bg-surface) 86%, transparent);
           padding: 10px;
           display: flex;
           justify-content: space-between;
@@ -238,7 +236,9 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .timeline-main strong {
           display: block;
-          color: #f4efff;
+          color: var(--text);
+          font-family: var(--font-display);
+          font-weight: 700;
           font-size: 14px;
           line-height: 1.4;
           margin-bottom: 4px;
@@ -246,20 +246,20 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .timeline-main span {
           font-size: 11px;
-          color: #b8abd8;
+          color: var(--text-3);
         }
 
         .timeline-main p {
           margin: 6px 0 0;
           font-size: 12px;
-          color: #cfc3ec;
+          color: var(--text-2);
           line-height: 1.35;
         }
 
         .remove-btn {
-          border: 1px solid #5a4d7f;
-          background: #231d36;
-          color: #bfafd8;
+          border: 1px solid rgba(179, 157, 219, 0.35);
+          background: var(--bg-surface);
+          color: var(--text-2);
           border-radius: 8px;
           width: 24px;
           height: 24px;
@@ -267,14 +267,14 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .remove-btn:hover {
-          border-color: #d19ec9;
-          color: #ffd0f6;
+          border-color: var(--purple);
+          color: var(--purple);
         }
 
         .empty {
-          border: 1px dashed #594e78;
-          border-radius: 12px;
-          background: #171329;
+          border: 1px dashed var(--border-3);
+          border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--purple-dim) 58%, transparent);
           padding: 14px;
           text-align: center;
         }
@@ -286,12 +286,12 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .empty h4 {
           margin: 0 0 6px;
-          color: #dfd4ff;
+          color: var(--text);
         }
 
         .empty p {
           margin: 0 0 10px;
-          color: #c2b6de;
+          color: var(--text-3);
           font-size: 13px;
           line-height: 1.4;
         }

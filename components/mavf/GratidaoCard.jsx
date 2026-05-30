@@ -39,7 +39,7 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
   };
 
   return (
-    <section className={`practice-card gratitude ${expanded ? 'expanded' : ''}`}>
+    <section className={`practice-card gratitude card ${expanded ? 'expanded' : ''}`}>
       <button type="button" className="card-head" onClick={onToggle}>
         <div>
           <div className="head-title">🌸 Gratidão</div>
@@ -99,16 +99,13 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
 
       <style jsx>{`
         .practice-card {
-          border: 1px solid #3c3136;
-          background: #171316;
-          border-radius: 14px;
           margin-bottom: 12px;
           overflow: hidden;
         }
 
         .practice-card.expanded {
           border-color: rgba(251, 113, 133, 0.5);
-          box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.2) inset;
+          box-shadow: 0 0 0 1px var(--rose-dim) inset;
         }
 
         .card-head {
@@ -122,35 +119,37 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           gap: 10px;
           padding: 14px;
           cursor: pointer;
+          border-left: 3px solid var(--rose);
         }
 
         .head-title {
-          color: #fb7185;
+          color: var(--rose);
           font-size: 17px;
           font-weight: 800;
           margin-bottom: 4px;
         }
 
         .head-meta {
-          color: #b09aa3;
+          color: var(--text-2);
           font-size: 12px;
           margin-bottom: 4px;
+          font-family: var(--font-mono);
         }
 
         .head-preview {
-          color: #d3c2c8;
+          color: var(--text);
           font-size: 13px;
           line-height: 1.4;
         }
 
         .chevron {
-          color: #d7a6b1;
+          color: var(--rose);
           font-size: 18px;
           padding-top: 2px;
         }
 
         .card-body {
-          border-top: 1px solid #403138;
+          border-top: 1px solid var(--border-2);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -159,19 +158,19 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
 
         .streak-badge {
           align-self: flex-start;
-          border: 1px solid rgba(251, 113, 133, 0.5);
-          background: rgba(251, 113, 133, 0.18);
-          color: #ffd7df;
-          border-radius: 999px;
+          border-radius: var(--radius-full);
           padding: 4px 10px;
           font-size: 12px;
           font-weight: 800;
+          background: var(--rose-dim);
+          border: 1px solid rgba(251, 113, 133, 0.5);
+          color: var(--rose);
         }
 
         .primary-btn,
         .ghost-btn {
-          border-radius: 10px;
-          border: 1px solid #fb7185;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(251, 113, 133, 0.5);
           padding: 10px 12px;
           font-size: 13px;
           font-weight: 800;
@@ -179,23 +178,22 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
         }
 
         .primary-btn {
-          background: #fb7185;
+          background: var(--rose);
           color: #2f1319;
         }
 
         .ghost-btn {
-          background: transparent;
-          color: #ffc2cc;
-          border-color: rgba(251, 113, 133, 0.45);
+          background: var(--rose-dim);
+          color: var(--rose);
         }
 
         .feedback {
           font-size: 13px;
-          color: #b6a5ac;
+          color: var(--text-2);
         }
 
         .feedback.error {
-          color: #ff9999;
+          color: var(--red);
         }
 
         .items {
@@ -207,13 +205,14 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
         .more {
           text-align: center;
           font-size: 11px;
-          color: #b49ea7;
+          color: var(--text-3);
+          font-family: var(--font-mono);
         }
 
         .empty {
-          border: 1px dashed #4b3a42;
-          border-radius: 12px;
-          background: #1a1318;
+          border: 1px dashed var(--border-3);
+          border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--rose-dim) 56%, transparent);
           padding: 14px;
           text-align: center;
         }
@@ -225,12 +224,12 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
 
         .empty h4 {
           margin: 0 0 6px;
-          color: #ffd8df;
+          color: var(--text);
         }
 
         .empty p {
           margin: 0 0 10px;
-          color: #ccb8c0;
+          color: var(--text-3);
           font-size: 13px;
           line-height: 1.4;
         }

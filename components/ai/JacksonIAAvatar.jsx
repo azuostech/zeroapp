@@ -34,17 +34,17 @@ export default function JacksonIAAvatar({ size = 'md', isLoading = false, showSt
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: radial-gradient(circle at 30% 30%, #1b4d2b, #0f2015 70%);
-          border: 1px solid rgba(0, 200, 83, 0.42);
-          box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.2) inset;
+          background: linear-gradient(135deg, var(--green-2), #00694A);
+          border: 2px solid var(--green);
+          box-shadow: var(--shadow-glow);
           transition: box-shadow 0.2s ease;
           flex-shrink: 0;
         }
 
         .jackson-avatar.loading {
           box-shadow:
-            0 0 0 1px rgba(0, 200, 83, 0.24) inset,
-            0 0 22px rgba(0, 200, 83, 0.45);
+            0 0 0 2px var(--green-mid) inset,
+            0 0 28px var(--green-glow);
         }
 
         .jackson-avatar span {
@@ -57,15 +57,15 @@ export default function JacksonIAAvatar({ size = 'md', isLoading = false, showSt
           align-items: center;
           gap: 5px;
           font-size: 12px;
-          color: #8bc29f;
+          color: var(--text-2);
         }
 
         .dot {
           width: 8px;
           height: 8px;
           border-radius: 999px;
-          background: #00c853;
-          box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.45);
+          background: var(--green);
+          box-shadow: 0 0 0 0 var(--green-glow);
           animation: pulse 1.6s infinite;
         }
 

@@ -1,3 +1,4 @@
+import '../styles/theme.css';
 import './globals.css';
 import ThemeAssetSync from '@/components/layout/ThemeAssetSync';
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar';
@@ -71,8 +72,7 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  userScalable: true,
   themeColor: '#00C853'
 };
 
