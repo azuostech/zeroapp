@@ -45,7 +45,7 @@ function getEventTypeBadge(eventType) {
   if (key === 'gain_registered') return { label: 'Novo ganho', className: 'badge-blue' };
   if (key === 'gain_grande') return { label: 'Ganho grande', className: 'badge-blue' };
   if (key === 'gratitude_registered') return { label: 'Gratidão', className: 'badge-rose' };
-  if (key.startsWith('gratitude_streak')) return { label: 'Streak gratidão', className: 'badge-rose' };
+  if (key.startsWith('gratitude_streak')) return { label: 'Streak gratidão 🔥', className: 'badge-rose' };
   if (key === 'identity_registered') return { label: 'Identidade', className: 'badge-purple' };
   if (key === 'tier_upgrade') return { label: 'Tier upgrade', className: 'badge-purple' };
   if (key === 'workshop_redeemed') return { label: 'Workshop', className: 'badge-gold' };

@@ -236,15 +236,47 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
           align-items: flex-start;
           gap: 8px;
           margin-bottom: 2px;
-          color: var(--text-2);
-          font-size: 12px;
-          line-height: 1.4;
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.35;
           cursor: pointer;
         }
 
         .share-toggle input {
-          margin-top: 2px;
-          accent-color: var(--rose);
+          appearance: none;
+          -webkit-appearance: none;
+          width: 18px;
+          height: 18px;
+          margin-top: 1px;
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          background: var(--bg3);
+          position: relative;
+          cursor: pointer;
+          flex-shrink: 0;
+          transition: var(--transition);
+        }
+
+        .share-toggle input:checked {
+          border-color: var(--green);
+          background: var(--green);
+        }
+
+        .share-toggle input:checked::after {
+          content: '';
+          position: absolute;
+          left: 6px;
+          top: 2px;
+          width: 4px;
+          height: 9px;
+          border: solid var(--bg);
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .share-toggle input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .submit-btn:disabled {
