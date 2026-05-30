@@ -14,8 +14,8 @@
   --gold-dim: rgba(255, 215, 0, 0.12);
   --blue: #64B5FF;
   --blue-dim: rgba(100, 181, 255, 0.12);
-  --purple: #B39DDB;
-  --purple-dim: rgba(179, 157, 219, 0.12);
+  --purple: #A78BFA;
+  --purple-dim: rgba(167, 139, 250, 0.12);
   --rose: #FB7185;
   --rose-dim: rgba(251, 113, 133, 0.12);
   --diamond: #5DCAA5;
@@ -213,7 +213,7 @@ a,
 
 .badge-purple {
   background: var(--purple-dim);
-  border-color: rgba(179, 157, 219, 0.36);
+  border-color: rgba(167, 139, 250, 0.36);
   color: var(--purple);
 }
 

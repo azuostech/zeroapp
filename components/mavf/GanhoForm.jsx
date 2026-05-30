@@ -27,6 +27,7 @@ const SIZE_OPTIONS = [
 export default function GanhoForm({ onSave, onClose, onSuccess }) {
   const [descricao, setDescricao] = useState('');
   const [tamanho, setTamanho] = useState('pequeno');
+  const [shareInFeed, setShareInFeed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedOption = useMemo(() => SIZE_OPTIONS.find((item) => item.key === tamanho) || SIZE_OPTIONS[0], [tamanho]);
@@ -40,7 +41,8 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
       setIsSaving(true);
       const payload = await onSave?.({
         descricao: descricao.trim(),
-        tamanho
+        tamanho,
+        share_in_feed: shareInFeed
       });
 
       if (payload?.coins_awarded?.amount > 0) {
@@ -117,6 +119,16 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
           })}
         </div>
 
+        <label className="share-toggle">
+          <input
+            type="checkbox"
+            checked={shareInFeed}
+            onChange={(event) => setShareInFeed(event.target.checked)}
+            disabled={isSaving}
+          />
+          <span>Compartilhar este ganho no feed da comunidade</span>
+        </label>
+
         <button type="submit" className="submit-btn btn-primary" disabled={!canSubmit}>
           {isSaving ? 'Registrando...' : 'Registrar Ganho'}
         </button>
@@ -127,7 +139,7 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
           position: fixed;
           inset: 0;
           z-index: 300;
-          background: rgba(4, 8, 6, 0.74);
+          background: color-mix(in srgb, var(--bg) 78%, transparent);
           display: flex;
           align-items: flex-end;
           justify-content: center;
@@ -225,6 +237,22 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
           width: 100%;
           padding: 12px;
           font-size: 14px;
+        }
+
+        .share-toggle {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 2px;
+          color: var(--text-2);
+          font-size: 12px;
+          line-height: 1.4;
+          cursor: pointer;
+        }
+
+        .share-toggle input {
+          margin-top: 2px;
+          accent-color: var(--green);
         }
 
         .submit-btn:disabled {

@@ -5,10 +5,10 @@ import { MAVF_PILLARS_MAP } from '@/lib/mavf-config';
 import ProgressSlider from '@/components/mavf/ProgressSlider';
 
 function getProgressColor(progress) {
-  if (progress >= 75) return '#00C853';
-  if (progress >= 50) return '#FFD700';
-  if (progress >= 25) return '#FF9800';
-  return '#888888';
+  if (progress >= 75) return 'var(--green)';
+  if (progress >= 50) return 'var(--gold)';
+  if (progress >= 25) return 'var(--blue)';
+  return 'var(--muted)';
 }
 
 function formatDate(value) {
@@ -145,7 +145,7 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
             className="progress-fill"
             style={{
               width: `${objective.progress}%`,
-              background: `linear-gradient(90deg, ${progressColor}, ${progressColor}cc)`
+              ['--progress-color']: progressColor
             }}
           />
         </div>
@@ -182,8 +182,8 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
 
       <style jsx>{`
         .objective-card {
-          background: #1a1a1a;
-          border: 1px solid #333;
+          background: var(--bg2);
+          border: 1px solid var(--border);
           border-radius: 12px;
           padding: 14px;
         }
@@ -206,7 +206,7 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         }
 
         .pillar-label {
-          color: #aaa;
+          color: var(--text-2);
           font-size: 12px;
           font-weight: 600;
           text-transform: uppercase;
@@ -216,7 +216,7 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         .delete-btn {
           border: none;
           background: transparent;
-          color: #999;
+          color: var(--text-3);
           cursor: pointer;
           font-size: 16px;
           opacity: 0.7;
@@ -229,7 +229,7 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         .objective-description {
           margin: 0 0 12px;
           font-size: 14px;
-          color: #f0f0f0;
+          color: var(--text);
           line-height: 1.5;
           font-weight: 600;
           white-space: pre-wrap;
@@ -248,12 +248,12 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         }
 
         .progress-title {
-          color: #888;
+          color: var(--muted);
         }
 
         .progress-track {
           height: 7px;
-          background: #303030;
+          background: var(--bg3);
           border-radius: 4px;
           overflow: hidden;
         }
@@ -261,14 +261,19 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         .progress-fill {
           height: 100%;
           transition: width 0.35s ease;
+          background: linear-gradient(
+            90deg,
+            var(--progress-color),
+            color-mix(in srgb, var(--progress-color) 72%, transparent)
+          );
         }
 
         .update-progress-btn {
           margin-top: 10px;
           width: 100%;
-          border: 1px solid #333;
+          border: 1px solid var(--border);
           background: transparent;
-          color: #999;
+          color: var(--text-3);
           border-radius: 8px;
           padding: 8px 10px;
           font-size: 11px;
@@ -277,9 +282,9 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         }
 
         .update-progress-btn:hover {
-          color: #00c853;
-          border-color: rgba(0, 200, 83, 0.4);
-          background: rgba(0, 200, 83, 0.08);
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 40%, transparent);
+          background: color-mix(in srgb, var(--green) 8%, transparent);
         }
 
         .objective-footer {
@@ -287,19 +292,19 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
           justify-content: space-between;
           align-items: center;
           gap: 8px;
-          border-top: 1px solid #333;
+          border-top: 1px solid var(--border);
           padding-top: 10px;
         }
 
         .deadline {
-          color: #888;
+          color: var(--muted);
           font-size: 12px;
         }
 
         .edit-meta-btn {
-          border: 1px solid #333;
-          background: #141414;
-          color: #aaa;
+          border: 1px solid var(--border);
+          background: var(--bg-surface);
+          color: var(--text-2);
           border-radius: 7px;
           padding: 5px 9px;
           font-size: 11px;
@@ -308,15 +313,15 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         }
 
         .edit-meta-btn:hover {
-          color: #ddd;
+          color: var(--text);
         }
 
         .meta-editor textarea,
         .meta-editor input {
           width: 100%;
-          border: 1px solid #333;
-          background: #111;
-          color: #eee;
+          border: 1px solid var(--border);
+          background: var(--bg);
+          color: var(--text);
           border-radius: 8px;
           padding: 9px 10px;
           outline: none;
@@ -325,7 +330,7 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
 
         .meta-editor textarea:focus,
         .meta-editor input:focus {
-          border-color: rgba(0, 200, 83, 0.5);
+          border-color: color-mix(in srgb, var(--green) 50%, transparent);
         }
 
         .meta-actions {
@@ -348,22 +353,22 @@ export default function ObjectiveCard({ objective, onUpdated, onDelete }) {
         }
 
         .btn-cancel {
-          border: 1px solid #333;
+          border: 1px solid var(--border);
           background: transparent;
-          color: #aaa;
+          color: var(--text-2);
         }
 
         .btn-save {
-          border: 1px solid #00c853;
-          background: #00c853;
-          color: #08150e;
+          border: 1px solid var(--green);
+          background: var(--green);
+          color: var(--bg);
         }
 
         .error-box {
           margin-top: 10px;
-          border: 1px solid rgba(255, 82, 82, 0.4);
-          background: rgba(255, 82, 82, 0.1);
-          color: #ff7b7b;
+          border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+          background: color-mix(in srgb, var(--red) 10%, transparent);
+          color: var(--red);
           border-radius: 8px;
           padding: 8px 10px;
           font-size: 12px;

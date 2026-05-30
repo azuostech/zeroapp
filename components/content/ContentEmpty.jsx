@@ -8,11 +8,11 @@ export default function ContentEmpty() {
 
       <style jsx>{`
         .content-empty {
-          border: 1px dashed var(--conteudo-border, #2f363d);
+          border: 1px dashed var(--border);
           border-radius: 16px;
           padding: 26px 14px;
           text-align: center;
-          background: color-mix(in srgb, var(--conteudo-card, #141619) 72%, transparent);
+          background: color-mix(in srgb, var(--bg2) 72%, transparent);
         }
 
         .emoji {
@@ -23,7 +23,7 @@ export default function ContentEmpty() {
         h3 {
           margin: 0;
           font-size: 18px;
-          color: var(--conteudo-muted, #8e98a2);
+          color: var(--muted);
           font-weight: 600;
         }
       `}</style>

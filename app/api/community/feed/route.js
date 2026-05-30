@@ -9,11 +9,34 @@ function parsePositiveLimit(value, fallback = 20, max = 60) {
   return Math.min(max, Math.floor(parsed));
 }
 
+function resolveDisplayName({ full_name, email }, fallback = 'Mentorado') {
+  const explicit = String(full_name || '').trim();
+  if (explicit) return explicit;
+
+  const safeEmail = String(email || '').trim().toLowerCase();
+  if (safeEmail && safeEmail.includes('@')) {
+    const localPart = safeEmail
+      .split('@')[0]
+      .replace(/[._-]+/g, ' ')
+      .trim();
+
+    if (localPart) {
+      return localPart
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+        .join(' ');
+    }
+  }
+
+  return fallback;
+}
+
 function toAuthorMap(rows) {
   const map = new Map();
   (rows || []).forEach((row) => {
     map.set(row.id, {
-      full_name: row.full_name || 'Mentorado',
+      full_name: resolveDisplayName(row),
       tier: row.tier || 'DESPERTAR'
     });
   });
@@ -83,7 +106,7 @@ export async function GET(request) {
     const serviceSupabase = getServiceSupabase();
     const { data: profiles, error: profilesError } = await serviceSupabase
       .from('profiles')
-      .select('id,full_name,tier')
+      .select('id,full_name,email,tier')
       .in('id', authorIds);
 
     if (!profilesError) {
@@ -93,7 +116,12 @@ export async function GET(request) {
 
   const enriched = safeEvents.map((event) => {
     const userIds = reactionsByEvent.get(event.id) || [];
-    const author = authorMap.get(event.user_id) || { full_name: 'Mentorado', tier: 'DESPERTAR' };
+    const metadata = event.metadata && typeof event.metadata === 'object' ? event.metadata : {};
+    const fallbackName = String(metadata.author_name || '').trim() || 'Mentorado';
+    const fallbackTier = String(metadata.author_tier || 'DESPERTAR').toUpperCase();
+    const author = authorMap.get(event.user_id) || null;
+    const authorName = author?.full_name || fallbackName;
+    const authorTier = String(author?.tier || fallbackTier).toUpperCase();
 
     return {
       id: event.id,
@@ -106,8 +134,8 @@ export async function GET(request) {
       turma: event.turma || null,
       reaction_count: userIds.length,
       user_reacted: userIds.includes(user.id),
-      author_name: author.full_name,
-      author_tier: author.tier
+      author_name: authorName,
+      author_tier: authorTier
     };
   });
 

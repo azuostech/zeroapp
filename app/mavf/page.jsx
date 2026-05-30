@@ -150,7 +150,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
   if (!activeSession && !lastCompletedSession) {
     mapContent = (
-      <div className="max-w-lg text-center bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-8 mx-auto">
+      <div className="max-w-lg text-center card card-green rounded-[18px] p-4 mx-auto">
         <div className="text-6xl mb-6">💤</div>
         <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
         <p className="text-[var(--text-2)]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
@@ -159,11 +159,11 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   } else if (!activeSession && lastCompletedSession) {
     mapContent = (
       <>
-        <div className="bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 mb-6">
+        <div className="card card-green rounded-[18px] p-4 mb-6">
           <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
         </div>
         <div className="text-center">
-          <Link href={mavfHistoryHref} className="inline-flex bg-[var(--green)] text-[#000] font-bold px-5 py-3 rounded-[8px]">
+          <Link href={mavfHistoryHref} className="inline-flex bg-[var(--green)] text-[var(--bg)] font-bold px-5 py-3 rounded-[8px]">
             Comparar sessões anteriores
           </Link>
         </div>
@@ -172,7 +172,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   } else {
     mapContent = (
       <>
-        <div className="mb-8 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-4">
+        <div className="mb-8 card card-green rounded-[18px] p-4">
           <div className="flex justify-between text-xs text-[var(--text-3)] uppercase tracking-[0.5px] mb-2">
             <span>Progresso</span>
             <span>{progress.completed}/11 pilares</span>
@@ -198,7 +198,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         ) : null}
 
         {!progress.all_completed && !currentPillar ? (
-          <div className="mb-10 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 text-center">
+          <div className="mb-10 card card-green rounded-[18px] p-4 text-center">
             <div className="text-4xl mb-2">🎯</div>
             <h2 className="text-xl font-semibold mb-2">Aguardando próximo pilar</h2>
             <p className="text-[var(--text-2)]">O mentor ainda vai liberar o próximo passo da sessão.</p>
@@ -206,7 +206,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         ) : null}
 
         {progress.all_completed ? (
-          <div className="mb-10 bg-[var(--bg-card)] border border-[var(--border-2)] rounded-[12px] p-6 text-center">
+          <div className="mb-10 card card-green rounded-[18px] p-4 text-center">
             <div className="text-5xl mb-3">✅</div>
             <h2 className="text-2xl font-bold mb-2">Respostas concluídas</h2>
             <p className="text-[var(--text-2)]">Aguarde o mentor finalizar a sessão para revelar a roda.</p>
@@ -251,8 +251,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             </div>
           ) : null}
           <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-display">{mapTitle}</h1>
-            <p className="text-[var(--text-2)]">Seus objetivos, práticas e evolução pessoal</p>
+            <h1 className="text-[22px] md:text-[30px] font-black leading-[1.1] mb-1" style={{ fontFamily: 'var(--font-body)' }}>
+              {mapTitle}
+            </h1>
+            <p className="text-[13px] text-[var(--muted)]">Seus objetivos, práticas e evolução pessoal</p>
           </div>
 
           <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />
@@ -268,8 +270,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
           )}
 
           <div className="mt-10">
-            <div className="text-[11px] uppercase tracking-[1.2px] text-[var(--text-3)] mb-2">Práticas Diárias</div>
-            <h2 className="text-[22px] md:text-[26px] font-bold mb-2">Consistência que transforma</h2>
+            <div className="text-[10px] uppercase tracking-[1px] text-[var(--muted)] mb-2">Práticas Diárias</div>
+            <h2 className="text-[22px] md:text-[26px] font-black mb-2" style={{ fontFamily: 'var(--font-body)' }}>
+              Consistência que transforma
+            </h2>
             <p className="text-[var(--text-2)] text-sm mb-5">
               Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
             </p>

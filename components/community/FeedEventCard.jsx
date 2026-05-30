@@ -33,7 +33,7 @@ function avatarColorFromName(name) {
     hash |= 0;
   }
 
-  const palette = ['#00c853', '#ff8a00', '#00acc1', '#7c4dff', '#f06292', '#43a047'];
+  const palette = ['var(--green)', 'var(--gold)', 'var(--blue)', 'var(--purple)', 'var(--rose)', 'var(--diamond)'];
   return palette[Math.abs(hash) % palette.length];
 }
 
@@ -42,8 +42,11 @@ function getEventTypeBadge(eventType) {
 
   if (key === 'month_complete') return { label: 'Mês completo', className: 'badge-green' };
   if (key === 'goal_reached') return { label: 'Meta atingida', className: 'badge-gold' };
+  if (key === 'gain_registered') return { label: 'Novo ganho', className: 'badge-blue' };
   if (key === 'gain_grande') return { label: 'Ganho grande', className: 'badge-blue' };
-  if (key === 'gratitude_streak') return { label: 'Streak gratidão', className: 'badge-rose' };
+  if (key === 'gratitude_registered') return { label: 'Gratidão', className: 'badge-rose' };
+  if (key.startsWith('gratitude_streak')) return { label: 'Streak gratidão', className: 'badge-rose' };
+  if (key === 'identity_registered') return { label: 'Identidade', className: 'badge-purple' };
   if (key === 'tier_upgrade') return { label: 'Tier upgrade', className: 'badge-purple' };
   if (key === 'workshop_redeemed') return { label: 'Workshop', className: 'badge-gold' };
   return { label: 'Evento', className: 'badge-neutral' };
@@ -87,6 +90,9 @@ export default function FeedEventCard({ event, onReact }) {
 
       <style jsx>{`
         .feed-card {
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          background: var(--bg2);
           padding: 14px;
         }
 
@@ -105,7 +111,7 @@ export default function FeedEventCard({ event, onReact }) {
           justify-content: center;
           font-size: 14px;
           font-weight: 800;
-          color: #041109;
+          color: var(--bg);
           flex-shrink: 0;
           border: 1px solid var(--border-3);
         }
@@ -124,11 +130,13 @@ export default function FeedEventCard({ event, onReact }) {
 
         .feed-author-row strong {
           font-size: 14px;
+          color: var(--text);
+          font-weight: 700;
         }
 
         .feed-time {
           font-size: 11px;
-          color: var(--text-3);
+          color: var(--muted);
         }
 
         .feed-event-type {
@@ -146,7 +154,7 @@ export default function FeedEventCard({ event, onReact }) {
 
         .feed-body {
           margin: 0 0 12px;
-          color: var(--text-2);
+          color: var(--text);
           font-size: 14px;
           line-height: 1.4;
         }

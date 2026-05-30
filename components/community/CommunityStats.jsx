@@ -29,35 +29,33 @@ export default function CommunityStats({ stats }) {
 
       <style jsx>{`
         .stats-strip {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
-          overflow-x: auto;
-          padding-bottom: 2px;
-          scrollbar-width: thin;
         }
 
         .stat-pill {
-          border: 1px solid var(--border-2);
-          background: var(--bg-elevated);
-          border-radius: var(--radius-full);
+          border: 1px solid var(--border);
+          background: var(--bg2);
+          border-radius: 12px;
           padding: 10px 14px;
-          min-width: 150px;
           display: inline-flex;
           flex-direction: column;
           gap: 2px;
-          flex-shrink: 0;
         }
 
         .stat-pill strong {
           color: var(--green);
-          font-size: 16px;
+          font-size: 18px;
           line-height: 1.1;
           font-family: var(--font-mono);
         }
 
         .stat-pill span {
-          color: var(--text-3);
-          font-size: 11px;
+          color: var(--muted);
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       `}</style>
     </div>

@@ -9,7 +9,7 @@ export default function BottomNavHub() {
   const tabs = [
     { id: 'inicio', icon: '🏠', label: 'Início', href: '/app' },
     { id: 'jornada', icon: '🌱', label: 'Minha Jornada', href: '/mavf' },
-    { id: 'voce', icon: '👤', label: 'Você', href: '/perfil' }
+    { id: 'conquistas', icon: '🏆', label: 'Conquistas', href: '/jornada' }
   ];
 
   const isActive = (href) => {

@@ -6,13 +6,13 @@ export default function ProgressIndicator({ value = 0, max = 1 }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1 text-[11px] uppercase tracking-[0.5px] text-[#888]">
+      <div className="flex items-center justify-between mb-1 text-[11px] uppercase tracking-[0.5px] text-[var(--muted)]">
         <span>Respostas</span>
         <span>{value}/{max}</span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden bg-[#333]">
+      <div className="h-2 rounded-full overflow-hidden bg-[var(--border)]">
         <div
-          className="h-full bg-gradient-to-r from-[#00C853] to-[#69f0ae] transition-all duration-300"
+          className="h-full bg-gradient-to-r from-[var(--green)] to-[var(--diamond)] transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>

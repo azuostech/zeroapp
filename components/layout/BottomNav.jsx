@@ -6,19 +6,19 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
   { id: 'jornada', href: '/mavf', icon: '🌱', label: 'Minha Jornada' },
-  { id: 'voce', href: '/perfil', icon: '👤', label: 'Você' }
+  { id: 'conquistas', href: '/jornada', icon: '🏆', label: 'Conquistas' }
 ];
 
 function getAutoActiveTab(pathname) {
   if (pathname === '/app' || pathname === '/') return 'inicio';
   if (pathname.startsWith('/mavf')) return 'jornada';
-  if (pathname.startsWith('/perfil')) return 'voce';
+  if (pathname.startsWith('/jornada')) return 'conquistas';
   return '';
 }
 
 export default function BottomNav({ activeTab = '' }) {
   const pathname = usePathname();
-  const normalizedActiveTab = activeTab === 'mavf' ? 'jornada' : activeTab === 'perfil' ? 'voce' : activeTab;
+  const normalizedActiveTab = activeTab === 'mavf' ? 'jornada' : activeTab === 'perfil' || activeTab === 'voce' ? 'conquistas' : activeTab;
   const current = normalizedActiveTab || getAutoActiveTab(pathname || '');
 
   return (

@@ -74,13 +74,14 @@ export function useGains(targetUserId = null) {
   }, [fetchData]);
 
   const addGain = useCallback(
-    async ({ descricao, tamanho }) => {
+    async ({ descricao, tamanho, share_in_feed = false }) => {
       const res = await fetch('/api/mavf/gains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           descricao,
           tamanho,
+          share_in_feed: Boolean(share_in_feed),
           ...(targetUserId ? { user_id: targetUserId } : {})
         })
       });

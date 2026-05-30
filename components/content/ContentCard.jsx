@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 const TIER_BADGES = {
-  LIVRE: { label: 'Grátis', className: 'badge-green' },
-  MOVIMENTO: { label: 'Mentorado', className: 'badge-gold' },
-  ACELERACAO: { label: 'Aceleração', className: 'badge-blue' },
-  AUTOGOVERNO: { label: 'Autogoverno', className: 'badge-purple' }
+  LIVRE: { label: 'Grátis', className: 'tier-livre' },
+  MOVIMENTO: { label: 'Mentorado', className: 'tier-movimento' },
+  ACELERACAO: { label: 'Aceleração', className: 'tier-aceleracao' },
+  AUTOGOVERNO: { label: 'Autogoverno', className: 'tier-autogoverno' }
 };
 
 const TYPE_META = {
@@ -111,6 +111,30 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
           font-weight: 700;
         }
 
+        .tier-badge.tier-livre {
+          background: var(--green);
+          border-color: transparent;
+          color: var(--bg);
+        }
+
+        .tier-badge.tier-movimento {
+          background: var(--gold);
+          border-color: transparent;
+          color: var(--bg);
+        }
+
+        .tier-badge.tier-aceleracao {
+          background: color-mix(in srgb, var(--blue) 20%, transparent);
+          border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+          color: var(--blue);
+        }
+
+        .tier-badge.tier-autogoverno {
+          background: color-mix(in srgb, var(--purple) 20%, transparent);
+          border-color: color-mix(in srgb, var(--purple) 35%, transparent);
+          color: var(--purple);
+        }
+
         h3 {
           margin: 0 0 4px;
           font-size: 18px;
@@ -142,13 +166,16 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
         {cardBody}
 
         <style jsx>{`
-          .content-card {
-            display: flex;
-            gap: 12px;
-            padding: 12px;
-            opacity: 0.5;
-            cursor: default;
-          }
+        .content-card {
+          display: flex;
+          gap: 12px;
+          padding: 12px;
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          background: var(--bg2);
+          opacity: 0.5;
+          cursor: default;
+        }
         `}</style>
       </article>
     );
@@ -160,6 +187,9 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
         display: flex;
         gap: 12px;
         padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--bg2);
         text-decoration: none;
         color: inherit;
       }
@@ -195,6 +225,9 @@ export default function ContentCard({ item, locked = false, onClick = null }) {
             display: flex;
             gap: 12px;
             padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg2);
             text-decoration: none;
             color: inherit;
             transition: var(--transition);

@@ -54,7 +54,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
         }
 
         .challenge-card {
-          border: 1px solid var(--green-mid);
+          border: 1px solid color-mix(in srgb, var(--green) 20%, transparent);
           border-radius: var(--radius-xl);
           background: var(--green-dim);
           padding: 14px;
@@ -72,7 +72,9 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
         }
 
         .challenge-top strong {
+          color: var(--green);
           font-size: 18px;
+          font-weight: 700;
           line-height: 1.15;
         }
 
@@ -84,6 +86,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
 
         .challenge-progress-track {
           height: 8px;
+          background: var(--bg3);
         }
 
         .challenge-progress-fill {
@@ -117,7 +120,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
           border: 1px solid var(--green-mid);
           border-radius: var(--radius-md);
           background: var(--green);
-          color: #05200f;
+          color: var(--bg);
           font-size: 13px;
           font-weight: 700;
           padding: 8px 12px;

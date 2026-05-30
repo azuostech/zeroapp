@@ -72,14 +72,16 @@ export default function ConteudoPage() {
       <style jsx>{`
         .conteudo-screen {
           min-height: 100vh;
-          background: var(--bg-deep);
+          background: var(--bg);
           color: var(--text);
         }
 
         .conteudo-shell {
+          min-height: 100vh;
           max-width: 920px;
           margin: 0 auto;
-          padding: 20px 14px calc(114px + env(safe-area-inset-bottom));
+          background: var(--bg);
+          padding: 20px 14px calc(120px + env(safe-area-inset-bottom));
         }
 
         .conteudo-header {
@@ -101,20 +103,22 @@ export default function ConteudoPage() {
 
         h1 {
           margin: 4px 0 4px;
-          font-size: 28px;
+          font-size: 22px;
+          font-family: var(--font-body);
+          font-weight: 900;
           line-height: 1.1;
         }
 
         p {
           margin: 0;
-          color: var(--text-2);
-          font-size: 14px;
+          color: var(--muted);
+          font-size: 13px;
         }
 
         .refresh-btn {
-          border: 1px solid var(--border-2);
+          border: 1px solid var(--border);
           border-radius: var(--radius-md);
-          background: var(--bg-surface);
+          background: var(--bg2);
           color: var(--text);
           font-size: 13px;
           font-weight: 700;
@@ -133,25 +137,25 @@ export default function ConteudoPage() {
         }
 
         .loading-inline {
-          border: 1px solid var(--border-2);
+          border: 1px solid var(--border);
           border-radius: var(--radius-md);
-          background: var(--bg-card);
+          background: var(--bg2);
           padding: 10px 12px;
           color: var(--text-2);
           font-size: 13px;
         }
 
         .error-inline {
-          border: 1px solid rgba(255, 90, 90, 0.28);
+          border: 1px solid color-mix(in srgb, var(--red) 28%, transparent);
           border-radius: 12px;
-          background: rgba(255, 90, 90, 0.08);
+          background: color-mix(in srgb, var(--red) 8%, transparent);
           padding: 10px 12px;
-          color: #ff7f7f;
+          color: var(--red);
           font-size: 13px;
         }
 
         .warning-inline {
-          border: 1px solid rgba(255, 215, 0, 0.32);
+          border: 1px solid color-mix(in srgb, var(--gold) 32%, transparent);
           border-radius: var(--radius-md);
           background: var(--gold-dim);
           padding: 10px 12px;
@@ -174,7 +178,7 @@ export default function ConteudoPage() {
           }
 
           h1 {
-            font-size: 26px;
+            font-size: 22px;
           }
         }
       `}</style>

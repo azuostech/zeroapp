@@ -32,6 +32,16 @@ function normalizeCategory(value) {
     .toLowerCase();
 }
 
+function normalizeShareFlag(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'sim') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === 'nao' || normalized === 'não') return false;
+  }
+  return false;
+}
+
 function resolveStreakAward(streak) {
   if (streak === 30) {
     return {
@@ -133,6 +143,7 @@ export async function POST(request) {
 
     const descricao = normalizeText(body?.descricao);
     const categoria = normalizeCategory(body?.categoria);
+    const shareInFeed = normalizeShareFlag(body?.share_in_feed);
 
     if (!descricao) {
       return NextResponse.json({ error: 'Descrição é obrigatória' }, { status: 422 });
@@ -165,13 +176,19 @@ export async function POST(request) {
       streak = 1;
     }
 
-    if (streak === 7 || streak === 30) {
+    if (shareInFeed) {
+      const isStreakMilestone = streak === 7 || streak === 30;
       await publishFeedEvent(supabase, {
         userId: context.targetUserId,
-        eventType: `gratitude_streak_${streak}`,
-        title: `${streak} dias seguidos de gratidao! 🔥`,
-        body: null,
-        metadata: { streak }
+        eventType: isStreakMilestone ? `gratitude_streak_${streak}` : 'gratitude_registered',
+        title: isStreakMilestone ? `${streak} dias seguidos de gratidao! 🔥` : 'Registrou nova gratidão 🌸',
+        body: isStreakMilestone ? null : entry.descricao,
+        metadata: {
+          entry_id: entry.id,
+          categoria,
+          streak,
+          shared_by_user: true
+        }
       });
     }
 
@@ -239,6 +256,7 @@ export async function POST(request) {
       {
         entry,
         stats: { streak },
+        shared_to_feed: shareInFeed,
         coins_awarded: coinsAwarded,
         balance,
         award_warning: awardWarning

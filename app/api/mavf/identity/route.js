@@ -9,6 +9,16 @@ function normalizeText(value) {
   return String(value || '').trim();
 }
 
+function normalizeShareFlag(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'sim') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === 'nao' || normalized === 'não') return false;
+  }
+  return false;
+}
+
 function resolveDbErrorMessage(error, fallbackMessage) {
   const code = String(error?.code || '').trim();
 
@@ -79,6 +89,7 @@ export async function POST(request) {
     const declaracao = normalizeText(body?.declaracao);
     const contexto = normalizeText(body?.contexto);
     const encontroRef = normalizeText(body?.encontro_ref);
+    const shareInFeed = normalizeShareFlag(body?.share_in_feed);
 
     if (!declaracao) {
       return NextResponse.json({ error: 'Declaração é obrigatória' }, { status: 422 });
@@ -103,16 +114,19 @@ export async function POST(request) {
       return NextResponse.json({ error: resolveDbErrorMessage(error, 'Erro ao registrar identidade') }, { status: 500 });
     }
 
-    await publishFeedEvent(supabase, {
-      userId: context.targetUserId,
-      eventType: 'identity_registered',
-      title: 'Registrou nova declaracao de identidade 💎',
-      body: declaration.declaracao,
-      metadata: {
-        declaration_id: declaration.id,
-        encontro_ref: declaration.encontro_ref || null
-      }
-    });
+    if (shareInFeed) {
+      await publishFeedEvent(supabase, {
+        userId: context.targetUserId,
+        eventType: 'identity_registered',
+        title: 'Registrou nova declaracao de identidade 💎',
+        body: declaration.declaracao,
+        metadata: {
+          declaration_id: declaration.id,
+          encontro_ref: declaration.encontro_ref || null,
+          shared_by_user: true
+        }
+      });
+    }
 
     let awardWarning = null;
     let coinsAwarded = {
@@ -172,6 +186,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         declaration,
+        shared_to_feed: shareInFeed,
         coins_awarded: coinsAwarded,
         balance,
         award_warning: awardWarning

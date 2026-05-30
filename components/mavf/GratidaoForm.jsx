@@ -14,6 +14,7 @@ const CATEGORIES = [
 export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak = 0 }) {
   const [descricao, setDescricao] = useState('');
   const [categoria, setCategoria] = useState('financeiro');
+  const [shareInFeed, setShareInFeed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const canSubmit = descricao.trim().length > 0 && !isSaving;
@@ -33,7 +34,8 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
       setIsSaving(true);
       const payload = await onSave?.({
         descricao: descricao.trim(),
-        categoria
+        categoria,
+        share_in_feed: shareInFeed
       });
 
       if (payload?.coins_awarded?.amount > 0) {
@@ -107,6 +109,16 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         {currentStreak > 1 ? <div className="streak">🔥 {currentStreak} dias seguidos</div> : null}
         {bonusPreview ? <div className="bonus">{bonusPreview}</div> : null}
 
+        <label className="share-toggle">
+          <input
+            type="checkbox"
+            checked={shareInFeed}
+            onChange={(event) => setShareInFeed(event.target.checked)}
+            disabled={isSaving}
+          />
+          <span>Compartilhar esta gratidão no feed da comunidade</span>
+        </label>
+
         <button type="submit" className="submit-btn btn-primary" disabled={!canSubmit}>
           {isSaving ? 'Registrando...' : 'Registrar Gratidão'}
         </button>
@@ -117,7 +129,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
           position: fixed;
           inset: 0;
           z-index: 300;
-          background: rgba(8, 5, 7, 0.72);
+          background: color-mix(in srgb, var(--bg) 76%, transparent);
           display: flex;
           align-items: flex-end;
           justify-content: center;
@@ -128,7 +140,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
           width: 100%;
           max-width: 560px;
           background: var(--bg-card);
-          border: 1px solid rgba(251, 113, 133, 0.32);
+          border: 1px solid color-mix(in srgb, var(--rose) 32%, transparent);
           border-radius: var(--radius-lg);
           padding: 14px;
           box-shadow: var(--shadow-lg);
@@ -152,7 +164,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
           width: 30px;
           height: 30px;
           border-radius: var(--radius-sm);
-          border: 1px solid rgba(251, 113, 133, 0.28);
+          border: 1px solid color-mix(in srgb, var(--rose) 28%, transparent);
           background: color-mix(in srgb, var(--rose-dim) 35%, var(--bg-surface));
           color: var(--text-2);
           font-size: 18px;
@@ -171,7 +183,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         }
 
         .textarea:focus {
-          border-color: rgba(251, 113, 133, 0.7);
+          border-color: var(--rose);
           box-shadow: 0 0 0 3px var(--rose-dim);
         }
 
@@ -192,7 +204,7 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
         }
 
         .chip.active {
-          border-color: rgba(251, 113, 133, 0.7);
+          border-color: var(--rose);
           background: var(--rose-dim);
           color: var(--rose);
         }
@@ -214,9 +226,25 @@ export default function GratidaoForm({ onSave, onClose, onSuccess, currentStreak
           width: 100%;
           padding: 12px;
           background: var(--rose);
-          border-color: rgba(251, 113, 133, 0.6);
-          color: #2b1118;
+          border-color: color-mix(in srgb, var(--rose) 60%, transparent);
+          color: var(--bg);
           font-size: 14px;
+        }
+
+        .share-toggle {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 2px;
+          color: var(--text-2);
+          font-size: 12px;
+          line-height: 1.4;
+          cursor: pointer;
+        }
+
+        .share-toggle input {
+          margin-top: 2px;
+          accent-color: var(--rose);
         }
 
         .submit-btn:disabled {

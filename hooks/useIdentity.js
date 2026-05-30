@@ -69,7 +69,7 @@ export function useIdentity(targetUserId = null) {
   }, [fetchData]);
 
   const addDeclaration = useCallback(
-    async ({ declaracao, contexto, encontro_ref }) => {
+    async ({ declaracao, contexto, encontro_ref, share_in_feed = false }) => {
       const res = await fetch('/api/mavf/identity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +77,7 @@ export function useIdentity(targetUserId = null) {
           declaracao,
           contexto,
           encontro_ref,
+          share_in_feed: Boolean(share_in_feed),
           ...(targetUserId ? { user_id: targetUserId } : {})
         })
       });

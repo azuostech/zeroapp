@@ -32,6 +32,16 @@ function normalizeSize(value) {
     .toLowerCase();
 }
 
+function normalizeShareFlag(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'sim') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === 'nao' || normalized === 'não') return false;
+  }
+  return false;
+}
+
 function resolveCoinsAward(size) {
   const isLarge = size === 'grande';
   const amount = isLarge ? 20 : 10;
@@ -111,6 +121,7 @@ export async function POST(request) {
 
     const descricao = normalizeDescription(body?.descricao);
     const tamanho = normalizeSize(body?.tamanho);
+    const shareInFeed = normalizeShareFlag(body?.share_in_feed);
 
     if (!descricao) {
       return NextResponse.json({ error: 'Descrição é obrigatória' }, { status: 422 });
@@ -134,13 +145,14 @@ export async function POST(request) {
       return NextResponse.json({ error: resolveDbErrorMessage(error, 'Erro ao registrar ganho') }, { status: 500 });
     }
 
-    if (tamanho === 'grande') {
+    if (shareInFeed) {
+      const isLargeGain = tamanho === 'grande';
       await publishFeedEvent(supabase, {
         userId: context.targetUserId,
-        eventType: 'gain_grande',
-        title: 'Registrou um grande ganho! ⚡',
+        eventType: isLargeGain ? 'gain_grande' : 'gain_registered',
+        title: isLargeGain ? 'Registrou um grande ganho! ⚡' : 'Registrou novo ganho ⚡',
         body: gain.descricao,
-        metadata: { gain_id: gain.id }
+        metadata: { gain_id: gain.id, tamanho, shared_by_user: true }
       });
     }
 
@@ -207,6 +219,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         gain,
+        shared_to_feed: shareInFeed,
         coins_awarded: coinsAwarded,
         balance,
         award_warning: awardWarning

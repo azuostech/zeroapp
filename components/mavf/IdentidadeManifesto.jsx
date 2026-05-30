@@ -59,9 +59,9 @@ export default function IdentidadeManifesto({ declarations = [] }) {
 
       <style jsx>{`
         .manifest {
-          border: 1px solid rgba(179, 157, 219, 0.5);
+          border: 1px solid color-mix(in srgb, var(--purple) 50%, transparent);
           border-radius: var(--radius-lg);
-          background: var(--purple-dim);
+          background: color-mix(in srgb, var(--purple) 6%, transparent);
           padding: 14px;
         }
 
@@ -84,7 +84,7 @@ export default function IdentidadeManifesto({ declarations = [] }) {
         }
 
         .manifest-item {
-          border: 1px solid rgba(179, 157, 219, 0.35);
+          border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
           border-radius: var(--radius-sm);
           background: color-mix(in srgb, var(--bg-surface) 84%, transparent);
           padding: 10px;
@@ -92,8 +92,8 @@ export default function IdentidadeManifesto({ declarations = [] }) {
 
         .manifest-text {
           margin: 0;
-          color: var(--text);
-          font-family: var(--font-display);
+          color: var(--purple);
+          font-family: var(--font-body);
           font-weight: 700;
           line-height: 1.4;
         }

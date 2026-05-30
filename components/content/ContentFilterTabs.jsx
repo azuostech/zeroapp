@@ -39,15 +39,19 @@ export default function ContentFilterTabs({ active = 'all', onChange }) {
           font-size: 12px;
           font-weight: 700;
           padding: 8px 12px;
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          background: var(--bg3);
+          color: var(--muted);
           white-space: nowrap;
           cursor: pointer;
           transition: var(--transition);
         }
 
         .tab-btn.active {
-          border-color: var(--green-mid);
-          color: var(--green);
-          background: var(--green-dim);
+          border-color: transparent;
+          color: var(--bg);
+          background: var(--green);
         }
       `}</style>
     </div>

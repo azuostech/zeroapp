@@ -37,7 +37,7 @@ export default function ProgressSlider({ value, onChange, onSave, onCancel, savi
           width: 100%;
           height: 8px;
           border-radius: 4px;
-          background: #333;
+          background: var(--border);
           -webkit-appearance: none;
           appearance: none;
           outline: none;
@@ -49,9 +49,9 @@ export default function ProgressSlider({ value, onChange, onSave, onCancel, savi
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #00c853;
+          background: var(--green);
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0, 200, 83, 0.4);
+          box-shadow: 0 2px 8px color-mix(in srgb, var(--green) 40%, transparent);
         }
 
         .progress-slider::-moz-range-thumb {
@@ -59,7 +59,7 @@ export default function ProgressSlider({ value, onChange, onSave, onCancel, savi
           height: 20px;
           border: none;
           border-radius: 50%;
-          background: #00c853;
+          background: var(--green);
           cursor: pointer;
         }
 
@@ -67,7 +67,7 @@ export default function ProgressSlider({ value, onChange, onSave, onCancel, savi
           display: flex;
           justify-content: space-between;
           margin-top: 5px;
-          color: #666;
+          color: var(--muted-dark);
           font-size: 10px;
         }
 
@@ -94,19 +94,19 @@ export default function ProgressSlider({ value, onChange, onSave, onCancel, savi
 
         .slider-btn-cancel {
           background: transparent;
-          color: #aaa;
-          border: 1px solid #333;
+          color: var(--text-2);
+          border: 1px solid var(--border);
         }
 
         .slider-btn-cancel:hover:not(:disabled) {
-          border-color: #555;
-          color: #ddd;
+          border-color: var(--border-2);
+          color: var(--text);
         }
 
         .slider-btn-save {
-          background: #00c853;
-          color: #09120c;
-          border: 1px solid #00c853;
+          background: var(--green);
+          color: var(--bg);
+          border: 1px solid var(--green);
         }
 
         .slider-btn-save:hover:not(:disabled) {

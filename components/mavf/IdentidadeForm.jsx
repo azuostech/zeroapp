@@ -7,6 +7,7 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
   const [declaracao, setDeclaracao] = useState('');
   const [contexto, setContexto] = useState('');
   const [encontro, setEncontro] = useState(encontroRef || '');
+  const [shareInFeed, setShareInFeed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const baseText = useMemo(() => declaracao.trim(), [declaracao]);
@@ -22,7 +23,8 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
       const payload = await onSave?.({
         declaracao: baseText,
         contexto: contexto.trim(),
-        encontro_ref: encontro.trim()
+        encontro_ref: encontro.trim(),
+        share_in_feed: shareInFeed
       });
 
       if (payload?.coins_awarded?.amount > 0) {
@@ -107,6 +109,16 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
           maxLength={60}
         />
 
+        <label className="share-toggle">
+          <input
+            type="checkbox"
+            checked={shareInFeed}
+            onChange={(event) => setShareInFeed(event.target.checked)}
+            disabled={isSaving}
+          />
+          <span>Compartilhar esta declaração no feed da comunidade</span>
+        </label>
+
         <button type="submit" className="submit-btn btn-primary" disabled={!canSubmit}>
           {isSaving ? 'Registrando...' : 'Declarar Minha Identidade'}
         </button>
@@ -117,7 +129,7 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
           position: fixed;
           inset: 0;
           z-index: 300;
-          background: rgba(5, 5, 10, 0.76);
+          background: color-mix(in srgb, var(--bg) 76%, transparent);
           display: flex;
           align-items: flex-end;
           justify-content: center;
@@ -128,7 +140,7 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
           width: 100%;
           max-width: 580px;
           background: var(--bg-card);
-          border: 1px solid rgba(179, 157, 219, 0.38);
+          border: 1px solid color-mix(in srgb, var(--purple) 38%, transparent);
           border-radius: var(--radius-lg);
           padding: 14px;
           box-shadow: var(--shadow-lg);
@@ -152,7 +164,7 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
           width: 30px;
           height: 30px;
           border-radius: var(--radius-sm);
-          border: 1px solid rgba(179, 157, 219, 0.38);
+          border: 1px solid color-mix(in srgb, var(--purple) 38%, transparent);
           background: color-mix(in srgb, var(--purple-dim) 30%, var(--bg-surface));
           color: var(--text-2);
           font-size: 18px;
@@ -182,7 +194,7 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
 
         .textarea:focus,
         .input:focus {
-          border-color: rgba(179, 157, 219, 0.72);
+          border-color: var(--purple);
           box-shadow: 0 0 0 3px var(--purple-dim);
         }
 
@@ -197,9 +209,9 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
         .preview {
           margin-top: 10px;
           margin-bottom: 8px;
-          border: 1px solid rgba(179, 157, 219, 0.45);
+          border: 1px solid color-mix(in srgb, var(--purple) 45%, transparent);
           border-radius: var(--radius-md);
-          background: var(--purple-dim);
+          background: color-mix(in srgb, var(--purple) 12%, transparent);
           padding: 10px;
           display: flex;
           flex-direction: column;
@@ -226,9 +238,25 @@ export default function IdentidadeForm({ onSave, onClose, onSuccess, encontroRef
           margin-top: 12px;
           padding: 12px;
           background: var(--purple);
-          border-color: rgba(179, 157, 219, 0.55);
-          color: #201241;
+          border-color: color-mix(in srgb, var(--purple) 55%, transparent);
+          color: var(--bg);
           font-size: 14px;
+        }
+
+        .share-toggle {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          margin-top: 10px;
+          color: var(--text-2);
+          font-size: 12px;
+          line-height: 1.4;
+          cursor: pointer;
+        }
+
+        .share-toggle input {
+          margin-top: 2px;
+          accent-color: var(--purple);
         }
 
         .submit-btn:disabled {

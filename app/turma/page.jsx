@@ -97,14 +97,16 @@ export default function TurmaPage() {
       <style jsx>{`
         .turma-screen {
           min-height: 100vh;
-          background: var(--bg-deep);
+          background: var(--bg);
           color: var(--text);
         }
 
         .turma-shell {
+          min-height: 100vh;
           max-width: 920px;
           margin: 0 auto;
-          padding: 20px 14px calc(114px + env(safe-area-inset-bottom));
+          background: var(--bg);
+          padding: 20px 14px calc(120px + env(safe-area-inset-bottom));
         }
 
         .turma-header {
@@ -126,31 +128,33 @@ export default function TurmaPage() {
 
         h1 {
           margin: 4px 0 4px;
-          font-size: 28px;
+          font-size: 22px;
+          font-family: var(--font-body);
+          font-weight: 900;
           line-height: 1.1;
         }
 
         p {
           margin: 0;
-          color: var(--text-2);
-          font-size: 14px;
+          color: var(--muted);
+          font-size: 13px;
         }
 
         .context-label {
           display: inline-block;
           margin-top: 6px;
-          color: var(--text-3);
-          font-size: 11px;
+          color: var(--muted);
+          font-size: 10px;
           text-transform: uppercase;
-          letter-spacing: 0.7px;
+          letter-spacing: 1px;
           font-weight: 700;
         }
 
         .refresh-btn,
         .load-more-btn {
-          border: 1px solid var(--border-2);
+          border: 1px solid var(--border);
           border-radius: var(--radius-md);
-          background: var(--bg-surface);
+          background: var(--bg2);
           color: var(--text);
           font-size: 13px;
           font-weight: 700;
@@ -170,9 +174,9 @@ export default function TurmaPage() {
         }
 
         .loading-inline {
-          border: 1px solid var(--border-2);
+          border: 1px solid var(--border);
           border-radius: var(--radius-md);
-          background: var(--bg-card);
+          background: var(--bg2);
           padding: 10px 12px;
           color: var(--text-2);
           font-size: 13px;
@@ -188,7 +192,7 @@ export default function TurmaPage() {
           }
 
           h1 {
-            font-size: 26px;
+            font-size: 22px;
           }
         }
       `}</style>

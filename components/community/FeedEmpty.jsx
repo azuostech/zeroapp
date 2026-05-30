@@ -12,11 +12,11 @@ export default function FeedEmpty({
 
       <style jsx>{`
         .feed-empty {
-          border: 1px dashed var(--turma-border, #2f363d);
+          border: 1px dashed var(--border);
           border-radius: 16px;
           padding: 24px 16px;
           text-align: center;
-          background: color-mix(in srgb, var(--turma-card, #141619) 72%, transparent);
+          background: color-mix(in srgb, var(--bg2) 72%, transparent);
         }
 
         .emoji {
@@ -31,7 +31,7 @@ export default function FeedEmpty({
 
         p {
           margin: 0;
-          color: var(--turma-muted, #98a0a8);
+          color: var(--muted);
           font-size: 14px;
         }
       `}</style>

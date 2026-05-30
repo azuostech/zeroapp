@@ -4,6 +4,27 @@
  */
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 
+function resolveDisplayName(profile) {
+  const fullName = String(profile?.full_name || '').trim();
+  if (fullName) return fullName;
+
+  const email = String(profile?.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return 'Mentorado';
+
+  const localPart = email
+    .split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .trim();
+
+  if (!localPart) return 'Mentorado';
+
+  return localPart
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
+}
+
 export async function publishFeedEvent(
   supabase,
   {
@@ -11,10 +32,13 @@ export async function publishFeedEvent(
     eventType,
     title,
     body = null,
-    metadata = {}
+    metadata = {},
+    shareInFeed = true
   }
 ) {
   try {
+    if (!shareInFeed) return;
+
     let writer = supabase;
 
     try {
@@ -23,17 +47,28 @@ export async function publishFeedEvent(
       writer = supabase;
     }
 
-    const { data: profile, error: profileError } = await writer.from('profiles').select('turma').eq('id', userId).maybeSingle();
+    const { data: profile, error: profileError } = await writer
+      .from('profiles')
+      .select('turma,full_name,email,tier')
+      .eq('id', userId)
+      .maybeSingle();
     if (profileError) {
       throw profileError;
     }
+
+    const authorName = resolveDisplayName(profile);
+    const authorTier = String(profile?.tier || 'DESPERTAR').toUpperCase();
 
     const payload = {
       user_id: userId,
       event_type: eventType,
       title,
       body,
-      metadata,
+      metadata: {
+        ...(metadata && typeof metadata === 'object' ? metadata : {}),
+        author_name: authorName,
+        author_tier: authorTier
+      },
       is_visible: true,
       turma: profile?.turma || null
     };

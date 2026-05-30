@@ -150,9 +150,9 @@ export default function AppHeader() {
             {shortName}
           </span>
 
-          <div className={`user-avatar avatar ${tierClass}`} title={displayName} aria-label={`Avatar de ${displayName}`}>
+          <Link href="/perfil" className={`user-avatar avatar ${tierClass}`} title={displayName} aria-label={`Abrir perfil de ${displayName}`}>
             {avatarInitial}
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -257,6 +257,17 @@ export default function AppHeader() {
           font-weight: 700;
           color: var(--text);
           text-transform: uppercase;
+          text-decoration: none;
+          transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .user-avatar:hover {
+          transform: translateY(-1px);
+        }
+
+        .user-avatar:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
         }
 
         .tier-despertar {

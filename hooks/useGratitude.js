@@ -66,13 +66,14 @@ export function useGratitude(targetUserId = null) {
   }, [fetchData]);
 
   const addEntry = useCallback(
-    async ({ descricao, categoria }) => {
+    async ({ descricao, categoria, share_in_feed = false }) => {
       const res = await fetch('/api/mavf/gratitude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           descricao,
           categoria,
+          share_in_feed: Boolean(share_in_feed),
           ...(targetUserId ? { user_id: targetUserId } : {})
         })
       });

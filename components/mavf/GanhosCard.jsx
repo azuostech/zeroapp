@@ -115,7 +115,8 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         .head-title {
           color: var(--green);
           font-size: 17px;
-          font-weight: 800;
+          font-family: var(--font-body);
+          font-weight: 700;
           margin-bottom: 4px;
           filter: drop-shadow(0 3px 8px var(--green-glow));
         }
@@ -160,7 +161,7 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
         .primary-btn {
           background: var(--green);
-          color: #06220f;
+          color: var(--bg);
         }
 
         .ghost-btn {
@@ -207,6 +208,8 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         .empty h4 {
           margin: 0 0 6px;
           color: var(--text);
+          font-family: var(--font-body);
+          font-weight: 700;
         }
 
         .empty p {

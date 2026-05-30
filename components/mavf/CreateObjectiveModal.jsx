@@ -132,7 +132,7 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
           position: fixed;
           inset: 0;
           z-index: 700;
-          background: rgba(0, 0, 0, 0.8);
+          background: color-mix(in srgb, var(--bg) 82%, transparent);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -142,8 +142,8 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
         .objective-modal-content {
           width: 100%;
           max-width: 560px;
-          background: #1a1a1a;
-          border: 1px solid #333;
+          background: var(--bg2);
+          border: 1px solid var(--border);
           border-radius: 14px;
           overflow: hidden;
         }
@@ -153,27 +153,27 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
           align-items: center;
           justify-content: space-between;
           padding: 16px 18px;
-          border-bottom: 1px solid #333;
+          border-bottom: 1px solid var(--border);
         }
 
         .objective-modal-header h3 {
           margin: 0;
           font-size: 18px;
-          font-family: 'Space Mono', monospace;
+          font-family: var(--font-mono);
         }
 
         .close-btn {
           border: none;
           background: transparent;
-          color: #aaa;
+          color: var(--text-2);
           cursor: pointer;
           border-radius: 6px;
           padding: 4px 8px;
         }
 
         .close-btn:hover:enabled {
-          background: #2a2a2a;
-          color: #fff;
+          background: var(--bg3);
+          color: var(--text);
         }
 
         .objective-form {
@@ -187,7 +187,7 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
         .form-group label {
           display: block;
           font-size: 12px;
-          color: #aaa;
+          color: var(--text-2);
           margin-bottom: 6px;
           font-weight: 600;
         }
@@ -196,9 +196,9 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
         .form-group input,
         .form-group textarea {
           width: 100%;
-          border: 1px solid #333;
-          background: #111;
-          color: #f0f0f0;
+          border: 1px solid var(--border);
+          background: var(--bg);
+          color: var(--text);
           border-radius: 8px;
           padding: 10px 12px;
           outline: none;
@@ -207,20 +207,20 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
         .form-group select:focus,
         .form-group input:focus,
         .form-group textarea:focus {
-          border-color: rgba(0, 200, 83, 0.55);
+          border-color: color-mix(in srgb, var(--green) 55%, transparent);
         }
 
         .form-group small {
           display: block;
           margin-top: 5px;
           font-size: 11px;
-          color: #777;
+          color: var(--muted-dark);
         }
 
         .error-box {
-          border: 1px solid rgba(255, 82, 82, 0.4);
-          background: rgba(255, 82, 82, 0.1);
-          color: #ff7b7b;
+          border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+          background: color-mix(in srgb, var(--red) 10%, transparent);
+          color: var(--red);
           border-radius: 8px;
           padding: 10px 12px;
           font-size: 12px;
@@ -249,20 +249,20 @@ export default function CreateObjectiveModal({ isOpen, onClose, onCreated, sessi
         }
 
         .btn-cancel {
-          border: 1px solid #333;
+          border: 1px solid var(--border);
           background: transparent;
-          color: #bbb;
+          color: var(--text-2);
         }
 
         .btn-cancel:hover:enabled {
-          border-color: #555;
-          color: #fff;
+          border-color: var(--border-2);
+          color: var(--text);
         }
 
         .btn-save {
-          border: 1px solid #00c853;
-          background: #00c853;
-          color: #08150e;
+          border: 1px solid var(--green);
+          background: var(--green);
+          color: var(--bg);
         }
 
         .btn-save:hover:enabled {

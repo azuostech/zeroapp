@@ -26,8 +26,8 @@ export default function MAVFTabs({ activeTab, onChange }) {
 
         .mavf-tabs-bar {
           display: flex;
-          background: #111;
-          border: 1px solid #333;
+          background: var(--bg2);
+          border: 1px solid var(--border);
           border-radius: 12px;
           overflow: hidden;
         }
@@ -36,7 +36,7 @@ export default function MAVFTabs({ activeTab, onChange }) {
           flex: 1;
           border: none;
           background: transparent;
-          color: #888;
+          color: var(--muted);
           padding: 13px 10px;
           font-size: 13px;
           font-weight: 600;
@@ -46,13 +46,13 @@ export default function MAVFTabs({ activeTab, onChange }) {
         }
 
         .mavf-tab:hover {
-          color: #bbb;
+          color: var(--text-2);
         }
 
         .mavf-tab.active {
-          color: #00c853;
-          background: rgba(0, 200, 83, 0.08);
-          border-bottom-color: #00c853;
+          color: var(--green);
+          background: color-mix(in srgb, var(--green) 10%, transparent);
+          border-bottom-color: var(--green);
         }
       `}</style>
     </div>

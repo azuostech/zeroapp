@@ -17,16 +17,16 @@ export default function MAVFAppShell({ children, activeTab = 'mavf', hideNavigat
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          background: #0a0a0a;
-          color: #ffffff;
+          background: var(--bg);
+          color: var(--text);
           color-scheme: dark;
         }
 
         .mavf-app-content {
           flex: 1;
           width: 100%;
-          padding: 18px 14px calc(90px + env(safe-area-inset-bottom));
-          background: #0a0a0a;
+          padding: 18px 14px calc(120px + env(safe-area-inset-bottom));
+          background: var(--bg);
         }
 
         @media (min-width: 768px) {

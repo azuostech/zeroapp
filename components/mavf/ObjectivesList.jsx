@@ -136,8 +136,8 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
 
       <style jsx>{`
         .objectives-wrap {
-          background: #222222;
-          border: 1px solid #333333;
+          background: var(--bg2);
+          border: 1px solid var(--border);
           border-radius: 12px;
           padding: 16px;
         }
@@ -146,8 +146,8 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
           display: flex;
           gap: 12px;
           align-items: flex-start;
-          border: 1px solid rgba(0, 200, 83, 0.35);
-          background: rgba(0, 200, 83, 0.1);
+          border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
+          background: color-mix(in srgb, var(--green) 10%, transparent);
           border-radius: 12px;
           padding: 12px;
           margin-bottom: 16px;
@@ -161,13 +161,13 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
         .info-title {
           font-size: 13px;
           font-weight: 700;
-          color: #00c853;
+          color: var(--green);
           margin-bottom: 4px;
         }
 
         .info-text {
           font-size: 12px;
-          color: #bbb;
+          color: var(--text-2);
           line-height: 1.45;
         }
 
@@ -182,19 +182,19 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
         .header-row h2 {
           margin: 0;
           font-size: 20px;
-          font-family: 'Space Mono', monospace;
+          font-family: var(--font-mono);
         }
 
         .header-row p {
           margin: 4px 0 0;
           font-size: 12px;
-          color: #888;
+          color: var(--muted);
         }
 
         .add-btn {
-          border: 1px solid #00c853;
-          background: #00c853;
-          color: #08130d;
+          border: 1px solid var(--green);
+          background: var(--green);
+          color: var(--bg);
           border-radius: 8px;
           font-size: 13px;
           font-weight: 700;
@@ -215,34 +215,34 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
         }
 
         .feedback.success {
-          border: 1px solid rgba(0, 200, 83, 0.4);
-          background: rgba(0, 200, 83, 0.12);
-          color: #8bebb2;
+          border: 1px solid color-mix(in srgb, var(--green) 40%, transparent);
+          background: var(--green-dim);
+          color: var(--green);
         }
 
         .feedback.error {
-          border: 1px solid rgba(255, 82, 82, 0.4);
-          background: rgba(255, 82, 82, 0.1);
-          color: #ff8f8f;
+          border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+          background: color-mix(in srgb, var(--red) 10%, transparent);
+          color: var(--red);
         }
 
         .feedback.info {
-          border: 1px solid rgba(68, 136, 255, 0.35);
-          background: rgba(68, 136, 255, 0.1);
-          color: #9ec2ff;
+          border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent);
+          background: var(--blue-dim);
+          color: var(--blue);
         }
 
         .loading-state,
         .empty-state {
-          border: 1px solid #333;
+          border: 1px solid var(--border);
           border-radius: 12px;
-          background: #1a1a1a;
+          background: var(--bg2);
           padding: 28px 18px;
           text-align: center;
         }
 
         .loading-state {
-          color: #888;
+          color: var(--muted);
           font-size: 13px;
         }
 
@@ -259,7 +259,7 @@ export default function ObjectivesList({ sessionId = null, targetUserId = null, 
 
         .empty-state p {
           margin: 0 0 14px;
-          color: #999;
+          color: var(--text-3);
           font-size: 13px;
         }
 

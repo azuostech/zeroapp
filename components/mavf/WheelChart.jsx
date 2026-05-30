@@ -31,8 +31,13 @@ export default function WheelChart({ sessions = [], responsesMap = {} }) {
       const center = size / 2;
       const maxRadius = Math.max(82, Math.min(size * 0.33, center - 58));
       const labelDistance = maxRadius + Math.max(30, size * 0.062);
+      const rootStyle = window.getComputedStyle(document.documentElement);
+      const ringColor = rootStyle.getPropertyValue('--bg3').trim() || 'currentColor';
+      const axisColor = rootStyle.getPropertyValue('--border').trim() || 'currentColor';
+      const emojiColor = rootStyle.getPropertyValue('--text-2').trim() || 'currentColor';
+      const labelColor = rootStyle.getPropertyValue('--muted').trim() || 'currentColor';
 
-      ctx.strokeStyle = '#2a2a2a';
+      ctx.strokeStyle = ringColor;
       ctx.lineWidth = 1;
       for (let step = 2; step <= 10; step += 2) {
         const ringRadius = (step / 10) * maxRadius;
@@ -52,7 +57,7 @@ export default function WheelChart({ sessions = [], responsesMap = {} }) {
         ctx.beginPath();
         ctx.moveTo(center, center);
         ctx.lineTo(x, y);
-        ctx.strokeStyle = '#3a3a3a';
+        ctx.strokeStyle = axisColor;
         ctx.lineWidth = 0.75;
         ctx.setLineDash([3, 3]);
         ctx.stroke();
@@ -72,11 +77,11 @@ export default function WheelChart({ sessions = [], responsesMap = {} }) {
 
         ctx.textAlign = labelAlign;
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#b0b0b0';
+        ctx.fillStyle = emojiColor;
         ctx.font = `${size < 380 ? 13 : 14}px Sora`;
         ctx.fillText(pillar.emoji, labelX, labelY - 10);
 
-        ctx.fillStyle = '#8e8e8e';
+        ctx.fillStyle = labelColor;
         ctx.font = `${size < 380 ? 9 : 10}px Sora`;
         ctx.fillText(pillar.label.toUpperCase(), labelX, labelY + 8);
       });

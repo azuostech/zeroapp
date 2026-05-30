@@ -112,7 +112,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .practice-card.expanded {
-          border-color: rgba(179, 157, 219, 0.62);
+          border-color: color-mix(in srgb, var(--purple) 62%, transparent);
           box-shadow: 0 0 0 1px var(--purple-dim) inset;
         }
 
@@ -133,7 +133,8 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         .head-title {
           color: var(--purple);
           font-size: 17px;
-          font-weight: 800;
+          font-family: var(--font-body);
+          font-weight: 700;
           margin-bottom: 4px;
         }
 
@@ -167,7 +168,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         .primary-btn,
         .ghost-btn {
           border-radius: var(--radius-md);
-          border: 1px solid rgba(179, 157, 219, 0.6);
+          border: 1px solid color-mix(in srgb, var(--purple) 60%, transparent);
           padding: 10px 12px;
           font-size: 13px;
           font-weight: 800;
@@ -176,7 +177,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .primary-btn {
           background: var(--purple);
-          color: #22144a;
+          color: var(--bg);
         }
 
         .ghost-btn {
@@ -194,9 +195,9 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .timeline {
-          border: 1px solid rgba(179, 157, 219, 0.35);
+          border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
           border-radius: var(--radius-md);
-          background: var(--purple-dim);
+          background: color-mix(in srgb, var(--purple) 12%, transparent);
           padding: 10px;
         }
 
@@ -219,7 +220,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .timeline li {
-          border: 1px solid rgba(179, 157, 219, 0.28);
+          border: 1px solid color-mix(in srgb, var(--purple) 28%, transparent);
           border-radius: var(--radius-sm);
           background: color-mix(in srgb, var(--bg-surface) 86%, transparent);
           padding: 10px;
@@ -236,8 +237,8 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .timeline-main strong {
           display: block;
-          color: var(--text);
-          font-family: var(--font-display);
+          color: var(--purple);
+          font-family: var(--font-body);
           font-weight: 700;
           font-size: 14px;
           line-height: 1.4;
@@ -257,7 +258,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .remove-btn {
-          border: 1px solid rgba(179, 157, 219, 0.35);
+          border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
           background: var(--bg-surface);
           color: var(--text-2);
           border-radius: 8px;

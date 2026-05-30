@@ -174,14 +174,16 @@ export default function JornadaPage() {
       <style jsx>{`
         .jornada-screen {
           min-height: 100vh;
-          background: var(--bg-deep);
+          background: var(--bg);
           color: var(--text);
         }
 
         .jornada-shell {
+          min-height: 100vh;
           max-width: 980px;
           margin: 0 auto;
-          padding: 20px 14px calc(116px + env(safe-area-inset-bottom));
+          background: var(--bg);
+          padding: 20px 14px calc(120px + env(safe-area-inset-bottom));
         }
 
         .jornada-header {
@@ -195,13 +197,15 @@ export default function JornadaPage() {
         h1 {
           margin: 0;
           font-size: 22px;
+          font-family: var(--font-body);
+          font-weight: 900;
           line-height: 1.1;
         }
 
         .jornada-header p {
-          margin: 6px 0 0;
-          color: var(--text-2);
-          font-size: 14px;
+          margin: 4px 0 0;
+          color: var(--muted);
+          font-size: 13px;
         }
 
         .btn-refresh,
@@ -218,10 +222,13 @@ export default function JornadaPage() {
         }
 
         .coins-strip {
-          border: 1px solid rgba(255, 213, 79, 0.22);
-          border-radius: var(--radius-lg);
-          background: var(--gold-dim);
-          padding: 13px;
+          border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent);
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--gold) 8%, transparent);
+          padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
           margin-bottom: 14px;
         }
 
@@ -233,19 +240,24 @@ export default function JornadaPage() {
         }
 
         .strip-balance {
-          color: var(--text-2);
+          color: color-mix(in srgb, var(--gold) 60%, var(--text));
           font-weight: 700;
           font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
 
         .strip-total {
           color: var(--gold);
-          font-size: 24px;
+          font-size: 26px;
+          font-weight: 700;
+          line-height: 1.1;
           font-family: var(--font-mono);
         }
 
         .strip-phase {
-          margin-top: 8px;
+          margin-top: 2px;
           display: flex;
           justify-content: space-between;
           gap: 8px;
@@ -254,8 +266,8 @@ export default function JornadaPage() {
         }
 
         .strip-phase small {
-          color: var(--text-3);
-          font-size: 10px;
+          color: var(--muted);
+          font-size: 11px;
           font-family: var(--font-mono);
         }
 
@@ -268,8 +280,8 @@ export default function JornadaPage() {
         }
 
         .feedback.error {
-          border-color: rgba(239, 68, 68, 0.45);
-          color: #e45a5a;
+          border-color: color-mix(in srgb, var(--red) 45%, transparent);
+          color: var(--red);
         }
 
         .timeline {
@@ -303,8 +315,8 @@ export default function JornadaPage() {
         }
 
         .fase-card.current {
-          border-color: rgba(255, 213, 79, 0.6);
-          box-shadow: 0 0 0 1px rgba(255, 213, 79, 0.28);
+          border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+          box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 28%, transparent);
         }
 
         .fase-card.done {
@@ -318,8 +330,8 @@ export default function JornadaPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: var(--bg-elevated);
-          border: 1px solid var(--border-2);
+          background: var(--bg3);
+          border: 1px solid var(--border);
           font-weight: 700;
           flex-shrink: 0;
           filter: grayscale(0);
@@ -332,7 +344,7 @@ export default function JornadaPage() {
         .fase-icon.done {
           background: var(--green);
           border-color: var(--green);
-          color: #05230f;
+          color: var(--bg);
         }
 
         .fase-icon.current {
@@ -344,18 +356,19 @@ export default function JornadaPage() {
         @keyframes pulseCurrent {
           0%,
           100% {
-            box-shadow: 0 0 0 0 rgba(255, 213, 79, 0.25);
+            box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 25%, transparent);
           }
           50% {
-            box-shadow: 0 0 0 7px rgba(255, 213, 79, 0);
+            box-shadow: 0 0 0 7px transparent;
           }
         }
 
         .fase-body h2 {
           margin: 0;
           font-size: 18px;
-          font-family: var(--font-display);
+          font-family: var(--font-body);
           font-weight: 700;
+          color: var(--text);
         }
 
         .fase-body p {
@@ -395,10 +408,26 @@ export default function JornadaPage() {
 
         .chip.on {
           color: var(--gold);
+          background: color-mix(in srgb, var(--gold) 10%, transparent);
+          border-color: color-mix(in srgb, var(--gold) 20%, transparent);
         }
 
         .chip.off {
-          color: var(--text-2);
+          color: var(--muted);
+          background: var(--bg3);
+          border-color: var(--border);
+        }
+
+        .fase-card.done .fase-body h2 {
+          color: var(--green);
+        }
+
+        .fase-card.current .fase-body h2 {
+          color: var(--gold);
+        }
+
+        .fase-card.locked .fase-body h2 {
+          color: var(--muted);
         }
 
         .premium-card,
@@ -425,7 +454,7 @@ export default function JornadaPage() {
 
         .btn-upgrade {
           display: inline-block;
-          border-color: rgba(255, 213, 79, 0.45);
+          border-color: color-mix(in srgb, var(--gold) 45%, transparent);
           background: var(--gold-dim);
           color: var(--gold);
         }
