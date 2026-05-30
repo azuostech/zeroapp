@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
+import FAB from '@/components/layout/FAB';
+import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { useJornada } from '@/hooks/useJornada';
 
 const UPGRADE_LINK = 'https://wa.me/';
@@ -26,6 +28,7 @@ export default function JornadaPage() {
   const { coinsAtual, coinsTotal, faseAtual, progressoPct, coinsParaProxima, proximaFase, transactions, fases, isLoading, error, refresh } =
     useJornada();
   const [tier, setTier] = useState('DESPERTAR');
+  const [isIAOpen, setIsIAOpen] = useState(false);
 
   useEffect(() => {
     ensureThemeAttribute();
@@ -63,8 +66,8 @@ export default function JornadaPage() {
       <main className="jornada-shell">
         <header className="jornada-header">
           <div>
-            <h1 className="text-display">Minha Jornada 🎯</h1>
-            <p>Desbloqueie recompensas conforme avança</p>
+            <h1 className="text-display">Conquistas 🏆</h1>
+            <p>Sua trilha de ZeroCoins e recompensas</p>
           </div>
           <button type="button" className="btn-refresh" onClick={refresh}>
             Atualizar
@@ -164,7 +167,9 @@ export default function JornadaPage() {
         </section>
       </main>
 
-      <BottomNav activeTab="jornada" />
+      <BottomNav />
+      <FAB onClick={() => setIsIAOpen(true)} />
+      <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
 
       <style jsx>{`
         .jornada-screen {

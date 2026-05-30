@@ -5,19 +5,21 @@ import { usePathname } from 'next/navigation';
 
 const TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
-  { id: 'mavf', href: '/mavf', icon: '📊', label: 'MAVF' },
-  { id: 'perfil', href: '/app#perfil', icon: '👤', label: 'Perfil' }
+  { id: 'jornada', href: '/mavf', icon: '🌱', label: 'Minha Jornada' },
+  { id: 'voce', href: '/perfil', icon: '👤', label: 'Você' }
 ];
 
 function getAutoActiveTab(pathname) {
-  if (pathname.startsWith('/mavf')) return 'mavf';
-  if (pathname.startsWith('/app')) return 'inicio';
+  if (pathname === '/app' || pathname === '/') return 'inicio';
+  if (pathname.startsWith('/mavf')) return 'jornada';
+  if (pathname.startsWith('/perfil')) return 'voce';
   return '';
 }
 
 export default function BottomNav({ activeTab = '' }) {
   const pathname = usePathname();
-  const current = activeTab || getAutoActiveTab(pathname || '');
+  const normalizedActiveTab = activeTab === 'mavf' ? 'jornada' : activeTab === 'perfil' ? 'voce' : activeTab;
+  const current = normalizedActiveTab || getAutoActiveTab(pathname || '');
 
   return (
     <nav className="bottom-nav" aria-label="Navegação principal do app">

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import FAB from '@/components/layout/FAB';
+import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import BlocoResumoStrip from '@/src/modules/finance/presentation/BlocoResumoStrip';
 import {
   percentualRealizado,
@@ -59,6 +61,7 @@ export default function ResumoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [data, setData] = useState({});
+  const [isIAOpen, setIsIAOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -241,6 +244,9 @@ export default function ResumoPage() {
           </section>
         </>
       ) : null}
+
+      <FAB onClick={() => setIsIAOpen(true)} />
+      <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
 
       <style jsx>{`
         .resumo-shell {

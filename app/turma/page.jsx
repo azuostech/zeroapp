@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
+import FAB from '@/components/layout/FAB';
+import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import FeedEventCard from '@/components/community/FeedEventCard';
 import CommunityStats from '@/components/community/CommunityStats';
 import DesafioCard from '@/components/community/DesafioCard';
@@ -12,6 +15,7 @@ import { useCommunityStats } from '@/hooks/useCommunityStats';
 import { useChallenge } from '@/hooks/useChallenge';
 
 export default function TurmaPage() {
+  const [isIAOpen, setIsIAOpen] = useState(false);
   const { events, turma, isLoading, hasMore, loadMore, react, refresh: refreshFeed } = useFeed();
   const { stats, isLoading: statsLoading } = useCommunityStats();
   const {
@@ -87,6 +91,8 @@ export default function TurmaPage() {
       </main>
 
       <BottomNav activeTab="inicio" />
+      <FAB onClick={() => setIsIAOpen(true)} />
+      <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
 
       <style jsx>{`
         .turma-screen {

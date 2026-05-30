@@ -12,6 +12,8 @@ import MAVFAppShell from '@/components/mavf/MAVFAppShell';
 import GanhosCard from '@/components/mavf/GanhosCard';
 import GratidaoCard from '@/components/mavf/GratidaoCard';
 import IdentidadeCard from '@/components/mavf/IdentidadeCard';
+import FAB from '@/components/layout/FAB';
+import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { useMavfSummary } from '@/hooks/useMavfSummary';
 
 function withUserQuery(path, userId) {
@@ -30,6 +32,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   const [lastCompletedSession, setLastCompletedSession] = useState(null);
   const [responsesBySession, setResponsesBySession] = useState({});
   const [progress, setProgress] = useState({ completed: 0, total: 11, percentage: 0, all_completed: false });
+  const [isIAOpen, setIsIAOpen] = useState(false);
   const adminMode = Boolean(adminViewUserId);
   const targetUserId = adminMode ? adminViewUserId : null;
   const { summary, isLoading: isSummaryLoading, error: summaryError, refresh: refreshSummary } = useMavfSummary(targetUserId);
@@ -109,35 +112,39 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
   if (loading) {
     return (
-      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-        <div className="max-w-5xl mx-auto">
-          <div className="min-h-[50vh] flex items-center justify-center text-[var(--text)]">
-            <div className="text-center">
-              <div className="text-4xl mb-3">⏳</div>
-              <p className="text-[var(--text-2)]">Carregando MAVF...</p>
+      <>
+        <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
+          <div className="max-w-5xl mx-auto">
+            <div className="min-h-[50vh] flex items-center justify-center text-[var(--text)]">
+              <div className="text-center">
+                <div className="text-4xl mb-3">⏳</div>
+                <p className="text-[var(--text-2)]">Carregando Minha Jornada...</p>
+              </div>
             </div>
           </div>
-        </div>
-      </MAVFAppShell>
+        </MAVFAppShell>
+        {!adminMode ? <FAB onClick={() => setIsIAOpen(true)} /> : null}
+        {!adminMode ? <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} /> : null}
+      </>
     );
   }
 
   if (accessDenied) {
     return (
-      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-        <div className="max-w-5xl mx-auto">
-          <MAVFPaywall currentTier={currentTier} />
-        </div>
-      </MAVFAppShell>
+      <>
+        <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
+          <div className="max-w-5xl mx-auto">
+            <MAVFPaywall currentTier={currentTier} />
+          </div>
+        </MAVFAppShell>
+        {!adminMode ? <FAB onClick={() => setIsIAOpen(true)} /> : null}
+        {!adminMode ? <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} /> : null}
+      </>
     );
   }
 
   const activeResponses = activeSession ? responsesBySession[activeSession.id] || [] : [];
-  const mapTitle = activeSession
-    ? `MAVF — ${activeSession.title}`
-    : lastCompletedSession
-      ? `MAVF — ${lastCompletedSession.title}`
-      : 'MAVF — Meu Mapa';
+  const mapTitle = 'Minha Jornada 🌱';
 
   let mapContent = null;
 
@@ -231,153 +238,82 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   }
 
   return (
-    <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-      <div className="max-w-5xl mx-auto text-[var(--text)]">
-        {adminMode ? (
-          <div className="mb-4 rounded-[10px] border border-[var(--blue)] bg-[var(--blue-dim)] px-4 py-3 text-sm">
-            <span className="font-semibold text-[var(--blue)]">Modo admin:</span>{' '}
-            {adminClientLabel || 'visualizando MAVF do cliente'}.
-            <Link href="/admin" className="ml-3 underline text-[var(--blue)]">
-              Voltar ao painel
-            </Link>
+    <>
+      <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
+        <div className="max-w-5xl mx-auto text-[var(--text)]">
+          {adminMode ? (
+            <div className="mb-4 rounded-[10px] border border-[var(--blue)] bg-[var(--blue-dim)] px-4 py-3 text-sm">
+              <span className="font-semibold text-[var(--blue)]">Modo admin:</span>{' '}
+              {adminClientLabel || 'visualizando MAVF do cliente'}.
+              <Link href="/admin" className="ml-3 underline text-[var(--blue)]">
+                Voltar ao painel
+              </Link>
+            </div>
+          ) : null}
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-display">{mapTitle}</h1>
+            <p className="text-[var(--text-2)]">Seus objetivos, práticas e evolução pessoal</p>
           </div>
-        ) : null}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-display">{mapTitle}</h1>
-          <p className="text-[var(--text-2)]">
-            {activeTab === 'mapa'
-              ? 'Responda com sinceridade e acompanhe sua evolução ao longo das sessões.'
-              : 'Transforme a autoavaliação em metas práticas e mensuráveis.'}
-          </p>
-        </div>
 
-        <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />
+          <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />
 
-        {activeTab === 'mapa' ? (
-          mapContent
-        ) : (
-          <ObjectivesList
-            sessionId={activeSession?.id || lastCompletedSession?.id || null}
-            targetUserId={targetUserId}
-            adminMode={adminMode}
-          />
-        )}
+          {activeTab === 'mapa' ? (
+            mapContent
+          ) : (
+            <ObjectivesList
+              sessionId={activeSession?.id || lastCompletedSession?.id || null}
+              targetUserId={targetUserId}
+              adminMode={adminMode}
+            />
+          )}
 
-        <div className="mt-10">
-          <div className="text-[11px] uppercase tracking-[1.2px] text-[var(--text-3)] mb-2">Práticas Diárias</div>
-          <h2 className="text-[22px] md:text-[26px] font-bold mb-2">Consistência que transforma</h2>
-          <p className="text-[var(--text-2)] text-sm mb-5">
-            Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
-          </p>
+          <div className="mt-10">
+            <div className="text-[11px] uppercase tracking-[1.2px] text-[var(--text-3)] mb-2">Práticas Diárias</div>
+            <h2 className="text-[22px] md:text-[26px] font-bold mb-2">Consistência que transforma</h2>
+            <p className="text-[var(--text-2)] text-sm mb-5">
+              Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
+            </p>
 
-          {summaryError ? (
-            <div className="mb-3 rounded-[10px] border border-[var(--red)] bg-[var(--red-dim)] px-4 py-3 text-sm text-[var(--red)]">
-              {summaryError}
-            </div>
-          ) : null}
-
-          {isSummaryLoading && !summary ? (
-            <div className="mb-3 rounded-[10px] border border-[var(--border-2)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-2)]">
-              Carregando resumo das práticas...
-            </div>
-          ) : null}
-
-          <GanhosCard
-            summary={summary?.gains}
-            expanded={expandedPractice === 'ganhos'}
-            onToggle={() => setExpandedPractice((prev) => (prev === 'ganhos' ? null : 'ganhos'))}
-            onUpdate={refreshSummary}
-            targetUserId={targetUserId}
-          />
-
-          <GratidaoCard
-            summary={summary?.gratitude}
-            expanded={expandedPractice === 'gratidao'}
-            onToggle={() => setExpandedPractice((prev) => (prev === 'gratidao' ? null : 'gratidao'))}
-            onUpdate={refreshSummary}
-            targetUserId={targetUserId}
-          />
-
-          <IdentidadeCard
-            summary={summary?.identity}
-            expanded={expandedPractice === 'identidade'}
-            onToggle={() => setExpandedPractice((prev) => (prev === 'identidade' ? null : 'identidade'))}
-            onUpdate={refreshSummary}
-            targetUserId={targetUserId}
-          />
-
-          {!adminMode ? (
-            <Link href="/jackson-ia" className="mavf-ia-cta">
-              <span className="mavf-ia-emoji">🤖</span>
-              <div className="mavf-ia-copy">
-                <strong>Conversar com o Jackson IA</strong>
-                <small>Análise personalizada da sua jornada</small>
+            {summaryError ? (
+              <div className="mb-3 rounded-[10px] border border-[var(--red)] bg-[var(--red-dim)] px-4 py-3 text-sm text-[var(--red)]">
+                {summaryError}
               </div>
-              <span className="mavf-ia-arrow">›</span>
-            </Link>
-          ) : null}
+            ) : null}
+
+            {isSummaryLoading && !summary ? (
+              <div className="mb-3 rounded-[10px] border border-[var(--border-2)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-2)]">
+                Carregando resumo das práticas...
+              </div>
+            ) : null}
+
+            <GanhosCard
+              summary={summary?.gains}
+              expanded={expandedPractice === 'ganhos'}
+              onToggle={() => setExpandedPractice((prev) => (prev === 'ganhos' ? null : 'ganhos'))}
+              onUpdate={refreshSummary}
+              targetUserId={targetUserId}
+            />
+
+            <GratidaoCard
+              summary={summary?.gratitude}
+              expanded={expandedPractice === 'gratidao'}
+              onToggle={() => setExpandedPractice((prev) => (prev === 'gratidao' ? null : 'gratidao'))}
+              onUpdate={refreshSummary}
+              targetUserId={targetUserId}
+            />
+
+            <IdentidadeCard
+              summary={summary?.identity}
+              expanded={expandedPractice === 'identidade'}
+              onToggle={() => setExpandedPractice((prev) => (prev === 'identidade' ? null : 'identidade'))}
+              onUpdate={refreshSummary}
+              targetUserId={targetUserId}
+            />
+          </div>
         </div>
-      </div>
-
-      <style jsx>{`
-        .mavf-ia-cta {
-          margin-top: 8px;
-          border: 1px solid var(--green-mid);
-          border-radius: 14px;
-          background: linear-gradient(140deg, var(--green-dim), color-mix(in srgb, var(--green-dim) 40%, transparent));
-          padding: 12px 14px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          transition: var(--transition);
-        }
-
-        .mavf-ia-cta:hover {
-          transform: translateY(-1px);
-          border-color: var(--green);
-        }
-
-        .mavf-ia-emoji {
-          width: 42px;
-          height: 42px;
-          border-radius: 12px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--green-dim);
-          border: 1px solid var(--green-mid);
-          font-size: 21px;
-          flex-shrink: 0;
-        }
-
-        .mavf-ia-copy {
-          min-width: 0;
-          flex: 1;
-        }
-
-        .mavf-ia-copy strong {
-          display: block;
-          color: var(--text);
-          font-family: var(--font-display);
-          font-weight: 700;
-          font-size: 15px;
-          line-height: 1.2;
-        }
-
-        .mavf-ia-copy small {
-          display: block;
-          margin-top: 3px;
-          color: var(--text-2);
-          font-size: 12px;
-        }
-
-        .mavf-ia-arrow {
-          color: var(--green);
-          font-size: 24px;
-          line-height: 1;
-        }
-      `}</style>
-    </MAVFAppShell>
+      </MAVFAppShell>
+      {!adminMode ? <FAB onClick={() => setIsIAOpen(true)} /> : null}
+      {!adminMode ? <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} /> : null}
+    </>
   );
 }

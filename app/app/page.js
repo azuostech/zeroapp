@@ -66,9 +66,9 @@ export default function HomeHubPage() {
 
   const navigationCards = [
     { icon: '💰', label: 'Finanças', href: '/financas' },
-    { icon: '🎓', label: 'Educação', href: '/conteudo' },
+    { icon: '📚', label: 'Educação', href: '/conteudo' },
     { icon: '👥', label: 'Comunidade', href: '/turma' },
-    { icon: '🏆', label: 'Jornada', href: '/jornada' }
+    { icon: '🏆', label: 'Conquistas', href: '/jornada' }
   ];
 
   return (
@@ -89,7 +89,7 @@ export default function HomeHubPage() {
       </main>
 
       <FAB onClick={() => setIsIAOpen(true)} />
-      <BottomNavHub onIAClick={() => setIsIAOpen(true)} />
+      <BottomNavHub />
       <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
     </div>
   );

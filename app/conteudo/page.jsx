@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
+import FAB from '@/components/layout/FAB';
+import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import ContentCard from '@/components/content/ContentCard';
 import ContentFilterTabs from '@/components/content/ContentFilterTabs';
 import ContentEmpty from '@/components/content/ContentEmpty';
@@ -11,6 +13,7 @@ import { useContent } from '@/hooks/useContent';
 
 export default function ConteudoPage() {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [isIAOpen, setIsIAOpen] = useState(false);
   const queryType = activeFilter === 'all' ? null : activeFilter;
   const { content, bloqueado, tierUsuario, isLoading, error, warning, refetch } = useContent(queryType);
 
@@ -63,6 +66,8 @@ export default function ConteudoPage() {
       </main>
 
       <BottomNav activeTab="inicio" />
+      <FAB onClick={() => setIsIAOpen(true)} />
+      <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
 
       <style jsx>{`
         .conteudo-screen {

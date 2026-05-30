@@ -8,30 +8,27 @@ export default function BottomNavHub() {
 
   const tabs = [
     { id: 'inicio', icon: '🏠', label: 'Início', href: '/app' },
-    { id: 'mavf', icon: '🧭', label: 'MAVF', href: '/mavf' },
-    { id: 'voce', icon: '👤', label: 'Você', href: '/jornada' }
+    { id: 'jornada', icon: '🌱', label: 'Minha Jornada', href: '/mavf' },
+    { id: 'voce', icon: '👤', label: 'Você', href: '/perfil' }
   ];
+
+  const isActive = (href) => {
+    if (href === '/app') return pathname === '/app' || pathname === '/';
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <>
       <nav className="bottom-nav" aria-label="Navegação principal">
         {tabs.map((tab) => {
-          const isActive = Boolean(tab.href && (pathname === tab.href || pathname.startsWith(`${tab.href}/`)));
-          const classes = `nav-tab${isActive ? ' active' : ''}`;
-
-          if (tab.action) {
-            return (
-              <button key={tab.id} type="button" className={classes} onClick={tab.action}>
-                <span className="nav-tab-icon" aria-hidden="true">{tab.icon}</span>
-                <span className="nav-tab-label">{tab.label}</span>
-              </button>
-            );
-          }
+          const active = isActive(tab.href);
+          const classes = `nav-tab${active ? ' active' : ''}`;
 
           return (
-            <Link key={tab.id} href={tab.href} className={classes}>
+            <Link key={tab.id} href={tab.href} className={classes} aria-current={active ? 'page' : undefined}>
               <span className="nav-tab-icon" aria-hidden="true">{tab.icon}</span>
               <span className="nav-tab-label">{tab.label}</span>
+              {active ? <span className="nav-tab-dot" aria-hidden="true" /> : null}
             </Link>
           );
         })}
@@ -74,6 +71,7 @@ const styles = `
     cursor: pointer;
     padding: 4px 0;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
   }
 
   .nav-tab-icon {
@@ -82,11 +80,13 @@ const styles = `
   }
 
   .nav-tab-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
+    line-height: 1.2;
+    text-align: center;
   }
 
   .nav-tab.active {
@@ -100,5 +100,14 @@ const styles = `
   .nav-tab:focus-visible {
     outline: 2px solid var(--green);
     outline-offset: -2px;
+  }
+
+  .nav-tab-dot {
+    position: absolute;
+    bottom: 3px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--green);
   }
 `;

@@ -1,63 +1,85 @@
-# CLAUDE Handoff - ZeroApp Home Hub
+# CLAUDE Handoff - ZeroApp Home Hub + Navegação v2
 
 Data: 2026-05-30
-Branch de origem: feature/mobile-ux-home-hub
+Branch atual: main
 
 ## Objetivo da rodada
-Implementar a nova Home Hub (mobile-first) com visual alinhado ao mockup aprovado, sem quebrar APIs/fluxos existentes.
+Concluir a Fase 2 do novo System Design (navegação v2 e renomeações visuais) e ajustar a tela de Finanças para exibir apenas os dados financeiros, sem quebrar APIs/fluxos existentes.
 
 ## O que foi implementado
 
-1. Design system base
-- Criado `styles/theme.css` com tokens de cor, tipografia, spacing, radius e utilitários visuais.
-- `app/layout.js` atualizado para importar o tema global.
+1. Navegação v2 (Bottom Nav)
+- Bottom nav padronizado para:
+  - `🏠 Início` -> `/app`
+  - `🌱 Minha Jornada` -> `/mavf`
+  - `👤 Você` -> `/perfil`
+- Removida duplicação de IA no menu inferior (IA permanece apenas no FAB).
+- Destaque ativo e acessibilidade (`aria-current`) ajustados.
 
-2. Nova Home Hub (`/app`)
-- `app/app/page.js` convertido para Home Hub client-side.
-- Busca de dados financeiros do mês atual via `GET /api/finance/month`.
-- Renderização do resumo financeiro + área de navegação principal.
+2. Home Hub (`/app`)
+- Cards de navegação atualizados para:
+  - `Finanças` (`/financas`)
+  - `Educação` (`/conteudo`) com ícone `📚`
+  - `Comunidade` (`/turma`)
+  - `Conquistas` (`/jornada`)
 
-3. Componentes novos da Home
-- `components/finance/FinanceSummaryCard.jsx`
-  - Grid 3x2 dos blocos financeiros.
-  - Cálculo de realizado/previsto por bloco.
-  - Saldo realizado do mês e previsto.
-- `components/layout/NavigationCard.jsx`
-  - Card visual dos atalhos (ícone + título).
-- `components/layout/FAB.jsx`
-  - Botão flutuante para acesso rápido.
-- `components/layout/BottomNavHub.jsx`
-  - Navegação inferior da Home Hub.
-- `components/layout/JacksonAIModal.jsx`
-  - Bottom sheet da IA (mantido funcional).
+3. Renomeação visual de telas
+- `/mavf` exibe título:
+  - `Minha Jornada 🌱`
+  - subtítulo `Seus objetivos, práticas e evolução pessoal`
+- `/jornada` exibe título:
+  - `Conquistas 🏆`
+  - subtítulo `Sua trilha de ZeroCoins e recompensas`
 
-4. Ajustes de UX/visual solicitados
-- Header: no lugar do texto "ZEROAPP", exibe o primeiro nome do usuário logado (`AppHeader.jsx`).
-- Seção "ONDE VOCÊ QUER IR?":
-  - cards centralizados, com borda verde e label abaixo do ícone.
-  - ajuste de escala para não exigir scroll excessivo.
-- Menu inferior:
-  - aba central alterada de `IA` para `MAVF` apontando para `/mavf`.
+4. FAB universal (com JacksonAIModal)
+- FAB + modal garantidos nas telas internas:
+  - `/app`, `/mavf`, `/jornada`, `/conteudo`, `/turma`, `/resumo`, `/financas`
+- `/jackson-ia` mantido como tela própria.
+
+5. Rota `/perfil` funcional
+- Criada página `/perfil` como tela dedicada de entrada da aba `Você`.
+- A página reutiliza `FinanceAppPage` com:
+  - `activeTab="voce"`
+  - foco automático na seção `#perfil`
+- Mantido fluxo existente sem alterar rotas `/mavf` e `/jornada`.
+
+6. Perfil e atalhos
+- Adicionado item `Minhas Conquistas` -> `/jornada` na seção de perfil.
+- Ajustes visuais dos itens de menu do perfil (ícone, descrição e seta).
+
+7. Ajuste solicitado na tela Finanças
+- Em `/financas`, removidos os blocos de jornada/perfil da parte inferior:
+  - `Minha Turma`, `Conteúdo`, `Conquistas`
+  - seção `Perfil e Jornada`
+- Tela permanece somente com os dados financeiros.
+- Navegação de retorno permanece pelo menu inferior.
+- Implementado via flag:
+  - `showJourneySections={false}` em `FinanceAppPage` para rota `/financas`.
 
 ## Marcação no código
-- Marker adicionado em `app/app/page.js`:
+- Marker anterior mantido em `app/app/page.js`:
   - `CLAUDE-HANDOFF-MARKER: Home Hub V1 ...`
+- Novo marker adicionado em `src/modules/finance/presentation/finance-app-page.jsx`:
+  - `CLAUDE-HANDOFF-MARKER: Fase 2 (Nav v2 + Perfil dedicado + Financas sem blocos de jornada), 2026-05-30.`
 
 ## Arquivos-chave alterados
 - `app/app/page.js`
-- `app/layout.js`
-- `styles/theme.css`
-- `components/layout/AppHeader.jsx`
+- `app/conteudo/page.jsx`
+- `app/financas/page.js`
+- `app/jornada/page.jsx`
+- `app/mavf/page.jsx`
+- `app/perfil/page.jsx` (novo)
+- `app/resumo/page.jsx`
+- `app/turma/page.jsx`
+- `components/layout/BottomNav.jsx`
 - `components/layout/BottomNavHub.jsx`
-- `components/layout/FAB.jsx`
-- `components/layout/JacksonAIModal.jsx`
-- `components/layout/NavigationCard.jsx`
-- `components/finance/FinanceSummaryCard.jsx`
-- `app/financas/*` (rota nova para acesso direto ao módulo financeiro)
+- `src/modules/finance/presentation/finance-app-page.jsx`
 
 ## Validação
-- Build executado com sucesso (`npm run build`) após as alterações.
+- `npm run build` executado com sucesso após as alterações.
+- `next.config.mjs` sem redirects conflitantes para `/mavf` ou `/jornada`.
 
 ## Observações para continuidade
-- Se precisar mais aderência visual ao mockup, ajustar apenas métricas finas (2-4px) no bloco "Home Hub" em `styles/theme.css`.
-- Evitar regressão: manter intactas APIs de `finance`, `coins`, `mavf` e autenticação.
+- Se houver novo ajuste de UI, prefira mexer em métricas/tokens sem alterar rotas nem APIs.
+- Evitar regressão nas APIs de `finance`, `coins`, `mavf` e autenticação.
+- A rota `/perfil` depende de `FinanceAppPage` com foco na seção de perfil; manter esse contrato caso extraia componente no futuro.

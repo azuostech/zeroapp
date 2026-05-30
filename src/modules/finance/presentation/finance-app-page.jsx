@@ -20,6 +20,26 @@ const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
 
 const BLOCOS_SAIDA = ['pagar-primeiro', 'doar', 'contas', 'investimentos', 'desfrute'];
+const PROFILE_MENU_ITEMS = [
+  {
+    icon: '🏆',
+    label: 'Minhas Conquistas',
+    href: '/jornada',
+    description: 'ZeroCoins, fases e recompensas'
+  },
+  {
+    icon: '🌱',
+    label: 'Minha Jornada',
+    href: '/mavf',
+    description: 'Objetivos, ganhos e evolução pessoal'
+  },
+  {
+    icon: '📅',
+    label: 'Resumo Mensal',
+    href: '/resumo',
+    description: 'Previsto x realizado por bloco'
+  }
+];
 
 function esc(s) {
   return String(s || '')
@@ -94,7 +114,13 @@ function withUserBody(body, userId) {
   return { ...(body || {}), user_id: userId };
 }
 
-export default function FinanceAppPage({ adminViewUserId = null }) {
+// CLAUDE-HANDOFF-MARKER: Fase 2 (Nav v2 + Perfil dedicado + Financas sem blocos de jornada), 2026-05-30.
+export default function FinanceAppPage({
+  adminViewUserId = null,
+  activeTab = 'inicio',
+  focusSectionId = null,
+  showJourneySections = true
+}) {
   const [theme, setTheme] = useState('light');
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
@@ -149,6 +175,24 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
       window.removeEventListener('zero:coins-updated', onCoinsUpdated);
     };
   }, [adminMode]);
+
+  useEffect(() => {
+    if (!focusSectionId || typeof window === 'undefined') return;
+
+    const goToSection = () => {
+      const section = document.getElementById(focusSectionId);
+      if (!section) return;
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const frameA = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(goToSection);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameA);
+    };
+  }, [focusSectionId]);
 
   const handleRedeemWorkshop = async (event) => {
     event.preventDefault();
@@ -1643,15 +1687,15 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           </div>
         </div>
 
-        {!adminMode ? (
+        {!adminMode && showJourneySections ? (
           <section className="home-quick-access">
             <QuickAccessCard emoji="👥" title="Minha Turma" subtitle="Ver conquistas e desafios" href="/turma" />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
-            <QuickAccessCard emoji="🤖" title="Jackson IA" subtitle="Análise e orientação" href="/jackson-ia" />
+            <QuickAccessCard emoji="🏆" title="Conquistas" subtitle="ZeroCoins e recompensas" href="/jornada" />
           </section>
         ) : null}
 
-        {adminMode ? null : (
+        {!adminMode && showJourneySections ? (
           <section className="perfil-section" id="perfil">
             <div className="perfil-header">
               <h3>Perfil e Jornada</h3>
@@ -1661,6 +1705,19 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
             </div>
 
             <p className="perfil-copy">Tem um código do Workshop? Resgate para desbloquear MOVIMENTO e ganhar +500 coins.</p>
+
+            <div className="perfil-menu-list">
+              {PROFILE_MENU_ITEMS.map((item) => (
+                <a key={item.href} href={item.href} className="perfil-menu-item">
+                  <span className="perfil-menu-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="perfil-menu-content">
+                    <strong>{item.label}</strong>
+                    <small>{item.description}</small>
+                  </span>
+                  <span className="perfil-menu-arrow" aria-hidden="true">›</span>
+                </a>
+              ))}
+            </div>
 
             <form className="perfil-redeem-form" onSubmit={handleRedeemWorkshop}>
               <input
@@ -1676,10 +1733,10 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
               </button>
             </form>
           </section>
-        )}
+        ) : null}
       </main>
 
-      {!adminMode ? <BottomNav activeTab="inicio" /> : null}
+      {!adminMode ? <BottomNav activeTab={activeTab} /> : null}
 
       <div className="value-sheet-overlay" id="value-sheet-overlay" onClick={() => window.closeItemEditor?.()}>
         <div className="value-sheet" onClick={(event) => event.stopPropagation()}>
@@ -3177,6 +3234,69 @@ export default function FinanceAppPage({ adminViewUserId = null }) {
           margin: 8px 0 10px;
           font-size: 12px;
           color: var(--muted);
+        }
+
+        .perfil-menu-list {
+          display: grid;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .perfil-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--bg4);
+          padding: 9px 10px;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+
+        .perfil-menu-item:hover {
+          border-color: var(--green);
+          background: var(--green-dim);
+        }
+
+        .perfil-menu-icon {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          background: var(--bg3);
+          border: 1px solid var(--border);
+          flex-shrink: 0;
+        }
+
+        .perfil-menu-content {
+          min-width: 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .perfil-menu-content strong {
+          font-size: 12px;
+          color: var(--text);
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .perfil-menu-content small {
+          margin-top: 2px;
+          color: var(--dim);
+          font-size: 11px;
+          line-height: 1.2;
+        }
+
+        .perfil-menu-arrow {
+          color: var(--green);
+          font-size: 18px;
+          line-height: 1;
         }
 
         .perfil-redeem-form {
