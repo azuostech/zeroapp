@@ -171,3 +171,62 @@ Finalizar a Fase 2 de navegação e corrigir a experiência de perfil, separando
 ### Validação
 - Build executado com sucesso após as mudanças:
   - `npm run build`
+
+---
+
+## Atualização 2026-05-30 — Feed da Comunidade (constraint SQL + validação em produção)
+
+`CLAUDE-HANDOFF-MARKER: feed-event-type-constraint-updated-and-validated-2026-05-30`
+
+### Problema observado
+- Usuário registrava novo ganho com `share_in_feed=true`, mas o evento não aparecia no feed.
+
+### Causa raiz
+- O banco ainda estava com constraint legado em `public.feed_events.event_type`, sem aceitar:
+  - `gain_registered`
+  - `gratitude_registered`
+- Isso gerava falha de insert para tipos novos.
+
+### Mitigação aplicada em código (compatibilidade)
+1. Fallback no publisher
+- `src/modules/community/application/feed-publisher.js`
+- Em erro de CHECK (`23514`) no `event_type`, tenta novamente com tipo legado compatível:
+  - `gain_registered` -> `gain_grande`
+  - `gratitude_registered` -> `gratitude_streak_7`
+- Salva o tipo original em `metadata.event_type_original`.
+
+2. Leitura do tipo original no feed
+- `app/api/community/feed/route.js`
+- Ao montar resposta do feed, prioriza:
+  - `metadata.event_type_original`
+  - fallback para `event.event_type`.
+
+### Migração SQL executada no banco (Supabase)
+- Constraint `feed_events_event_type_check` foi recriado com os tipos:
+  - `month_complete`
+  - `goal_reached`
+  - `achievement_unlocked`
+  - `gain_grande`
+  - `gratitude_streak_7`
+  - `gratitude_streak_30`
+  - `tier_upgrade`
+  - `identity_registered`
+  - `workshop_redeemed`
+  - `gain_registered`
+  - `gratitude_registered`
+  - `received_reaction`
+
+### Validação da migração
+1. Pós-migração confirmada
+- `pg_get_constraintdef(...)` retornou lista nova completa no banco.
+
+2. Smoke test transacional (sem persistir dados)
+- Inserções testadas com `BEGIN ... ROLLBACK`:
+  - `gain_registered`
+  - `gratitude_registered`
+  - `received_reaction`
+- Todos aceitos sem erro de constraint.
+- Verificação final: `0` linhas de teste persistidas.
+
+### Commit relacionado
+- `5213842` — `fix: compat feed event type for legacy db constraint` (push em `main`).
