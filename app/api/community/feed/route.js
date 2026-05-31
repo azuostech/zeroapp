@@ -117,6 +117,8 @@ export async function GET(request) {
   const enriched = safeEvents.map((event) => {
     const userIds = reactionsByEvent.get(event.id) || [];
     const metadata = event.metadata && typeof event.metadata === 'object' ? event.metadata : {};
+    // CLAUDE-HANDOFF-MARKER: Preserve original event type when compatibility fallback rewrites DB event_type (2026-05-30)
+    const resolvedEventType = String(metadata.event_type_original || event.event_type || '').trim() || event.event_type;
     const fallbackName = String(metadata.author_name || '').trim() || 'Mentorado';
     const fallbackTier = String(metadata.author_tier || 'DESPERTAR').toUpperCase();
     const author = authorMap.get(event.user_id) || null;
@@ -125,7 +127,7 @@ export async function GET(request) {
 
     return {
       id: event.id,
-      event_type: event.event_type,
+      event_type: resolvedEventType,
       title: event.title,
       body: event.body,
       metadata: event.metadata || {},
