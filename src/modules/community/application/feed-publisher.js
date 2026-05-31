@@ -37,6 +37,34 @@ async function insertFeedPayload(writer, supabase, payload) {
   return insertError;
 }
 
+async function loadAuthorProfileSnapshot(writer, supabase, userId) {
+  const selectFields = 'turma,full_name,email,tier';
+  const tryRead = async (client) =>
+    client.from('profiles').select(selectFields).eq('id', userId).maybeSingle();
+
+  const primary = await tryRead(writer);
+  if (primary.data) {
+    return primary.data;
+  }
+
+  if (writer !== supabase) {
+    const fallback = await tryRead(supabase);
+    if (fallback.data) {
+      return fallback.data;
+    }
+
+    if (primary.error && fallback.error) {
+      throw fallback.error;
+    }
+  }
+
+  if (primary.error) {
+    throw primary.error;
+  }
+
+  return null;
+}
+
 export async function publishFeedEvent(
   supabase,
   {
@@ -59,14 +87,7 @@ export async function publishFeedEvent(
       writer = supabase;
     }
 
-    const { data: profile, error: profileError } = await writer
-      .from('profiles')
-      .select('turma,full_name,email,tier')
-      .eq('id', userId)
-      .maybeSingle();
-    if (profileError) {
-      throw profileError;
-    }
+    const profile = await loadAuthorProfileSnapshot(writer, supabase, userId);
 
     const authorName = resolveDisplayName(profile);
     const authorTier = String(profile?.tier || 'DESPERTAR').toUpperCase();

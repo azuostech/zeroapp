@@ -17,17 +17,21 @@ import { useChallenge } from '@/hooks/useChallenge';
 export default function TurmaPage() {
   const [isIAOpen, setIsIAOpen] = useState(false);
   const { events, turma, isLoading, hasMore, loadMore, react, refresh: refreshFeed } = useFeed();
-  const { stats, isLoading: statsLoading } = useCommunityStats();
+  const { stats, isLoading: statsLoading, refresh: refreshStats } = useCommunityStats();
   const {
     challenge,
     participations,
     user_participated: userParticipated,
     progress_pct: progressPct,
-    isLoading: challengeLoading
+    isLoading: challengeLoading,
+    refresh: refreshChallenge
   } = useChallenge();
 
   const hasTurma = Boolean(String(turma || '').trim());
   const turmaNome = hasTurma ? String(turma).trim() : null;
+  const handleRefreshAll = async () => {
+    await Promise.allSettled([refreshFeed(), refreshStats(), refreshChallenge()]);
+  };
 
   return (
     <div className="turma-screen">
@@ -43,7 +47,7 @@ export default function TurmaPage() {
             <p>{turmaNome ? `Turma ${turmaNome}` : 'Comunidade'}</p>
             <span className="context-label">{turmaNome ? `Vendo eventos da Turma ${turmaNome}` : 'Vendo todos os eventos'}</span>
           </div>
-          <button type="button" className="refresh-btn" onClick={refreshFeed}>
+          <button type="button" className="refresh-btn" onClick={handleRefreshAll}>
             Atualizar
           </button>
         </header>

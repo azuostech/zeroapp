@@ -250,6 +250,12 @@ export default function GanhoForm({ onSave, onClose, onSuccess }) {
           cursor: pointer;
         }
 
+        .share-toggle span {
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.35;
+        }
+
         .share-toggle input {
           appearance: none;
           -webkit-appearance: none;
