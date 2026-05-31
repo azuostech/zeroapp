@@ -4,17 +4,6 @@
  */
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 
-const LEGACY_ALLOWED_EVENT_TYPES = new Set([
-  'month_complete',
-  'goal_reached',
-  'gain_grande',
-  'gratitude_streak_7',
-  'gratitude_streak_30',
-  'identity_registered',
-  'tier_upgrade',
-  'workshop_redeemed'
-]);
-
 function resolveDisplayName(profile) {
   const fullName = String(profile?.full_name || '').trim();
   if (fullName) return fullName;
@@ -36,27 +25,6 @@ function resolveDisplayName(profile) {
     .join(' ');
 }
 
-function isLegacyEventTypeAllowed(eventType) {
-  return LEGACY_ALLOWED_EVENT_TYPES.has(String(eventType || '').trim());
-}
-
-function resolveLegacyEventType(eventType) {
-  const normalized = String(eventType || '').trim();
-  if (isLegacyEventTypeAllowed(normalized)) return normalized;
-
-  if (normalized === 'gain_registered') return 'gain_grande';
-  if (normalized === 'gratitude_registered') return 'gratitude_streak_7';
-
-  return 'identity_registered';
-}
-
-function isEventTypeConstraintError(error) {
-  const code = String(error?.code || '').trim();
-  const message = String(error?.message || '').toLowerCase();
-  return code === '23514' && message.includes('event_type');
-}
-
-// CLAUDE-HANDOFF-MARKER: Community feed compatibility fallback for legacy event_type constraints (2026-05-30)
 async function insertFeedPayload(writer, supabase, payload) {
   const { error: insertError } = await writer.from('feed_events').insert(payload);
   if (!insertError) return null;
@@ -112,6 +80,7 @@ export async function publishFeedEvent(
       body,
       metadata: {
         ...baseMetadata,
+        event_type_original: requestedEventType,
         author_name: authorName,
         author_tier: authorTier
       },
@@ -120,25 +89,7 @@ export async function publishFeedEvent(
     };
 
     const insertError = await insertFeedPayload(writer, supabase, payload);
-    if (!insertError) return;
-
-    if (isEventTypeConstraintError(insertError)) {
-      const legacyEventType = resolveLegacyEventType(requestedEventType);
-      const compatibilityPayload = {
-        ...payload,
-        event_type: legacyEventType,
-        metadata: {
-          ...payload.metadata,
-          event_type_original: requestedEventType
-        }
-      };
-
-      const compatibilityError = await insertFeedPayload(writer, supabase, compatibilityPayload);
-      if (!compatibilityError) return;
-      throw compatibilityError;
-    }
-
-    throw insertError;
+    if (insertError) throw insertError;
   } catch (error) {
     console.error('[community/feed-publisher] publish failed:', {
       userId,
