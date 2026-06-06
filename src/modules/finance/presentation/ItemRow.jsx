@@ -1,5 +1,7 @@
 'use client';
 
+import SwipeableItem from '@/components/finance/SwipeableItem';
+
 function parseMoney(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (typeof value !== 'string') return 0;
@@ -43,63 +45,59 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
   };
 
   return (
-    <div className={`item-row ${realized ? 'is-realized' : ''}`}>
-      <button
-        type="button"
-        className={`item-check ${realized ? 'checked' : ''}`}
-        onClick={handleToggle}
-        disabled={readOnly}
-        aria-label={realized ? 'Marcar como pendente' : 'Marcar como realizado'}
-      >
-        {realized ? '✓' : ''}
-      </button>
+    <SwipeableItem itemName={safeItem.nome || 'Item'} onDelete={() => onRemove?.()} disabled={readOnly}>
+      <div className={`item-row ${realized ? 'is-realized' : ''}`}>
+        <button
+          type="button"
+          className={`item-check ${realized ? 'checked' : ''}`}
+          onClick={handleToggle}
+          disabled={readOnly}
+          aria-label={realized ? 'Marcar como pendente' : 'Marcar como realizado'}
+        >
+          {realized ? '✓' : ''}
+        </button>
 
-      <div className="item-content">
-        <div className="item-main">
-          <input
-            type="text"
-            value={safeItem.nome || ''}
-            onChange={(e) => onUpdate?.('nome', e.target.value)}
-            className="item-name"
-            placeholder="Nome do item"
-            readOnly={readOnly}
-          />
-
-          {acima ? <span className="badge-acima">⚠ Acima</span> : null}
-        </div>
-
-        <div className="item-values">
-          <label className="field">
-            <span>Previsto</span>
+        <div className="item-content">
+          <div className="item-main">
             <input
               type="text"
-              inputMode="decimal"
-              value={moneyInput(safeItem.valor_previsto ?? safeItem.valor, '0')}
-              onChange={(e) => onUpdate?.('valor_previsto', e.target.value)}
+              value={safeItem.nome || ''}
+              onChange={(e) => onUpdate?.('nome', e.target.value)}
+              className="item-name"
+              placeholder="Nome do item"
               readOnly={readOnly}
             />
-          </label>
 
-          {realized ? (
-            <label className="field field-realizado">
-              <span>Realizado</span>
+            {acima ? <span className="badge-acima">⚠ Acima</span> : null}
+          </div>
+
+          <div className="item-values">
+            <label className="field">
+              <span>Previsto</span>
               <input
                 type="text"
                 inputMode="decimal"
-                value={moneyInput(safeItem.valor_realizado, '0')}
-                onChange={(e) => onUpdate?.('valor_realizado', e.target.value)}
+                value={moneyInput(safeItem.valor_previsto ?? safeItem.valor, '0')}
+                onChange={(e) => onUpdate?.('valor_previsto', e.target.value)}
                 readOnly={readOnly}
               />
             </label>
-          ) : null}
+
+            {realized ? (
+              <label className="field field-realizado">
+                <span>Realizado</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={moneyInput(safeItem.valor_realizado, '0')}
+                  onChange={(e) => onUpdate?.('valor_realizado', e.target.value)}
+                  readOnly={readOnly}
+                />
+              </label>
+            ) : null}
+          </div>
         </div>
       </div>
-
-      {!readOnly ? (
-        <button type="button" className="item-remove" onClick={() => onRemove?.()} aria-label="Remover item">
-          ×
-        </button>
-      ) : null}
 
       <style jsx>{`
         .item-row {
@@ -207,17 +205,7 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
           color: #00c853;
         }
 
-        .item-remove {
-          border: 0;
-          background: transparent;
-          color: #9b9b9b;
-          font-size: 22px;
-          line-height: 1;
-          padding: 0 2px;
-          cursor: pointer;
-          margin-top: -2px;
-        }
       `}</style>
-    </div>
+    </SwipeableItem>
   );
 }

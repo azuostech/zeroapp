@@ -477,3 +477,15 @@ a,
     letter-spacing: 0.5px;
   }
 }
+
+.swipe-hint {
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .swipe-container:hover .swipe-hint {
+    opacity: 1;
+  }
+}
