@@ -59,6 +59,14 @@ function withContentOptionalFields(payload) {
     base.disponivel_em = normalizeDateOnly(payload.disponivel_em);
   }
 
+  if (hasOwn('session_id')) {
+    base.session_id = normalizeNullableText(payload.session_id);
+  }
+
+  if (hasOwn('visibility')) {
+    base.visibility = String(payload.visibility || 'visible').trim().toLowerCase();
+  }
+
   return base;
 }
 
