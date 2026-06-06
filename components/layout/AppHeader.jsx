@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
@@ -37,9 +38,11 @@ function getFirstName(profile) {
 }
 
 export default function AppHeader() {
+  const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [theme, setTheme] = useState('light');
   const [faseProgress, setFaseProgress] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const readTheme = () => {
@@ -130,6 +133,18 @@ export default function AppHeader() {
   const tierClass = `tier-${profileTier.toLowerCase()}`;
   const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
 
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      router.replace('/');
+      router.refresh();
+    }
+  };
+
   return (
     <header className="app-header">
       <div className="header-content">
@@ -153,6 +168,10 @@ export default function AppHeader() {
           <Link href="/perfil" className={`user-avatar avatar ${tierClass}`} title={displayName} aria-label={`Abrir perfil de ${displayName}`}>
             {avatarInitial}
           </Link>
+
+          <button type="button" className="logout-btn" onClick={handleLogout} disabled={isLoggingOut} aria-label="Sair da conta">
+            {isLoggingOut ? '...' : 'Sair'}
+          </button>
         </div>
       </div>
 
@@ -270,6 +289,35 @@ export default function AppHeader() {
           outline-offset: 2px;
         }
 
+        .logout-btn {
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-full);
+          background: var(--bg-surface);
+          color: var(--text-2);
+          min-height: 36px;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+          border-color: var(--red);
+          color: var(--red);
+          background: var(--red-dim);
+        }
+
+        .logout-btn:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+
+        .logout-btn:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+
         .tier-despertar {
           border-color: var(--green-mid);
         }
@@ -320,6 +368,17 @@ export default function AppHeader() {
 
           .user-name {
             display: none;
+          }
+
+          .logout-btn {
+            width: 36px;
+            padding: 0;
+            font-size: 0;
+          }
+
+          .logout-btn::before {
+            content: '⎋';
+            font-size: 16px;
           }
         }
       `}</style>

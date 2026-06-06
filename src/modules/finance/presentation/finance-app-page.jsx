@@ -623,6 +623,205 @@ export default function FinanceAppPage({
       el.textContent = resumoValor(previsto, realizado);
     };
 
+    let openSwipeReset = null;
+
+    const closeOpenSwipe = (except = null) => {
+      if (openSwipeReset && openSwipeReset !== except) {
+        openSwipeReset();
+      }
+    };
+
+    const closeSwipeDeleteSheet = () => {
+      document.getElementById('swipe-delete-overlay')?.remove();
+    };
+
+    const openSwipeDeleteSheet = ({ itemName, onConfirm, reset }) => {
+      closeSwipeDeleteSheet();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'swipe-delete-overlay';
+      overlay.className = 'swipe-delete-overlay';
+      overlay.innerHTML = `
+        <div class="swipe-delete-sheet" role="dialog" aria-modal="true" aria-labelledby="swipe-delete-title">
+          <div class="swipe-delete-handle"></div>
+          <div class="swipe-delete-title" id="swipe-delete-title">Excluir item?</div>
+          <div class="swipe-delete-desc">"${esc(itemName)}" será removido da lista. Esta ação não pode ser desfeita.</div>
+          <div class="swipe-delete-actions">
+            <button type="button" class="swipe-delete-cancel">Cancelar</button>
+            <button type="button" class="swipe-delete-confirm">Excluir</button>
+          </div>
+        </div>`;
+
+      const cancel = () => {
+        closeSwipeDeleteSheet();
+        reset?.();
+      };
+
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) cancel();
+      });
+      overlay.querySelector('.swipe-delete-cancel')?.addEventListener('click', cancel);
+      overlay.querySelector('.swipe-delete-confirm')?.addEventListener('click', () => {
+        const confirmBtn = overlay.querySelector('.swipe-delete-confirm');
+        if (confirmBtn) {
+          confirmBtn.textContent = 'Excluindo...';
+          confirmBtn.disabled = true;
+        }
+        closeSwipeDeleteSheet();
+        onConfirm?.();
+      });
+
+      document.body.appendChild(overlay);
+    };
+
+    const isInteractiveSwipeTarget = (target) =>
+      Boolean(target?.closest?.('button,input,select,textarea,label,a,[data-no-swipe="true"]'));
+
+    const makeSwipeDeleteItem = ({ row, itemName, onDelete }) => {
+      const container = document.createElement('div');
+      container.className = 'finance-swipe-container swipe-container';
+      container.innerHTML = `
+        <div class="finance-swipe-bg">
+          <div class="finance-swipe-bg-content">
+            <span class="finance-swipe-bg-icon">🗑</span>
+            <span class="finance-swipe-bg-text">Excluir</span>
+          </div>
+        </div>
+        <div class="finance-swipe-hint swipe-hint">← deslize para excluir</div>`;
+
+      const bg = container.querySelector('.finance-swipe-bg');
+      row.classList.add('finance-swipe-row');
+      container.appendChild(row);
+
+      const state = {
+        startX: 0,
+        startY: 0,
+        offset: 0,
+        dragging: false,
+        vertical: false,
+        moved: false,
+        open: false
+      };
+
+      const applyOffset = (offset) => {
+        state.offset = offset;
+        row.style.transform = `translateX(${offset}px)`;
+        if (bg) bg.style.opacity = String(Math.min(1, Math.abs(offset) / 72));
+      };
+
+      const reset = () => {
+        row.style.transition = 'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+        if (bg) bg.style.transition = 'opacity 0.25s ease';
+        applyOffset(0);
+        state.open = false;
+        if (openSwipeReset === reset) openSwipeReset = null;
+      };
+
+      const reveal = () => {
+        row.style.transition = 'transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)';
+        if (bg) bg.style.transition = 'opacity 0.25s ease';
+        applyOffset(-88);
+        state.open = true;
+        openSwipeReset = reset;
+        openSwipeDeleteSheet({
+          itemName,
+          reset,
+          onConfirm: () => {
+            container.classList.add('is-deleting');
+            setTimeout(() => onDelete?.(), 150);
+          }
+        });
+      };
+
+      const finish = () => {
+        if (Math.abs(state.offset) >= 72) reveal();
+        else reset();
+      };
+
+      const start = (clientX, clientY, target) => {
+        if (isInteractiveSwipeTarget(target)) return false;
+        closeOpenSwipe(reset);
+        row.style.transition = 'none';
+        if (bg) bg.style.transition = 'none';
+        state.startX = clientX;
+        state.startY = clientY;
+        state.offset = 0;
+        state.dragging = true;
+        state.vertical = false;
+        state.moved = false;
+        return true;
+      };
+
+      const move = (clientX, clientY, preventDefault) => {
+        if (!state.dragging) return;
+        const dx = clientX - state.startX;
+        const dy = clientY - state.startY;
+
+        if (state.offset === 0 && Math.abs(dy) > Math.abs(dx) + 5) {
+          state.vertical = true;
+          return;
+        }
+        if (state.vertical) return;
+        if (dx > 0 && state.offset === 0) return;
+
+        if (Math.abs(dx) > 4) state.moved = true;
+        preventDefault?.();
+        applyOffset(Math.max(-88, Math.min(0, dx)));
+      };
+
+      row.addEventListener('touchstart', (event) => {
+        const touch = event.touches?.[0];
+        if (!touch) return;
+        start(touch.clientX, touch.clientY, event.target);
+      });
+      row.addEventListener(
+        'touchmove',
+        (event) => {
+          const touch = event.touches?.[0];
+          if (!touch) return;
+          move(touch.clientX, touch.clientY, () => event.preventDefault());
+        },
+        { passive: false }
+      );
+      row.addEventListener('touchend', () => {
+        if (!state.dragging) return;
+        state.dragging = false;
+        if (state.vertical) return;
+        finish();
+      });
+
+      row.addEventListener('mousedown', (event) => {
+        if (event.button !== 0 || !start(event.clientX, event.clientY, event.target)) return;
+
+        const onMouseMove = (moveEvent) => {
+          move(moveEvent.clientX, moveEvent.clientY);
+        };
+        const onMouseUp = () => {
+          if (!state.dragging) return;
+          state.dragging = false;
+          finish();
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      row.addEventListener(
+        'click',
+        (event) => {
+          if (!state.moved) return;
+          event.preventDefault();
+          event.stopPropagation();
+          state.moved = false;
+        },
+        true
+      );
+
+      return container;
+    };
+
     const renderSubcats = (gi) => {
       const container = document.getElementById(`subcats-${gi}`);
       if (!container) return;
@@ -640,9 +839,14 @@ export default function FinanceAppPage({
             <div class="subcat-nome${sub.realized ? ' done' : ''}">${esc(sub.nome)}</div>
             <div class="subcat-meta">${sub.realized ? 'Pago' : 'Pendente'}</div>
           </div>
-          <button class="subcat-amount-btn${sub.realized ? ' realized' : ''}" onclick="openSubcatEditor(${gi},${si})">${esc(rowAmountLabel(sub))}</button>
-          <button class="subcat-remove" onclick="removerSubcat(${gi},${si})">✕</button>`;
-        container.appendChild(row);
+          <button class="subcat-amount-btn${sub.realized ? ' realized' : ''}" onclick="openSubcatEditor(${gi},${si})">${esc(rowAmountLabel(sub))}</button>`;
+        container.appendChild(
+          makeSwipeDeleteItem({
+            row,
+            itemName: sub.nome || 'Subcategoria',
+            onDelete: () => removerSubcat(gi, si)
+          })
+        );
       });
 
       atualizarTotalGrupo(gi);
@@ -657,7 +861,6 @@ export default function FinanceAppPage({
           <div class="grupo-left"><span class="grupo-arrow">▶</span><span class="grupo-nome">${esc(grupo.nome)}</span></div>
           <div class="grupo-right">
             <span class="grupo-total" id="gtotal-${gi}"></span>
-            <button class="grupo-remove-btn" onclick="removerGrupo(event,${gi})">✕</button>
           </div>
         </div>
         <div class="grupo-body" id="gbody-${gi}">
@@ -667,6 +870,18 @@ export default function FinanceAppPage({
           </div>
           <div id="subcats-${gi}"></div>
         </div>`;
+
+      const header = wrap.querySelector('.grupo-header');
+      if (header) {
+        wrap.insertBefore(
+          makeSwipeDeleteItem({
+            row: header,
+            itemName: `${grupo.nome || 'Grupo'} e suas subcategorias`,
+            onDelete: () => removerGrupo(null, gi)
+          }),
+          wrap.firstChild
+        );
+      }
 
       setTimeout(() => renderSubcats(gi), 0);
       return wrap;
@@ -696,9 +911,14 @@ export default function FinanceAppPage({
             <div class="cat-nome${cat.realized ? ' done' : ''}">${esc(cat.nome)}</div>
             <div class="cat-meta">${cat.realized ? 'Pago' : 'Pendente'}</div>
           </div>
-          <button class="cat-amount-btn${cat.realized ? ' realized' : ''}" onclick="openSimplesEditor('${bloco}',${i})">${esc(rowAmountLabel(cat))}</button>
-          <button class="cat-remove" onclick="removerCat('${bloco}',${i})">✕</button>`;
-        container.appendChild(row);
+          <button class="cat-amount-btn${cat.realized ? ' realized' : ''}" onclick="openSimplesEditor('${bloco}',${i})">${esc(rowAmountLabel(cat))}</button>`;
+        container.appendChild(
+          makeSwipeDeleteItem({
+            row,
+            itemName: cat.nome || 'Item',
+            onDelete: () => removerCat(bloco, i)
+          })
+        );
       });
     };
 
@@ -866,8 +1086,7 @@ export default function FinanceAppPage({
     };
 
     const removerGrupo = (event, gi) => {
-      event.stopPropagation();
-      if ((dados.contas[gi]?.subcats || []).length > 0 && !window.confirm(`Remover "${dados.contas[gi].nome}"?`)) return;
+      event?.stopPropagation?.();
       const nomeGrupo = dados.contas[gi]?.nome;
       const replicar = Boolean(nomeGrupo) && perguntarReplicarExclusao();
       dados.contas.splice(gi, 1);
@@ -2639,6 +2858,153 @@ export default function FinanceAppPage({
           border-bottom: none;
         }
 
+        .finance-swipe-container {
+          position: relative;
+          overflow: hidden;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
+        .finance-swipe-bg {
+          position: absolute;
+          inset: 0;
+          background: #ff3b30;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          padding-right: 22px;
+          opacity: 0;
+          z-index: 1;
+        }
+
+        .finance-swipe-bg-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          color: #fff;
+        }
+
+        .finance-swipe-bg-icon {
+          font-size: 20px;
+          line-height: 1;
+        }
+
+        .finance-swipe-bg-text {
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+
+        .finance-swipe-row {
+          position: relative;
+          z-index: 2;
+          will-change: transform;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .finance-swipe-hint {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 3;
+          border: 1px solid rgba(255, 59, 48, 0.25);
+          border-radius: 8px;
+          background: rgba(255, 59, 48, 0.12);
+          color: #ff3b30;
+          padding: 3px 8px;
+          font-size: 10px;
+          font-weight: 800;
+          pointer-events: none;
+          opacity: 0;
+          white-space: nowrap;
+          transition: opacity 0.2s;
+        }
+
+        @media (hover: hover) {
+          .finance-swipe-container:hover .finance-swipe-hint {
+            opacity: 1;
+          }
+        }
+
+        .finance-swipe-container.is-deleting {
+          opacity: 0;
+          transform: translateX(-16px);
+          transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        .swipe-delete-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 500;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.7);
+          animation: fadeIn 0.15s ease;
+        }
+
+        .swipe-delete-sheet {
+          width: 100%;
+          max-width: 480px;
+          border-top: 1px solid #2a2a2a;
+          border-radius: 24px 24px 0 0;
+          background: #1a1a1a;
+          padding: 0 20px 36px;
+          animation: valueSheetIn 0.2s ease;
+        }
+
+        .swipe-delete-handle {
+          width: 40px;
+          height: 4px;
+          border-radius: 2px;
+          background: #333;
+          margin: 12px auto 16px;
+        }
+
+        .swipe-delete-title {
+          margin-bottom: 6px;
+          color: #f0f0f0;
+          font-size: 17px;
+          font-weight: 900;
+        }
+
+        .swipe-delete-desc {
+          margin-bottom: 20px;
+          color: #888;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .swipe-delete-actions {
+          display: flex;
+          gap: 10px;
+        }
+
+        .swipe-delete-actions button {
+          flex: 1;
+          border-radius: 12px;
+          padding: 14px;
+          font-family: 'Sora', sans-serif;
+          font-size: 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .swipe-delete-cancel {
+          border: 1px solid #333;
+          background: #2a2a2a;
+          color: #f0f0f0;
+        }
+
+        .swipe-delete-confirm {
+          border: 1px solid #ff3b30;
+          background: #ff3b30;
+          color: #fff;
+        }
+
         .cat-nome {
           font-size: 13px;
           color: var(--dim);
@@ -2697,22 +3063,6 @@ export default function FinanceAppPage({
             width: 110px;
             font-size: 12px;
           }
-        }
-
-        .cat-remove {
-          background: none;
-          border: none;
-          color: var(--muted);
-          cursor: pointer;
-          font-size: 15px;
-          padding: 4px;
-          border-radius: 4px;
-          transition: color 0.15s;
-          flex-shrink: 0;
-        }
-
-        .cat-remove:hover {
-          color: var(--red);
         }
 
         .cat-amount-btn {
@@ -2886,21 +3236,6 @@ export default function FinanceAppPage({
           line-height: 1.2;
         }
 
-        .grupo-remove-btn {
-          background: none;
-          border: none;
-          color: var(--muted);
-          cursor: pointer;
-          font-size: 14px;
-          padding: 3px 5px;
-          border-radius: 4px;
-          transition: color 0.15s;
-        }
-
-        .grupo-remove-btn:hover {
-          color: var(--red);
-        }
-
         .grupo-body {
           display: none;
         }
@@ -2988,22 +3323,6 @@ export default function FinanceAppPage({
             width: 100px;
             font-size: 11px;
           }
-        }
-
-        .subcat-remove {
-          background: none;
-          border: none;
-          color: var(--muted);
-          cursor: pointer;
-          font-size: 13px;
-          padding: 3px;
-          border-radius: 4px;
-          transition: color 0.15s;
-          flex-shrink: 0;
-        }
-
-        .subcat-remove:hover {
-          color: var(--red);
         }
 
         .subcat-amount-btn {
