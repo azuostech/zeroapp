@@ -5,6 +5,7 @@ import { normalizeGoogleDriveImageUrl } from '@/src/lib/drive-image-url';
 
 const ALLOWED_TYPES = new Set(['video', 'pdf', 'article', 'tool']);
 const ALLOWED_TIERS = new Set(['LIVRE', 'MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
+const ALLOWED_VISIBILITY = new Set(['visible', 'locked', 'hidden']);
 const ALLOWED_FIELDS = new Set([
   'title',
   'description',
@@ -15,7 +16,9 @@ const ALLOWED_FIELDS = new Set([
   'order_index',
   'is_published',
   'turma_exclusiva',
-  'disponivel_em'
+  'disponivel_em',
+  'session_id',
+  'visibility'
 ]);
 
 function normalizeNullableText(value) {
@@ -41,6 +44,13 @@ function normalizeTier(value) {
 function normalizeOrderIndex(value) {
   const parsed = Number.parseInt(String(value), 10);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+function normalizeVisibility(value) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+  return ALLOWED_VISIBILITY.has(normalized) ? normalized : null;
 }
 
 function normalizeDateOnly(value) {
@@ -190,6 +200,18 @@ export async function PATCH(request, { params }) {
       const normalized = normalizeDateOnly(value);
       if (!normalized.ok) return NextResponse.json({ error: 'invalid_disponivel_em' }, { status: 422 });
       updates.disponivel_em = normalized.value;
+      continue;
+    }
+
+    if (field === 'session_id') {
+      updates.session_id = normalizeNullableText(value);
+      continue;
+    }
+
+    if (field === 'visibility') {
+      const normalized = normalizeVisibility(value);
+      if (!normalized) return NextResponse.json({ error: 'invalid_visibility' }, { status: 422 });
+      updates.visibility = normalized;
     }
   }
 

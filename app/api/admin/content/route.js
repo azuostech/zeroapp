@@ -5,6 +5,7 @@ import { normalizeGoogleDriveImageUrl } from '@/src/lib/drive-image-url';
 
 const ALLOWED_TYPES = new Set(['video', 'pdf', 'article', 'tool']);
 const ALLOWED_TIERS = new Set(['LIVRE', 'MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
+const ALLOWED_VISIBILITY = new Set(['visible', 'locked', 'hidden']);
 
 function normalizeType(value) {
   const normalized = String(value || '')
@@ -30,6 +31,13 @@ function normalizeOrderIndex(value, fallback = 0) {
   if (value === undefined || value === null || value === '') return fallback;
   const parsed = Number.parseInt(String(value), 10);
   return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function normalizeVisibility(value, fallback = 'visible') {
+  const normalized = String(value || fallback)
+    .trim()
+    .toLowerCase();
+  return ALLOWED_VISIBILITY.has(normalized) ? normalized : null;
 }
 
 function normalizeDateOnly(value) {
@@ -117,6 +125,8 @@ export async function POST(request) {
   const isPublished = typeof body?.is_published === 'boolean' ? body.is_published : false;
   const turmaExclusiva = normalizeNullableText(body?.turma_exclusiva);
   const disponivelEm = normalizeDateOnly(body?.disponivel_em);
+  const sessionId = normalizeNullableText(body?.session_id);
+  const visibility = normalizeVisibility(body?.visibility, 'visible');
 
   if (!title) {
     return NextResponse.json({ error: 'title_required' }, { status: 422 });
@@ -138,6 +148,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'invalid_disponivel_em' }, { status: 422 });
   }
 
+  if (!visibility) {
+    return NextResponse.json({ error: 'invalid_visibility' }, { status: 422 });
+  }
+
   const { data, error: insertError } = await supabase
     .from('member_area_content')
     .insert({
@@ -150,7 +164,9 @@ export async function POST(request) {
       order_index: orderIndex,
       is_published: isPublished,
       turma_exclusiva: turmaExclusiva,
-      disponivel_em: disponivelEm.value
+      disponivel_em: disponivelEm.value,
+      session_id: sessionId,
+      visibility
     })
     .select('*')
     .single();

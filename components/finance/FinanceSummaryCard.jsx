@@ -2,7 +2,7 @@
 
 const BLOCOS_CONFIG = [
   { key: 'receitas', icon: '💵', label: 'Receitas' },
-  { key: 'pagar-primeiro', icon: '🏦', label: 'Se Pagar 1o' },
+  { key: 'pagar-primeiro', icon: '🏦', label: 'Se Pagar 1º' },
   { key: 'doar', icon: '🤝', label: 'Doação' },
   { key: 'contas', icon: '📋', label: 'Contas' },
   { key: 'investimentos', icon: '📈', label: 'Invest' },

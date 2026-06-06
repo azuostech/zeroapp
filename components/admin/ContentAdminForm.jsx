@@ -44,8 +44,16 @@ const INITIAL_FORM = {
   order_index: 0,
   is_published: false,
   turma_exclusiva: '',
-  disponivel_em: ''
+  disponivel_em: '',
+  session_id: '',
+  visibility: 'visible'
 };
+
+const VISIBILITY_OPTIONS = [
+  { value: 'visible', label: '● Visível' },
+  { value: 'locked', label: '🔒 Bloqueado' },
+  { value: 'hidden', label: '👁 Oculto' }
+];
 
 function parseDomain(url) {
   try {
@@ -100,11 +108,44 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [sessions, setSessions] = useState([]);
 
   const isEdit = mode === 'edit';
   const heading = isEdit ? 'Editar Conteúdo' : 'Novo Conteúdo';
   const domainMeta = useMemo(() => parseDomain(form.url), [form.url]);
   const releasePreview = useMemo(() => formatReleasePreview(form.disponivel_em), [form.disponivel_em]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSessions = async () => {
+      try {
+        const response = await fetch('/api/admin/programs', { cache: 'no-store' });
+        const payload = await parsePayload(response);
+        if (!response.ok) return;
+        const nextSessions = [];
+        for (const program of payload?.programs || []) {
+          for (const session of program?.content_sessions || []) {
+            nextSessions.push({
+              ...session,
+              program_title: program?.title || 'Programa'
+            });
+          }
+        }
+        if (active) {
+          setSessions(nextSessions.sort((a, b) => Number(a?.order_index || 0) - Number(b?.order_index || 0)));
+        }
+      } catch (_) {
+        if (active) setSessions([]);
+      }
+    };
+
+    loadSessions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isEdit || !contentId) return;
@@ -133,7 +174,9 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           order_index: Number(content.order_index || 0),
           is_published: Boolean(content.is_published),
           turma_exclusiva: String(content.turma_exclusiva || ''),
-          disponivel_em: String(content.disponivel_em || '')
+          disponivel_em: String(content.disponivel_em || ''),
+          session_id: String(content.session_id || ''),
+          visibility: String(content.visibility || 'visible')
         });
       } catch (err) {
         if (!active) return;
@@ -166,7 +209,9 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
         is_published: Boolean(publishValue),
         thumbnail_url: normalizedThumbnail,
         turma_exclusiva: String(form.turma_exclusiva || '').trim() || null,
-        disponivel_em: String(form.disponivel_em || '').trim() || null
+        disponivel_em: String(form.disponivel_em || '').trim() || null,
+        session_id: String(form.session_id || '').trim() || null,
+        visibility: String(form.visibility || 'visible').trim()
       };
 
       const response = await fetch(isEdit ? `/api/admin/content/${contentId}` : '/api/admin/content', {
@@ -237,6 +282,7 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
               maxLength={140}
               required
             />
+            <small className="field-tip">💡 Use º (ordinal) em vez da letra o: ex: 1º Encontro</small>
           </label>
 
           <label>
@@ -306,6 +352,31 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
               Se preenchida, o card aparece bloqueado até esta data. Libera automaticamente quando a data chega.
             </span>
             {releasePreview ? <span className="field-tip release-preview">Liberará em {releasePreview}</span> : null}
+          </label>
+
+          <label>
+            Sessão
+            <select value={form.session_id} onChange={(event) => setField('session_id', event.target.value)}>
+              <option value="">Sem sessão (avulso)</option>
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.program_title} · {session.title}
+                </option>
+              ))}
+            </select>
+            <span className="field-tip">Organiza esta aula dentro de um programa da área de membros.</span>
+          </label>
+
+          <label>
+            Visibilidade
+            <select value={form.visibility} onChange={(event) => setField('visibility', event.target.value)}>
+              {VISIBILITY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span className="field-tip">Controla exibição sem substituir o status de publicação.</span>
           </label>
 
           <label>

@@ -7,6 +7,7 @@ export const VALID_COINS_ACTIONS = [
   'debt_cleared',
   'referral',
   'workshop_code',
+  'content_completed',
   'tier_upgrade_aceleracao',
   'tier_upgrade_autogoverno',
   'admin_adjustment'
@@ -21,6 +22,7 @@ export const DEFAULT_COINS_DESCRIPTIONS = {
   debt_cleared: 'Dívida quitada',
   referral: 'Indicação de amigo',
   workshop_code: 'Código do Workshop resgatado',
+  content_completed: 'Aula concluída',
   tier_upgrade_aceleracao: 'Bônus mensal tier Aceleração',
   tier_upgrade_autogoverno: 'Bônus mensal tier Autogoverno',
   admin_adjustment: 'Ajuste administrativo'
@@ -35,6 +37,7 @@ export const DEFAULT_COINS_ACTION_AMOUNTS = {
   debt_cleared: 200,
   referral: 80,
   workshop_code: 500,
+  content_completed: 15,
   tier_upgrade_aceleracao: 300,
   tier_upgrade_autogoverno: 600
 };
