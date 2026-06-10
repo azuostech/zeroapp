@@ -646,3 +646,81 @@ Fazer o Jackson IA responder com consciência da data/hora atual e de indicadore
 - O contexto depende de rede no runtime do servidor Next.
 - Em caso de falha de rede, o Jackson continua respondendo com data/hora local e marca indicadores como indisponíveis, sem inventar valores.
 - `backup.dump` continua não rastreado e não deve entrar no commit sem pedido explícito.
+
+---
+
+## Atualização 2026-06-10 — Conteúdo com Múltiplas Turmas
+
+### Objetivo da rodada
+Corrigir o caso em que o usuário `sza.treinamentos@gmail.com` via o programa `Workshop Finanças do Zero`, mas a tela de detalhe mostrava `1 sessões · 0 aulas`, mesmo com aulas cadastradas.
+
+### Diagnóstico
+O cadastro estava correto no banco:
+- Programa: `Workshop Finanças do Zero`
+- Sessão: `Aulas`
+- Aulas publicadas/visíveis:
+  - `Workshop 01 - Comece por aqui`
+  - `Workshop 02 - Perfil Financeiro`
+
+O usuário estava com:
+- `turma = "Maio 2026, Workshop"`
+- `tier = ACELERACAO`
+
+A causa era a política RLS de turma. As policies comparavam por igualdade exata:
+- `profiles.turma = turma_exclusiva`
+
+Com isso, `"Maio 2026, Workshop"` não batia com `"Workshop"`. O programa/sessão podia aparecer por uma combinação de acesso/admin, mas as aulas eram filtradas pela policy de `member_area_content`.
+
+### O que foi implementado
+
+1. Nova função SQL de acesso multiturma
+- Criado script idempotente:
+  - `scripts/migrate-conteudo-multiturma.sql`
+- A função criada no banco:
+  - `public.profile_has_turma(user_turmas text, required_turma text)`
+- Ela aceita lista separada por vírgula ou ponto-e-vírgula:
+  - `"Maio 2026, Workshop"`
+  - `"Maio 2026; Workshop"`
+
+2. Policies atualizadas
+O script recria as policies de leitura:
+- `programs_read` em `content_programs`
+- `sessions_read` em `content_sessions`
+- `member_content_read` em `member_area_content`
+
+As policies agora usam:
+- `public.profile_has_turma(p.turma, turma_exclusiva)`
+
+3. API legada alinhada
+- `app/api/content/route.js` também passou a tratar `profile.turma` como lista separada por vírgula/ponto-e-vírgula.
+- Isso mantém o preview de conteúdo bloqueado/desbloqueado coerente com a RLS.
+
+### Migração aplicada
+O script `scripts/migrate-conteudo-multiturma.sql` foi aplicado no banco da `.env.local`.
+
+Verificação exibida pelo próprio script:
+- `Multiturma: turma usuario teste = Maio 2026, Workshop`
+- `Multiturma: acesso Workshop = t`
+- `Multiturma: acesso Maio 2026 = t`
+- `Multiturma: policies recriadas = 3`
+
+### Validação realizada
+- Simulação com `ROLE authenticated` e `auth.uid()` do usuário `sza.treinamentos@gmail.com`.
+- Resultado da consulta RLS para `Workshop Finanças do Zero`:
+  - `1` sessão
+  - `2` aulas
+- Função validada:
+  - `profile_has_turma('Maio 2026, Workshop', 'Workshop') = true`
+  - `profile_has_turma('Maio 2026, Workshop', 'Maio 2026') = true`
+  - `profile_has_turma('Maio 2026, Workshop', 'Outra') = false`
+- `git diff --check` passou.
+- `npm run build` passou.
+
+### Arquivos alterados
+- `app/api/content/route.js`
+- `scripts/migrate-conteudo-multiturma.sql`
+
+### Pontos de atenção para continuidade
+- `profiles.turma` continua sendo texto simples; agora o padrão suportado é lista separada por `,` ou `;`.
+- Se futuramente houver UI própria para múltiplas turmas, o ideal é evoluir para estrutura normalizada ou array, mas esta correção resolve o formato já usado em produção.
+- `backup.dump` continua não rastreado e não deve entrar em commits.

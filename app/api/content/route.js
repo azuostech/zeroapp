@@ -63,7 +63,11 @@ function formatarData(dateValue) {
 function canPreviewForTurma(itemTurma, userTurma) {
   const requiredTurma = normalizeTurma(itemTurma);
   if (!requiredTurma) return true;
-  return normalizeTurma(userTurma) === requiredTurma;
+  return String(userTurma || '')
+    .split(/[;,]/)
+    .map((turma) => turma.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(requiredTurma.toLowerCase());
 }
 
 function isTierAcessivel(requiredTier, accessibleTiers) {
