@@ -111,9 +111,19 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           overflow: hidden;
         }
 
+        .practice-card.identity {
+          background: linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--purple-dim) 44%, var(--bg-card)),
+            var(--bg-elevated)
+          );
+          border-color: color-mix(in srgb, var(--purple) 20%, var(--border-2));
+          box-shadow: var(--shadow-card);
+        }
+
         .practice-card.expanded {
           border-color: color-mix(in srgb, var(--purple) 62%, transparent);
-          box-shadow: 0 0 0 1px var(--purple-dim) inset;
+          box-shadow: var(--shadow-card), 0 0 0 1px var(--purple-dim) inset;
         }
 
         .card-head {
@@ -128,6 +138,11 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           padding: 14px;
           cursor: pointer;
           border-left: 3px solid var(--purple);
+          transition: var(--transition);
+        }
+
+        .card-head:hover {
+          background: color-mix(in srgb, var(--purple-dim) 40%, transparent);
         }
 
         .head-title {
@@ -135,6 +150,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           font-size: 17px;
           font-family: var(--font-body);
           font-weight: 700;
+          line-height: 1.15;
           margin-bottom: 4px;
         }
 
@@ -143,10 +159,11 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           font-size: 12px;
           margin-bottom: 4px;
           font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .head-preview {
-          color: var(--text);
+          color: var(--text-2);
           font-size: 13px;
           line-height: 1.4;
         }
@@ -159,6 +176,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .card-body {
           border-top: 1px solid var(--border-2);
+          background: color-mix(in srgb, var(--bg2) 72%, transparent);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -173,6 +191,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
           font-size: 13px;
           font-weight: 800;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .primary-btn {
@@ -183,6 +202,18 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         .ghost-btn {
           background: var(--purple-dim);
           color: var(--purple);
+        }
+
+        .primary-btn:hover,
+        .ghost-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px color-mix(in srgb, var(--purple) 24%, transparent);
+        }
+
+        .primary-btn:focus-visible,
+        .ghost-btn:focus-visible {
+          outline: 2px solid var(--purple);
+          outline-offset: 2px;
         }
 
         .feedback {
@@ -197,7 +228,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         .timeline {
           border: 1px solid color-mix(in srgb, var(--purple) 35%, transparent);
           border-radius: var(--radius-md);
-          background: color-mix(in srgb, var(--purple) 12%, transparent);
+          background: color-mix(in srgb, var(--purple) 8%, transparent);
           padding: 10px;
         }
 
@@ -248,6 +279,8 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         .timeline-main span {
           font-size: 11px;
           color: var(--text-3);
+          font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .timeline-main p {

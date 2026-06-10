@@ -103,9 +103,19 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           overflow: hidden;
         }
 
+        .practice-card.gratitude {
+          background: linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--rose-dim) 44%, var(--bg-card)),
+            var(--bg-elevated)
+          );
+          border-color: color-mix(in srgb, var(--rose) 20%, var(--border-2));
+          box-shadow: var(--shadow-card);
+        }
+
         .practice-card.expanded {
           border-color: color-mix(in srgb, var(--rose) 58%, transparent);
-          box-shadow: 0 0 0 1px var(--rose-dim) inset;
+          box-shadow: var(--shadow-card), 0 0 0 1px var(--rose-dim) inset;
         }
 
         .card-head {
@@ -120,6 +130,11 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           padding: 14px;
           cursor: pointer;
           border-left: 3px solid var(--rose);
+          transition: var(--transition);
+        }
+
+        .card-head:hover {
+          background: color-mix(in srgb, var(--rose-dim) 40%, transparent);
         }
 
         .head-title {
@@ -127,6 +142,7 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           font-size: 17px;
           font-family: var(--font-body);
           font-weight: 700;
+          line-height: 1.15;
           margin-bottom: 4px;
         }
 
@@ -135,10 +151,11 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           font-size: 12px;
           margin-bottom: 4px;
           font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .head-preview {
-          color: var(--text);
+          color: var(--text-2);
           font-size: 13px;
           line-height: 1.4;
         }
@@ -151,6 +168,7 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
 
         .card-body {
           border-top: 1px solid var(--border-2);
+          background: color-mix(in srgb, var(--bg2) 72%, transparent);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -166,6 +184,8 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           background: var(--rose-dim);
           border: 1px solid color-mix(in srgb, var(--rose) 58%, transparent);
           color: var(--rose);
+          font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .primary-btn,
@@ -176,6 +196,7 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           font-size: 13px;
           font-weight: 800;
           cursor: pointer;
+          transition: var(--transition);
         }
 
         .primary-btn {
@@ -186,6 +207,18 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
         .ghost-btn {
           background: var(--rose-dim);
           color: var(--rose);
+        }
+
+        .primary-btn:hover,
+        .ghost-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px color-mix(in srgb, var(--rose) 22%, transparent);
+        }
+
+        .primary-btn:focus-visible,
+        .ghost-btn:focus-visible {
+          outline: 2px solid var(--rose);
+          outline-offset: 2px;
         }
 
         .feedback {
@@ -208,12 +241,13 @@ export default function GratidaoCard({ summary, expanded, onToggle, onUpdate, ta
           font-size: 11px;
           color: var(--text-3);
           font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .empty {
           border: 1px dashed var(--border-3);
           border-radius: var(--radius-md);
-          background: color-mix(in srgb, var(--rose-dim) 56%, transparent);
+          background: color-mix(in srgb, var(--rose-dim) 56%, var(--bg-card));
           padding: 14px;
           text-align: center;
         }

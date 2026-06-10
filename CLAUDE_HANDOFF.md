@@ -230,3 +230,227 @@ Finalizar a Fase 2 de navegação e corrigir a experiência de perfil, separando
 
 ### Commit relacionado
 - `5213842` — `fix: compat feed event type for legacy db constraint` (push em `main`).
+
+---
+
+## Atualização 2026-06-08 — Últimas implementações para continuidade
+
+### Estado atual do repo
+- Branch atual: `main`.
+- HEAD: `513deef` (`merge: feature swipe delete`), sincronizado com `origin/main`.
+- Working tree sem diff rastreado no momento deste resumo.
+- Existe `backup.dump` não rastreado; não foi alterado nesta rodada.
+
+### 1. Comunidade por turma + stats via RPC
+Commit principal:
+- `e289c94` — `fix(community): garantir publicação por turma e stats atualizadas`
+
+O que mudou:
+- `publishFeedEvent` agora tenta usar `service role` para gravar `feed_events`, com fallback para o client Supabase da request.
+- O publisher carrega snapshot do autor (`turma`, `full_name`, `email`, `tier`) e grava no evento:
+  - `turma`
+  - `metadata.event_type_original`
+  - `metadata.author_name`
+  - `metadata.author_tier`
+- Isso corrige feed segmentado por turma e evita perda de autoria quando `profiles` estiver incompleto.
+- `/api/community/stats` passou a usar a RPC segura `get_community_stats(p_turma)`, em vez de montar agregados diretamente na API.
+- A página `/turma` agora explicita o contexto:
+  - se o usuário tem turma, mostra eventos da turma;
+  - se não tem turma, mostra contexto geral.
+- Os formulários MAVF (`GanhoForm`, `GratidaoForm`, `IdentidadeForm`) mantêm opt-in explícito para compartilhar no feed.
+
+Arquivos principais:
+- `src/modules/community/application/feed-publisher.js`
+- `app/api/community/stats/route.js`
+- `app/turma/page.jsx`
+- `scripts/migrate-ajuste5-community-stats-rpc.sql`
+- `components/mavf/GanhoForm.jsx`
+- `components/mavf/GratidaoForm.jsx`
+- `components/mavf/IdentidadeForm.jsx`
+
+Observação:
+- A RPC `get_community_stats(text)` precisa estar aplicada no Supabase para `/api/community/stats` funcionar.
+
+### 2. Área de membros / Educação por programas
+Commits principais:
+- `37cdcc9` — `feat: implement area de membros`
+- `498efc3` — `merge: feature area de membros`
+
+O que foi implementado:
+- Nova estrutura de conteúdo por programas:
+  - `content_programs`
+  - `content_sessions`
+  - `content_progress`
+  - `content_comments`
+  - `content_comment_replies`
+- `member_area_content` foi expandida para funcionar como aula vinculada a sessão:
+  - `session_id`
+  - `visibility` (`visible`, `locked`, `hidden`)
+- Fluxo público:
+  - `/conteudo` lista programas disponíveis com progresso.
+  - `/conteudo/[id]` mostra detalhe do programa, sessões expansíveis e aulas.
+  - `/conteudo/[id]/[aulaId]` abre player da aula, navegação anterior/próxima, progresso e comentários.
+- Regras de acesso:
+  - filtra por publicação, visibilidade, tier, turma e disponibilidade por data.
+  - quando a aula está bloqueada, a API remove a `url` e retorna `locked/locked_reason`.
+- Progresso:
+  - abrir aula faz `POST /api/content/[id]/progress` para marcar início.
+  - concluir aula faz `POST /api/content/[id]/progress/complete`.
+  - desmarcar conclusão usa `DELETE /api/content/[id]/progress/complete`.
+  - primeira conclusão tenta conceder `15` ZeroCoins via RPC `award_coins`, action type `content_completed`.
+- Comentários:
+  - comentários e respostas por aula.
+  - delete permitido para autor ou admin.
+  - autores enriquecidos por `profiles`.
+- Admin:
+  - `/admin/conteudo/programas`
+  - `/admin/conteudo/programas/novo`
+  - CRUD de programas e sessões.
+  - endpoint para vincular conteúdo existente a uma sessão.
+- Migrações:
+  - `scripts/migrate-area-membros.sql`
+  - `scripts/migrate-area-membros-etapa-d-feed-events.sql`
+- A Etapa D atualiza a constraint de `feed_events.event_type` para aceitar `content_completed`.
+
+Arquivos principais:
+- `app/conteudo/page.jsx`
+- `app/conteudo/[id]/page.jsx`
+- `app/conteudo/[id]/[aulaId]/page.jsx`
+- `app/api/content/programs/route.js`
+- `app/api/content/programs/[id]/route.js`
+- `app/api/content/[id]/progress/route.js`
+- `app/api/content/[id]/progress/complete/route.js`
+- `app/api/content/[id]/comments/route.js`
+- `components/content/ProgramCard.jsx`
+- `components/content/AulaItem.jsx`
+- `components/content/CommentsSection.jsx`
+- `components/content/CommentItem.jsx`
+- `hooks/usePrograms.js`
+- `hooks/useProgramDetail.js`
+- `hooks/useComments.js`
+- `app/admin/conteudo/programas/page.jsx`
+- `components/admin/ProgramAdminForm.jsx`
+- `hooks/useAdminPrograms.js`
+
+Pontos de atenção:
+- Confirmar que as migrações da área de membros foram aplicadas no Supabase antes de validar o fluxo.
+- Confirmar se a RPC `award_coins` aceita `content_completed` em produção; o código JS já adicionou esse action type em `src/modules/coins/application/coins-service.js`.
+- A conclusão da aula concede coins, mas o código da rota não publica diretamente um evento no feed; a migração apenas prepara a constraint para `content_completed`.
+
+### 3. Swipe delete nas listas financeiras
+Commits principais:
+- `355ae7b` — `feat: add swipe delete to finance lists`
+- `513deef` — `merge: feature swipe delete`
+
+O que foi implementado:
+- Criado hook reutilizável `useSwipeDelete` com suporte a touch e mouse.
+- Criado componente `SwipeableItem` com:
+  - arraste horizontal para revelar ação de excluir;
+  - prevenção de conflito com scroll vertical;
+  - ignore de alvos interativos (`button`, `input`, `select`, `textarea`, `label`, `a`, `data-no-swipe`);
+  - apenas uma linha aberta por vez;
+  - sheet de confirmação antes da exclusão.
+- `ItemRow` passou a envolver itens financeiros em `SwipeableItem`.
+- `finance-app-page.jsx` também recebeu implementação de swipe para listas renderizadas/manipuladas internamente, incluindo remoção de subcategorias, grupos e categorias.
+- Estilos globais adicionados em `styles/theme.css` para hints de swipe.
+- `AppHeader` foi ajustado na mesma branch; evitar reverter sem comparar, pois ele agora concentra logo, nome, tier/coins e refresh por evento `zero:coins-updated`.
+
+Arquivos principais:
+- `hooks/useSwipeDelete.js`
+- `components/finance/SwipeableItem.jsx`
+- `src/modules/finance/presentation/ItemRow.jsx`
+- `src/modules/finance/presentation/finance-app-page.jsx`
+- `styles/theme.css`
+- `components/layout/AppHeader.jsx`
+
+Pontos de atenção:
+- Validar swipe em mobile real ou em viewport mobile, porque o hook usa `preventDefault()` durante arraste horizontal.
+- Conferir se exclusões financeiras continuam respeitando estados `readOnly`/admin antes de mexer no fluxo.
+
+### Validação desta atualização
+- Esta rodada foi apenas de resumo/handoff.
+- Não foi executado build/test novo após anexar este documento.
+
+---
+
+## Atualização 2026-06-09 — Design System Fase 3 (MAVF + Feed)
+
+### Objetivo da rodada
+Aplicar ajustes visuais pontuais da Fase 3 nas telas internas, sem alterar lógica, APIs, hooks ou banco.
+
+### Escopo respeitado
+- Não alterar `GanhoForm`, `GratidaoForm`, `IdentidadeForm`.
+- Não alterar `AppHeader.jsx`.
+- Não alterar `app/turma/page.jsx` depois da auditoria do refresh/contexto por turma.
+- Não duplicar tokens em `styles/theme.css`.
+- Manter a abordagem de estilo existente de cada arquivo.
+
+### O que foi implementado
+
+1. Cards MAVF com tokens do design system
+- `GanhosCard` recebeu tratamento visual verde:
+  - fundo sutil com `var(--green-dim)`
+  - borda/glow com tokens verdes
+  - hover/focus nos botões
+  - valores numéricos com `var(--font-mono)` e `tabular-nums`
+- `GratidaoCard` recebeu tratamento visual rosa:
+  - fundo sutil com `var(--rose-dim)`
+  - streak badge com `var(--rose)`
+  - hover/focus rosa
+  - valores numéricos com `var(--font-mono)`
+- `IdentidadeCard` recebeu tratamento visual roxo:
+  - fundo sutil com `var(--purple-dim)`
+  - timeline mais próxima do manifesto visual
+  - declarações mantendo `var(--purple)`, `var(--font-body)` e `font-weight: 700`
+  - datas com `var(--font-mono)`
+
+2. FeedEventCard com badges por tipo
+- Tipos de ganho:
+  - `gain_registered`
+  - `gain_grande`
+  - usam `badge-blue`.
+- Tipos de gratidão:
+  - `gratitude_registered`
+  - `gratitude_streak*`
+  - usam `badge-rose` com `🔥` no label.
+- Tipo de identidade:
+  - `identity_registered`
+  - usa `badge-purple`.
+- Aula concluída:
+  - `content_completed`
+  - usa `badge-green`.
+- Botão "Dar força" foi alinhado ao padrão:
+  - estado normal com `var(--bg3)`, `var(--border)`, `var(--text-2)`
+  - hover/ativo em verde.
+
+### Arquivos alterados nesta rodada
+- `components/mavf/GanhosCard.jsx`
+- `components/mavf/GratidaoCard.jsx`
+- `components/mavf/IdentidadeCard.jsx`
+- `components/community/FeedEventCard.jsx`
+- `CLAUDE_HANDOFF.md`
+
+### Arquivos auditados e preservados
+- `components/mavf/GanhoForm.jsx`
+- `components/mavf/GratidaoForm.jsx`
+- `components/mavf/IdentidadeForm.jsx`
+- `components/layout/AppHeader.jsx`
+- `app/turma/page.jsx`
+- `styles/theme.css`
+
+### Validação
+- `styles/theme.css` já continha:
+  - `--rose`
+  - `--rose-dim`
+  - `--purple`
+  - `--purple-dim`
+  - `--blue`
+  - `--blue-dim`
+- Varredura nos arquivos alterados não encontrou hex/rgba hardcoded.
+- `git diff --check` passou nos arquivos alterados.
+- `npm run build` executado com sucesso.
+- Tentativa de validação visual via in-app browser não foi possível porque nenhum browser estava disponível na sessão; o dev server local foi iniciado e encerrado.
+
+### Observações para continuidade
+- `backup.dump` continua não rastreado e não faz parte desta rodada.
+- Se houver próxima fase de design, deixar `finance-app-page.jsx` para uma rodada própria, como o prompt da Fase 3 já sugeria.

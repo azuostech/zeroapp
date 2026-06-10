@@ -44,9 +44,10 @@ function getEventTypeBadge(eventType) {
   if (key === 'goal_reached') return { label: 'Meta atingida', className: 'badge-gold' };
   if (key === 'gain_registered') return { label: 'Novo ganho', className: 'badge-blue' };
   if (key === 'gain_grande') return { label: 'Ganho grande', className: 'badge-blue' };
-  if (key === 'gratitude_registered') return { label: 'Gratidão', className: 'badge-rose' };
-  if (key.startsWith('gratitude_streak')) return { label: 'Streak gratidão 🔥', className: 'badge-rose' };
+  if (key === 'gratitude_registered') return { label: '🔥 Gratidão', className: 'badge-rose' };
+  if (key.startsWith('gratitude_streak')) return { label: '🔥 Streak gratidão', className: 'badge-rose' };
   if (key === 'identity_registered') return { label: 'Identidade', className: 'badge-purple' };
+  if (key === 'content_completed') return { label: 'Aula concluída', className: 'badge-green' };
   if (key === 'tier_upgrade') return { label: 'Tier upgrade', className: 'badge-purple' };
   if (key === 'workshop_redeemed') return { label: 'Workshop', className: 'badge-gold' };
   return { label: 'Evento', className: 'badge-neutral' };
@@ -94,6 +95,7 @@ export default function FeedEventCard({ event, onReact }) {
           border-radius: 16px;
           background: var(--bg2);
           padding: 14px;
+          box-shadow: var(--shadow-card);
         }
 
         .feed-card-top {
@@ -114,6 +116,7 @@ export default function FeedEventCard({ event, onReact }) {
           color: var(--bg);
           flex-shrink: 0;
           border: 1px solid var(--border-3);
+          box-shadow: var(--shadow-sm);
         }
 
         .feed-author-meta {
@@ -142,14 +145,16 @@ export default function FeedEventCard({ event, onReact }) {
         .feed-event-type {
           margin-bottom: 8px;
           width: fit-content;
+          font-family: var(--font-body);
         }
 
         .feed-title {
           margin: 0 0 4px;
           font-size: 18px;
-          font-family: var(--font-display);
+          font-family: var(--font-body);
           font-weight: 700;
           line-height: 1.15;
+          color: var(--text);
         }
 
         .feed-body {
@@ -160,11 +165,19 @@ export default function FeedEventCard({ event, onReact }) {
         }
 
         .feed-react-btn {
+          border-color: var(--border);
+          background: var(--bg3);
+          color: var(--text-2);
           font-size: 13px;
           font-weight: 700;
           padding: 8px 11px;
           cursor: pointer;
           transition: var(--transition);
+        }
+
+        .feed-react-btn:hover {
+          border-color: var(--green-mid);
+          color: var(--green);
         }
 
         .feed-react-btn.active {

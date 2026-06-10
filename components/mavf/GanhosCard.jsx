@@ -93,9 +93,19 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           overflow: hidden;
         }
 
+        .practice-card.gains {
+          background: linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--green-dim) 44%, var(--bg-card)),
+            var(--bg-elevated)
+          );
+          border-color: color-mix(in srgb, var(--green) 18%, var(--border-2));
+          box-shadow: var(--shadow-card);
+        }
+
         .practice-card.expanded {
           border-color: var(--green-mid);
-          box-shadow: 0 0 0 1px var(--green-dim) inset;
+          box-shadow: var(--shadow-green), 0 0 0 1px var(--green-dim) inset;
         }
 
         .card-head {
@@ -110,6 +120,11 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           padding: 14px;
           cursor: pointer;
           border-left: 3px solid var(--green);
+          transition: var(--transition);
+        }
+
+        .card-head:hover {
+          background: color-mix(in srgb, var(--green-dim) 38%, transparent);
         }
 
         .head-title {
@@ -117,6 +132,7 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           font-size: 17px;
           font-family: var(--font-body);
           font-weight: 700;
+          line-height: 1.15;
           margin-bottom: 4px;
           filter: drop-shadow(0 3px 8px var(--green-glow));
         }
@@ -126,10 +142,11 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           font-size: 12px;
           margin-bottom: 4px;
           font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .head-preview {
-          color: var(--text);
+          color: var(--text-2);
           font-size: 13px;
           line-height: 1.4;
         }
@@ -142,6 +159,7 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
         .card-body {
           border-top: 1px solid var(--border-2);
+          background: color-mix(in srgb, var(--bg2) 72%, transparent);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -162,12 +180,25 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         .primary-btn {
           background: var(--green);
           color: var(--bg);
+          box-shadow: var(--shadow-green);
         }
 
         .ghost-btn {
           background: var(--green-dim);
           color: var(--green);
           border-color: var(--green-mid);
+        }
+
+        .primary-btn:hover,
+        .ghost-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-hover);
+        }
+
+        .primary-btn:focus-visible,
+        .ghost-btn:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
         }
 
         .feedback {
@@ -190,12 +221,13 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
           font-size: 11px;
           color: var(--text-3);
           font-family: var(--font-mono);
+          font-variant-numeric: tabular-nums;
         }
 
         .empty {
           border: 1px dashed var(--border-3);
           border-radius: var(--radius-md);
-          background: color-mix(in srgb, var(--bg-card) 80%, transparent);
+          background: color-mix(in srgb, var(--green-dim) 42%, var(--bg-card));
           padding: 14px;
           text-align: center;
         }
