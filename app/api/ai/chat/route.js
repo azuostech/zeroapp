@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 import { buildUserContext } from '@/src/lib/ai/context-builder';
+import { buildMarketContext } from '@/src/lib/ai/market-context';
 import { buildSystemPrompt } from '@/src/lib/ai/system-prompt';
 
 export const runtime = 'nodejs';
@@ -91,8 +92,12 @@ export async function POST(request) {
   }
 
   try {
-    const userContext = await buildUserContext(user.id, { supabase });
-    const systemPrompt = buildSystemPrompt(userContext);
+    const now = new Date();
+    const [userContext, marketContext] = await Promise.all([
+      buildUserContext(user.id, { supabase, now }),
+      buildMarketContext({ now })
+    ]);
+    const systemPrompt = buildSystemPrompt(userContext, { marketContext });
 
     const response = await client.messages.create({
       model: MODEL,

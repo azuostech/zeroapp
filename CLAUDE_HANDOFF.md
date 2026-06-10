@@ -454,3 +454,195 @@ Aplicar ajustes visuais pontuais da Fase 3 nas telas internas, sem alterar lógi
 ### Observações para continuidade
 - `backup.dump` continua não rastreado e não faz parte desta rodada.
 - Se houver próxima fase de design, deixar `finance-app-page.jsx` para uma rodada própria, como o prompt da Fase 3 já sugeria.
+
+---
+
+## Atualização 2026-06-10 — Admin Conteúdo por Programas
+
+### Commit relacionado
+- `b5fed5b` — `feat: organize admin content by programs`
+- Status: commit enviado para `origin/main`.
+
+### Objetivo da rodada
+Adequar a área admin de conteúdo para refletir a experiência do usuário em `/conteudo`, que agora é organizada por:
+- programas
+- sessões
+- aulas/conteúdos
+
+Antes, `/admin/conteudo` funcionava principalmente como lista plana de arquivos. Isso dificultava criar e organizar aulas dentro da estrutura de programas exibida para os alunos.
+
+### O que foi implementado
+
+1. `/admin/conteudo` virou visão estrutural
+- A tela principal agora mostra `Conteúdo por Programas`.
+- Lista programas como cards principais.
+- Cada programa pode expandir sessões.
+- Cada sessão mostra suas aulas/conteúdos vinculados.
+- A estrutura fica mais próxima da tela pública:
+  - `/conteudo`
+  - `/conteudo/[id]`
+  - `/conteudo/[id]/[aulaId]`
+
+2. Ações disponíveis por nível
+- Programa:
+  - ver/ocultar sessões
+  - criar sessão
+  - editar nome do programa
+  - publicar/despublicar
+  - excluir
+- Sessão:
+  - adicionar aula diretamente naquela sessão
+  - editar nome da sessão
+  - excluir sessão
+- Aula/conteúdo:
+  - editar
+  - publicar/despublicar
+  - excluir
+  - alterar ordem
+
+3. Criação de aula com sessão pré-selecionada
+- O botão `+ Aula` dentro de uma sessão abre:
+  - `/admin/conteudo/novo?session_id=<id>`
+- `ContentAdminForm` agora lê `session_id` da URL no client.
+- Quando a sessão é pré-selecionada, o formulário exibe um bloco de contexto com:
+  - nome do programa
+  - nome da sessão
+- Isso reduz erro operacional ao cadastrar aulas no programa errado.
+
+4. Conteúdos sem sessão
+- A tela exibe uma seção `Aulas sem programa`.
+- Serve para identificar conteúdos avulsos que ainda não estão organizados em programa/sessão.
+- Observação importante: esses conteúdos não fazem parte do fluxo principal por programas enquanto não forem vinculados a uma sessão.
+
+5. Compatibilidade com a tela antiga de programas
+- Em `/admin/conteudo/programas`, o botão `+ Aula` também passou a abrir o formulário com `session_id` na query string.
+- Isso mantém os dois caminhos admin coerentes.
+
+### Arquivos alterados
+- `app/admin/conteudo/page.jsx`
+- `app/admin/conteudo/programas/page.jsx`
+- `components/admin/ContentAdminForm.jsx`
+
+### Validação realizada
+- `git diff --check` passou.
+- `npm run build` passou.
+- Commit e push realizados em `main`.
+
+### Pontos de atenção para continuidade
+- `backup.dump` continua não rastreado e não faz parte do commit.
+- A reorganização usa hooks/APIs já existentes:
+  - `useAdminContent`
+  - `useAdminPrograms`
+  - `/api/admin/content`
+  - `/api/admin/programs`
+- Não houve alteração de banco, migração ou API nesta rodada.
+- A tela ainda usa `window.prompt`/`window.confirm` para algumas ações rápidas de programa/sessão; se a próxima fase for polimento admin, trocar isso por modais próprios seria o próximo passo natural.
+
+---
+
+## Atualização 2026-06-10 — Correção de Erro HTML no Admin Conteúdo
+
+### Objetivo da rodada
+Evitar que a área admin exiba uma página HTML bruta do Next.js quando uma ação de conteúdo/programa falha no servidor.
+
+O bug apareceu ao incluir uma sessão: a interface renderizou o HTML completo de uma página de erro (`<!DOCTYPE html>... __NEXT_DATA__ ...`) dentro da tela `/admin/conteudo`, em vez de mostrar uma mensagem curta e operável.
+
+### O que foi ajustado
+
+1. Tratamento de erro mais defensivo
+- `resolveError` agora detecta respostas HTML por:
+  - `content-type: text/html`
+  - início do payload com `<!doctype`
+  - início do payload com `<html`
+  - presença de `__NEXT_DATA__`
+- Quando a resposta é HTML, o front não mostra o corpo bruto.
+- A mensagem volta para o fallback amigável com status HTTP, como:
+  - `Erro ao criar sessão (500)`
+  - `Erro ao carregar programas (500)`
+
+2. Pontos cobertos
+- Formulário de conteúdo/aulas.
+- Hook de conteúdos admin.
+- Hook de programas admin.
+
+### Arquivos alterados
+- `components/admin/ContentAdminForm.jsx`
+- `hooks/useAdminContent.js`
+- `hooks/useAdminPrograms.js`
+
+### Observação técnica
+O erro original apontava para `Cannot find module './vendor-chunks/next.js'` dentro de `.next/server/...`, com cara de problema de build/cache/dev server do Next, não de regra de negócio. A correção feita não altera a lógica de criação de sessão; ela impede que o HTML bruto vaze para a interface caso uma falha desse tipo volte a acontecer.
+
+---
+
+## Atualização 2026-06-10 — Jackson IA com Data, Hora e Mercado Atual
+
+### Objetivo da rodada
+Fazer o Jackson IA responder com consciência da data/hora atual e de indicadores financeiros oficiais do mercado brasileiro, em vez de depender apenas do conhecimento estático do modelo.
+
+### O que foi implementado
+
+1. Novo contexto vivo de tempo e mercado
+- Criado `src/lib/ai/market-context.js`.
+- O helper gera um bloco de prompt com:
+  - data e hora atuais em `America/Sao_Paulo`
+  - Meta Selic
+  - IPCA mensal
+  - IPCA acumulado em 12 meses
+  - CDI diário
+  - dólar PTAX venda
+
+2. Fontes oficiais usadas
+- Banco Central do Brasil SGS:
+  - série `432` — Meta Selic definida pelo Copom
+  - série `433` — IPCA mensal
+  - série `13522` — IPCA acumulado em 12 meses
+  - série `12` — CDI diário
+- Banco Central do Brasil PTAX:
+  - `CotacaoDolarDia` para dólar PTAX venda
+
+3. Comportamento seguro
+- Os dados são buscados em janela até a data atual em São Paulo, evitando usar dado futuro por engano.
+- Se o indicador não responder, o prompt informa indisponibilidade da fonte oficial e orienta o modelo a não chutar números.
+- Há cache em memória de 15 minutos para reduzir chamadas externas.
+- O dólar PTAX tenta a data atual e recua até 7 dias para encontrar a última cotação disponível.
+
+4. Integração no chat
+- `app/api/ai/chat/route.js` agora monta:
+  - contexto financeiro do usuário
+  - contexto de tempo/mercado
+  - system prompt final
+- Os dois contextos são carregados em paralelo com `Promise.all`.
+
+5. System prompt atualizado
+- `src/lib/ai/system-prompt.js` passou a aceitar `options.marketContext`.
+- O prompt instrui o Jackson a usar o bloco `TEMPO E MERCADO` quando o usuário falar de:
+  - hoje
+  - agora
+  - data/hora
+  - Selic
+  - IPCA
+  - CDI
+  - dólar
+  - cenário macroeconômico
+- Também foi ajustada a frase final para separar falta de dados pessoais da disponibilidade de dados macro.
+
+### Arquivos alterados
+- `app/api/ai/chat/route.js`
+- `src/lib/ai/market-context.js`
+- `src/lib/ai/system-prompt.js`
+
+### Validação realizada
+- `git diff --check` passou.
+- `npm run build` passou.
+- Endpoints do Banco Central foram conferidos com `curl` fora do sandbox:
+  - SGS Selic retornou dados até `10/06/2026`
+  - SGS IPCA mensal/IPCA 12 meses retornou última referência oficial disponível
+  - SGS CDI retornou dado diário disponível
+  - PTAX retornou dólar venda para a última data consultada
+
+### Pontos de atenção para continuidade
+- Essa implementação não cria nova tabela, variável de ambiente ou dependência.
+- O contexto depende de rede no runtime do servidor Next.
+- Em caso de falha de rede, o Jackson continua respondendo com data/hora local e marca indicadores como indisponíveis, sem inventar valores.
+- `backup.dump` continua não rastreado e não deve entrar no commit sem pedido explícito.

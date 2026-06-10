@@ -14,7 +14,14 @@ async function parsePayload(response) {
 
 function resolveError(response, payload, fallback) {
   if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error.trim();
-  if (typeof payload?.raw === 'string' && payload.raw.trim()) return payload.raw.trim();
+  const raw = typeof payload?.raw === 'string' ? payload.raw.trim() : '';
+  const contentType = response.headers?.get?.('content-type') || '';
+  const isHtmlError =
+    contentType.includes('text/html') ||
+    raw.toLowerCase().startsWith('<!doctype') ||
+    raw.toLowerCase().startsWith('<html') ||
+    raw.includes('__NEXT_DATA__');
+  if (raw && !isHtmlError) return raw;
   return `${fallback} (${response.status})`;
 }
 
