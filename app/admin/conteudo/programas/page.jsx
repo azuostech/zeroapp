@@ -253,7 +253,11 @@ export default function AdminProgramasPage() {
                           <button type="button" className="btn small" onClick={() => handleEditSession(session)}>
                             ✏️
                           </button>
-                          <button type="button" className="btn small" onClick={() => router.push('/admin/conteudo/novo')}>
+                          <button
+                            type="button"
+                            className="btn small"
+                            onClick={() => router.push(`/admin/conteudo/novo?session_id=${encodeURIComponent(session.id)}`)}
+                          >
                             + Aula
                           </button>
                           <button type="button" className="btn small danger" onClick={() => handleDeleteSession(session)}>

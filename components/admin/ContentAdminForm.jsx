@@ -109,11 +109,16 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [sessions, setSessions] = useState([]);
+  const [presetSessionId, setPresetSessionId] = useState('');
 
   const isEdit = mode === 'edit';
   const heading = isEdit ? 'Editar Conteúdo' : 'Novo Conteúdo';
   const domainMeta = useMemo(() => parseDomain(form.url), [form.url]);
   const releasePreview = useMemo(() => formatReleasePreview(form.disponivel_em), [form.disponivel_em]);
+  const selectedSession = useMemo(
+    () => sessions.find((session) => session.id === form.session_id) || null,
+    [form.session_id, sessions]
+  );
 
   useEffect(() => {
     let active = true;
@@ -128,12 +133,19 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           for (const session of program?.content_sessions || []) {
             nextSessions.push({
               ...session,
-              program_title: program?.title || 'Programa'
+              program_title: program?.title || 'Programa',
+              program_order: Number(program?.order_index || 0)
             });
           }
         }
         if (active) {
-          setSessions(nextSessions.sort((a, b) => Number(a?.order_index || 0) - Number(b?.order_index || 0)));
+          setSessions(
+            nextSessions.sort(
+              (a, b) =>
+                Number(a?.program_order || 0) - Number(b?.program_order || 0) ||
+                Number(a?.order_index || 0) - Number(b?.order_index || 0)
+            )
+          );
         }
       } catch (_) {
         if (active) setSessions([]);
@@ -146,6 +158,17 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (isEdit || typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    setPresetSessionId(String(params.get('session_id') || '').trim());
+  }, [isEdit]);
+
+  useEffect(() => {
+    if (isEdit || !presetSessionId) return;
+    setForm((current) => (current.session_id ? current : { ...current, session_id: presetSessionId }));
+  }, [isEdit, presetSessionId]);
 
   useEffect(() => {
     if (!isEdit || !contentId) return;
@@ -272,6 +295,13 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
         </header>
 
         <section className="form-card">
+          {selectedSession ? (
+            <div className="session-context">
+              <strong>{selectedSession.program_title}</strong>
+              <span>{selectedSession.title}</span>
+            </div>
+          ) : null}
+
           <label>
             Título *
             <input
@@ -501,6 +531,24 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           padding: 16px;
           display: grid;
           gap: 12px;
+        }
+
+        .session-context {
+          border: 1px solid rgba(0, 200, 83, 0.28);
+          border-radius: 12px;
+          background: rgba(0, 200, 83, 0.1);
+          color: #d9ffe8;
+          padding: 10px 12px;
+          display: grid;
+          gap: 3px;
+          font-size: 13px;
+        }
+
+        .session-context strong {
+          color: #00c853;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
         label {
