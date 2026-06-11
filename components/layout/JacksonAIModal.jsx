@@ -27,6 +27,33 @@ export default function JacksonAIModal({ isOpen, onClose }) {
   }, [isOpen, onClose]);
 
   useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+
+    const syncViewport = () => {
+      const height = viewport?.height || window.innerHeight;
+      const offsetTop = viewport?.offsetTop || 0;
+      root.style.setProperty('--ia-visual-height', `${height}px`);
+      root.style.setProperty('--ia-visual-offset-top', `${offsetTop}px`);
+    };
+
+    syncViewport();
+    viewport?.addEventListener('resize', syncViewport);
+    viewport?.addEventListener('scroll', syncViewport);
+    window.addEventListener('resize', syncViewport);
+
+    return () => {
+      viewport?.removeEventListener('resize', syncViewport);
+      viewport?.removeEventListener('scroll', syncViewport);
+      window.removeEventListener('resize', syncViewport);
+      root.style.removeProperty('--ia-visual-height');
+      root.style.removeProperty('--ia-visual-offset-top');
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!chatRef.current) return;
     chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages, isLoading]);
@@ -144,22 +171,33 @@ export default function JacksonAIModal({ isOpen, onClose }) {
 const styles = `
   .ia-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--ia-visual-height, 100dvh);
     background: rgba(0, 0, 0, 0.7);
     z-index: 200;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    overflow: hidden;
+    transform: translateY(var(--ia-visual-offset-top, 0px));
   }
 
   .ia-sheet {
+    width: min(100%, 720px);
+    max-width: 100%;
+    min-width: 0;
+    margin: 0 auto;
     background: var(--bg2);
     border-radius: 24px 24px 0 0;
     border-top: 1px solid var(--border);
-    height: 75vh;
+    height: min(75vh, calc(var(--ia-visual-height, 100dvh) - 8px));
+    max-height: calc(var(--ia-visual-height, 100dvh) - 8px);
     display: flex;
     flex-direction: column;
-    padding-bottom: env(safe-area-inset-bottom, 22px);
+    overflow: hidden;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 22px));
   }
 
   .ia-handle {
@@ -250,6 +288,7 @@ const styles = `
 
   .ia-chat {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -330,6 +369,9 @@ const styles = `
 
   .ia-input-wrap {
     margin: 0 20px;
+    width: calc(100% - 40px);
+    max-width: calc(100% - 40px);
+    min-width: 0;
     border: 1px solid var(--border);
     border-radius: 14px;
     background: var(--bg3);
@@ -342,17 +384,21 @@ const styles = `
 
   .ia-input {
     flex: 1;
+    width: 100%;
+    min-width: 0;
     border: none;
     outline: none;
     background: transparent;
     color: var(--text);
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 16px;
+    line-height: 1.4;
   }
 
   .ia-send {
-    width: 32px;
-    height: 32px;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
     min-height: unset;
     border-radius: 50%;
     border: none;
@@ -366,5 +412,32 @@ const styles = `
   .ia-send:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 480px) {
+    .ia-sheet {
+      border-radius: 20px 20px 0 0;
+      height: min(78vh, calc(var(--ia-visual-height, 100dvh) - 6px));
+      max-height: calc(var(--ia-visual-height, 100dvh) - 6px);
+    }
+
+    .ia-header {
+      padding-inline: 14px;
+    }
+
+    .ia-chips {
+      padding-inline: 14px;
+    }
+
+    .ia-chat {
+      padding-inline: 14px;
+    }
+
+    .ia-input-wrap {
+      margin-inline: 14px;
+      width: calc(100% - 28px);
+      max-width: calc(100% - 28px);
+      padding: 9px 10px 9px 14px;
+    }
   }
 `;

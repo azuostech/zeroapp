@@ -196,13 +196,15 @@ export default function JacksonIAPage() {
 
       <style jsx>{`
         .jackson-page {
+          width: 100%;
           max-width: 900px;
           margin: 0 auto;
-          min-height: calc(100vh - 180px);
+          min-height: calc(100dvh - 180px);
           display: flex;
           flex-direction: column;
           gap: 10px;
           color: var(--text);
+          overflow-x: hidden;
         }
 
         .chat-header {
@@ -263,6 +265,7 @@ export default function JacksonIAPage() {
           min-height: 360px;
           max-height: 58vh;
           overflow-y: auto;
+          overflow-x: hidden;
         }
 
         .empty-state {
@@ -327,12 +330,17 @@ export default function JacksonIAPage() {
           border-radius: var(--radius-md);
           padding: 8px;
           background: var(--bg-card);
+          min-width: 0;
+          overflow: hidden;
         }
 
         .composer {
           display: grid;
-          grid-template-columns: 1fr auto;
+          grid-template-columns: minmax(0, 1fr) auto;
           gap: 8px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
           background: var(--bg-card);
@@ -340,11 +348,15 @@ export default function JacksonIAPage() {
         }
 
         .composer input {
+          width: 100%;
+          min-width: 0;
           border: 1px solid var(--border-2);
           background: var(--bg-surface);
           color: var(--text);
           border-radius: var(--radius-md);
           padding: 10px 12px;
+          font-size: 16px;
+          line-height: 1.4;
           outline: none;
         }
 
@@ -358,7 +370,9 @@ export default function JacksonIAPage() {
         }
 
         .composer button {
+          width: 52px;
           min-width: 52px;
+          min-height: 44px;
           border: 1px solid var(--green-mid);
           border-radius: 999px;
           background: var(--green);
@@ -375,6 +389,10 @@ export default function JacksonIAPage() {
         }
 
         @media (max-width: 760px) {
+          .jackson-page {
+            min-height: calc(100dvh - 142px);
+          }
+
           .chat-header {
             grid-template-columns: 1fr;
             align-items: flex-start;
@@ -385,11 +403,24 @@ export default function JacksonIAPage() {
           }
 
           .chat-area {
-            max-height: 52vh;
+            min-height: min(330px, 48dvh);
+            max-height: 52dvh;
+            padding-inline: 10px;
           }
 
           .empty-state h1 {
             font-size: 22px;
+          }
+
+          .composer {
+            border-radius: 20px;
+            padding: 8px;
+          }
+
+          .composer button {
+            width: 48px;
+            min-width: 48px;
+            min-height: 48px;
           }
         }
       `}</style>
