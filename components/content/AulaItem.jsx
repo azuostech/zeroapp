@@ -10,7 +10,7 @@ const TYPE_META = {
 };
 
 const TIER_LABELS = {
-  LIVRE: 'Grátis',
+  LIVRE: 'Livre',
   MOVIMENTO: 'Mentorado',
   ACELERACAO: 'Aceleração',
   AUTOGOVERNO: 'Autogoverno'

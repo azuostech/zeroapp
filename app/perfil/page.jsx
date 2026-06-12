@@ -28,6 +28,14 @@ function statusLabel(value) {
   return value || '—';
 }
 
+function resolveTierAvatarClass(tier) {
+  const normalized = String(tier || 'DESPERTAR').toUpperCase();
+  if (normalized === 'MOVIMENTO') return 'tier-movimento';
+  if (normalized === 'ACELERACAO') return 'tier-aceleracao';
+  if (normalized === 'AUTOGOVERNO') return 'tier-autogoverno';
+  return 'tier-despertar';
+}
+
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 }
@@ -110,6 +118,7 @@ export default function PerfilPage() {
   const firstName = useMemo(() => fullName.split(/\s+/)[0] || 'Mentorado', [fullName]);
   const profileInitial = useMemo(() => firstName.charAt(0).toUpperCase() || 'M', [firstName]);
   const safeTier = useMemo(() => String(profile?.tier || 'DESPERTAR').toUpperCase(), [profile?.tier]);
+  const avatarTierClass = resolveTierAvatarClass(safeTier);
 
   const handleEmailSubmit = async (event) => {
     event.preventDefault();
@@ -216,7 +225,7 @@ export default function PerfilPage() {
           <>
             <section className="profile-hero card">
               <div className="hero-main">
-                <div className="profile-avatar" aria-hidden="true">{profileInitial}</div>
+                <div className={`profile-avatar ${avatarTierClass}`} aria-hidden="true">{profileInitial}</div>
                 <div className="hero-copy">
                   <h2>{firstName}</h2>
                   <p>{userEmail || 'Sem e-mail cadastrado'}</p>
@@ -423,12 +432,13 @@ export default function PerfilPage() {
         }
 
         .profile-avatar {
+          --avatar-color: var(--green);
           width: 72px;
           height: 72px;
           border-radius: 999px;
-          border: 2px solid var(--green);
-          box-shadow: 0 0 16px color-mix(in srgb, var(--green) 40%, transparent);
-          background: var(--bg3);
+          border: 2px solid var(--avatar-color);
+          box-shadow: 0 0 16px color-mix(in srgb, var(--avatar-color) 40%, transparent);
+          background: color-mix(in srgb, var(--avatar-color) 18%, var(--bg3));
           color: var(--text);
           display: inline-flex;
           align-items: center;
@@ -437,6 +447,23 @@ export default function PerfilPage() {
           font-weight: 800;
           font-family: var(--font-body);
           flex-shrink: 0;
+        }
+
+        .profile-avatar.tier-despertar {
+          --avatar-color: var(--green);
+        }
+
+        .profile-avatar.tier-movimento {
+          --avatar-color: var(--gold);
+          color: var(--bg);
+        }
+
+        .profile-avatar.tier-aceleracao {
+          --avatar-color: var(--blue);
+        }
+
+        .profile-avatar.tier-autogoverno {
+          --avatar-color: var(--purple);
         }
 
         .hero-copy {
@@ -534,20 +561,28 @@ export default function PerfilPage() {
         }
 
         .stack-form input:focus {
-          border-color: var(--green);
-          box-shadow: 0 0 0 2px color-mix(in srgb, var(--green) 18%, transparent);
+          border-color: var(--green-mid);
+          box-shadow: 0 0 0 3px var(--green-dim);
         }
 
         .stack-form button {
-          border: 1px solid var(--green);
+          border: none;
           border-radius: 10px;
           background: var(--green);
           color: var(--bg);
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 700;
-          padding: 12px;
+          padding: 13px;
           cursor: pointer;
           transition: var(--transition);
+        }
+
+        .stack-form button:not(:disabled):hover {
+          opacity: 0.9;
+        }
+
+        .stack-form button:not(:disabled):active {
+          transform: scale(0.99);
         }
 
         .stack-form button:disabled {
@@ -644,7 +679,7 @@ export default function PerfilPage() {
 
         .menu-arrow {
           color: var(--muted);
-          font-size: 22px;
+          font-size: 14px;
           line-height: 1;
         }
 

@@ -90,9 +90,10 @@ export default function ConteudoPage() {
 
         h1 {
           margin: 4px 0 0;
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 900;
           line-height: 1.1;
+          color: var(--text);
         }
 
         .header-side {

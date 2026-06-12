@@ -43,8 +43,8 @@ export default function TurmaPage() {
             <Link href="/app" className="back-link">
               ← voltar
             </Link>
-            <h1 className="text-display">Turma 💪</h1>
-            <p>{turmaNome ? `Turma ${turmaNome}` : 'Comunidade'}</p>
+            <h1 className="text-display">Comunidade 👥</h1>
+            <p>{turmaNome ? `Turma ${turmaNome}` : 'Geral'}</p>
             <span className="context-label">{turmaNome ? `Vendo eventos da Turma ${turmaNome}` : 'Vendo todos os eventos'}</span>
           </div>
           <button type="button" className="refresh-btn" onClick={handleRefreshAll}>

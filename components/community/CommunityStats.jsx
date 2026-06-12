@@ -38,7 +38,7 @@ export default function CommunityStats({ stats }) {
           border: 1px solid var(--border);
           background: var(--bg2);
           border-radius: 12px;
-          padding: 10px 14px;
+          padding: 12px;
           display: inline-flex;
           flex-direction: column;
           gap: 2px;

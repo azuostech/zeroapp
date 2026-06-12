@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 const TIER_BADGES = {
-  LIVRE: { label: 'Grátis', className: 'tier-livre' },
+  LIVRE: { label: 'Livre', className: 'tier-livre' },
   MOVIMENTO: { label: 'Mentorado', className: 'tier-movimento' },
   ACELERACAO: { label: 'Aceleração', className: 'tier-aceleracao' },
   AUTOGOVERNO: { label: 'Autogoverno', className: 'tier-autogoverno' }

@@ -307,7 +307,7 @@ export default function JornadaPage() {
           bottom: -14px;
           width: 2px;
           height: 14px;
-          background: var(--border-2);
+          background: var(--border);
         }
 
         .fase-card.done:not(:last-child)::after {
@@ -381,7 +381,10 @@ export default function JornadaPage() {
         }
 
         .progress-track {
-          height: 8px;
+          height: 5px;
+          border-radius: var(--radius-full);
+          background: var(--bg3);
+          overflow: hidden;
         }
 
         .progress-fill {
@@ -402,8 +405,10 @@ export default function JornadaPage() {
         }
 
         .chip {
-          padding: 5px 9px;
-          font-size: 12px;
+          border-radius: 20px;
+          padding: 3px 10px;
+          font-size: 10px;
+          font-weight: 700;
         }
 
         .chip.on {
@@ -506,7 +511,7 @@ export default function JornadaPage() {
           }
 
           h1 {
-            font-size: 25px;
+            font-size: 22px;
           }
         }
       `}</style>

@@ -3,7 +3,7 @@
 import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 
 const TIER_LABELS = {
-  LIVRE: 'Grátis',
+  LIVRE: 'Livre',
   MOVIMENTO: 'Mentorado',
   ACELERACAO: 'Aceleração',
   AUTOGOVERNO: 'Autogoverno'
@@ -63,7 +63,7 @@ export default function ProgramCard({ program, onClick }) {
 
         .cover {
           height: 120px;
-          background: linear-gradient(135deg, #0d2b1b, #101820);
+          background: linear-gradient(135deg, var(--green-accent), var(--bg-card));
           position: relative;
           display: grid;
           place-items: center;
@@ -105,7 +105,7 @@ export default function ProgramCard({ program, onClick }) {
           right: 0;
           bottom: 0;
           height: 4px;
-          background: rgba(255, 255, 255, 0.12);
+          background: var(--border-2);
         }
 
         .progress-track span {
