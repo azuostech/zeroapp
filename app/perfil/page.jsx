@@ -685,7 +685,7 @@ export default function PerfilPage() {
 
         @media (max-width: 760px) {
           .perfil-shell {
-            padding: 14px 10px calc(106px + env(safe-area-inset-bottom));
+            padding: 14px 10px calc(120px + env(safe-area-inset-bottom));
           }
 
           .perfil-header h1 {
