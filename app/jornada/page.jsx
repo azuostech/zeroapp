@@ -24,6 +24,7 @@ function ensureThemeAttribute() {
   }
 }
 
+// CLAUDE-HANDOFF-MARKER: Design System Fase 3 consolidado para telas internas; manter logica/hooks intactos.
 export default function JornadaPage() {
   const { coinsAtual, coinsTotal, faseAtual, progressoPct, coinsParaProxima, proximaFase, transactions, fases, isLoading, error, refresh } =
     useJornada();
@@ -271,6 +272,12 @@ export default function JornadaPage() {
           font-family: var(--font-mono);
         }
 
+        .strip-phase .badge {
+          color: var(--gold);
+          font-size: 14px;
+          font-weight: 700;
+        }
+
         .feedback {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
@@ -374,6 +381,8 @@ export default function JornadaPage() {
         .fase-body p {
           margin: 4px 0 8px;
           color: var(--text-2);
+          font-size: 12px;
+          line-height: 1.6;
         }
 
         .progress-wrap {
@@ -388,7 +397,8 @@ export default function JornadaPage() {
         }
 
         .progress-fill {
-          background: linear-gradient(90deg, var(--gold), var(--green));
+          background: var(--green);
+          box-shadow: 0 0 8px color-mix(in srgb, var(--green) 40%, transparent);
         }
 
         .progress-wrap small {

@@ -435,11 +435,11 @@ export default function PerfilPage() {
           --avatar-color: var(--green);
           width: 72px;
           height: 72px;
-          border-radius: 999px;
+          border-radius: 50%;
           border: 2px solid var(--avatar-color);
           box-shadow: 0 0 16px color-mix(in srgb, var(--avatar-color) 40%, transparent);
           background: color-mix(in srgb, var(--avatar-color) 18%, var(--bg3));
-          color: var(--text);
+          color: var(--bg);
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -455,7 +455,6 @@ export default function PerfilPage() {
 
         .profile-avatar.tier-movimento {
           --avatar-color: var(--gold);
-          color: var(--bg);
         }
 
         .profile-avatar.tier-aceleracao {
@@ -550,6 +549,7 @@ export default function PerfilPage() {
         }
 
         .stack-form input {
+          width: 100%;
           border: 1px solid var(--border);
           border-radius: 10px;
           background: var(--bg3);
@@ -558,6 +558,7 @@ export default function PerfilPage() {
           font-family: var(--font-body);
           padding: 12px 14px;
           outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .stack-form input:focus {
@@ -566,15 +567,17 @@ export default function PerfilPage() {
         }
 
         .stack-form button {
+          width: 100%;
           border: none;
           border-radius: 10px;
           background: var(--green);
           color: var(--bg);
+          font-family: var(--font-body);
           font-size: 14px;
           font-weight: 700;
           padding: 13px;
           cursor: pointer;
-          transition: var(--transition);
+          transition: opacity 0.15s, transform 0.15s;
         }
 
         .stack-form button:not(:disabled):hover {
@@ -594,6 +597,7 @@ export default function PerfilPage() {
           border-radius: 10px;
           padding: 10px 12px;
           font-size: 13px;
+          line-height: 1.5;
           border: 1px solid var(--border);
           background: var(--bg3);
           color: var(--text-2);
@@ -604,12 +608,14 @@ export default function PerfilPage() {
         }
 
         .feedback.error {
+          margin-top: 6px;
           border-color: color-mix(in srgb, var(--red) 28%, transparent);
           background: color-mix(in srgb, var(--red) 8%, transparent);
           color: var(--red);
         }
 
         .feedback.success {
+          margin-top: 6px;
           border-color: color-mix(in srgb, var(--green) 35%, transparent);
           background: var(--green-dim);
           color: var(--green);
@@ -679,7 +685,7 @@ export default function PerfilPage() {
 
         .menu-arrow {
           color: var(--muted);
-          font-size: 14px;
+          font-size: 16px;
           line-height: 1;
         }
 
