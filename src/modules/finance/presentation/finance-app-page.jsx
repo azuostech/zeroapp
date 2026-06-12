@@ -687,9 +687,11 @@ export default function FinanceAppPage({
             <span class="finance-swipe-bg-text">Excluir</span>
           </div>
         </div>
-        <div class="finance-swipe-hint swipe-hint">← deslize para excluir</div>`;
+        <div class="finance-swipe-hint swipe-hint">← deslize para excluir</div>
+        <button type="button" class="finance-desktop-delete" aria-label="Excluir ${esc(itemName)}">🗑</button>`;
 
       const bg = container.querySelector('.finance-swipe-bg');
+      const desktopDelete = container.querySelector('.finance-desktop-delete');
       row.classList.add('finance-swipe-row');
       container.appendChild(row);
 
@@ -818,6 +820,20 @@ export default function FinanceAppPage({
         },
         true
       );
+
+      desktopDelete?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeOpenSwipe(reset);
+        openSwipeDeleteSheet({
+          itemName,
+          reset,
+          onConfirm: () => {
+            container.classList.add('is-deleting');
+            setTimeout(() => onDelete?.(), 150);
+          }
+        });
+      });
 
       return container;
     };
@@ -2923,9 +2939,64 @@ export default function FinanceAppPage({
           transition: opacity 0.2s;
         }
 
+        .finance-desktop-delete {
+          display: none;
+        }
+
         @media (hover: hover) {
           .finance-swipe-container:hover .finance-swipe-hint {
             opacity: 1;
+          }
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .finance-swipe-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 44px;
+            align-items: stretch;
+            gap: 8px;
+            overflow: visible;
+          }
+
+          .finance-swipe-bg,
+          .finance-swipe-hint {
+            display: none;
+          }
+
+          .finance-swipe-row {
+            grid-column: 1;
+            grid-row: 1;
+            transform: none !important;
+          }
+
+          .finance-desktop-delete {
+            grid-column: 2;
+            grid-row: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
+            border: 1px solid color-mix(in srgb, var(--red) 26%, var(--border));
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--red) 8%, transparent);
+            color: var(--red);
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+          }
+
+          .finance-swipe-container:hover .finance-desktop-delete,
+          .finance-swipe-container:focus-within .finance-desktop-delete {
+            opacity: 1;
+          }
+
+          .finance-desktop-delete:hover,
+          .finance-desktop-delete:focus-visible {
+            border-color: var(--red);
+            background: color-mix(in srgb, var(--red) 14%, transparent);
+            outline: none;
           }
         }
 
