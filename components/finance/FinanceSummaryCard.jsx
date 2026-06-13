@@ -139,12 +139,12 @@ export default function FinanceSummaryCard({ data = {}, mes, ano, isLoading = fa
 
       <div style={styles.balanceSection}>
         <div style={styles.balanceLabel}>Saldo Realizado do Mês</div>
-        <div style={{ ...styles.balanceValue, color: saldo >= 0 ? '#FFFFFF' : '#FF4444' }}>{fmtBRL(saldo)}</div>
+        <div style={{ ...styles.balanceValue, color: saldo >= 0 ? 'var(--green-text)' : 'var(--red)' }}>{fmtBRL(saldo)}</div>
 
         {saldoPrev !== 0 ? (
           <div style={styles.balancePrev}>
             Previsto:{' '}
-            <span style={{ color: saldoPrev >= 0 ? '#00C853' : '#FF4444' }}>{fmtBRL(saldoPrev)}</span>
+            <span style={{ color: saldoPrev >= 0 ? 'var(--green-text)' : 'var(--red)' }}>{fmtBRL(saldoPrev)}</span>
           </div>
         ) : null}
 
@@ -156,10 +156,10 @@ export default function FinanceSummaryCard({ data = {}, mes, ano, isLoading = fa
 
 const styles = {
   card: {
-    background: '#1a1a1a',
-    borderRadius: 24,
-    padding: 24,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+    background: 'var(--bg-card)',
+    borderRadius: 'var(--radius-xl)',
+    padding: 'var(--padding-card)',
+    boxShadow: 'var(--shadow-card)'
   },
   grid: {
     display: 'grid',
@@ -173,43 +173,56 @@ const styles = {
     alignItems: 'center',
     textAlign: 'center',
     gap: 3,
-    minWidth: 0
+    minWidth: 0,
+    background: 'var(--bg)',
+    borderRadius: 'var(--radius-md)',
+    padding: 10
   },
   blockIcon: {
     fontSize: 28,
-    filter: 'grayscale(100%) opacity(0.6)',
+    background: 'var(--green-dim)',
+    borderRadius: 'var(--radius-full)',
+    width: 40,
+    height: 40,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 2,
     lineHeight: 1
   },
   blockLabel: {
     fontSize: 9,
     fontWeight: 600,
-    color: '#888888',
+    color: 'var(--text3)',
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
   blockValue: {
     fontSize: 14,
     fontWeight: 700,
-    color: '#00C853',
+    color: 'var(--green-dark)',
     fontFamily: "'Space Mono', monospace"
   },
   blockSub: {
     fontSize: 9,
-    color: '#666666'
+    color: 'var(--text3)'
   },
   divider: {
     height: 1,
-    background: '#333333',
+    background: 'var(--border)',
     marginBottom: 16
   },
   balanceSection: {
-    textAlign: 'center'
+    textAlign: 'center',
+    background: 'var(--green-dim)',
+    border: '1px solid var(--border-green)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 16
   },
   balanceLabel: {
     fontSize: 11,
     fontWeight: 600,
-    color: '#888888',
+    color: 'var(--green-text)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
     marginBottom: 6
@@ -223,18 +236,18 @@ const styles = {
   },
   balancePrev: {
     fontSize: 11,
-    color: '#888888',
+    color: 'var(--text2)',
     marginTop: 4
   },
   period: {
     marginTop: 8,
     fontSize: 11,
-    color: '#888888',
+    color: 'var(--text3)',
     letterSpacing: '0.8px'
   },
   skeleton: {
     height: 240,
     borderRadius: 12,
-    background: 'linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%)'
+    background: 'linear-gradient(90deg, var(--bg-input) 25%, var(--bg-section) 50%, var(--bg-input) 75%)'
   }
 };

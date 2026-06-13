@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 
-const THEME_KEY = 'zeroapp-theme';
 const ICON_VERSION = '20260510d';
 
 const THEME_ICONS = {
@@ -19,14 +18,7 @@ const THEME_ICONS = {
 };
 
 function resolveTheme() {
-  try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === 'light' || saved === 'dark') return saved;
-  } catch (_) {
-    // no-op
-  }
-
-  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  return 'light';
 }
 
 function applyThemeAssets(theme) {

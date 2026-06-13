@@ -20,12 +20,12 @@ const styles = `
     height: var(--fab-size);
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, var(--green), #00694a);
+    background: var(--green);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    box-shadow: var(--shadow-fab);
+    box-shadow: var(--shadow-green);
     cursor: pointer;
     z-index: 90;
     transition: all 0.2s ease;
@@ -34,11 +34,11 @@ const styles = `
 
   .fab:active {
     transform: scale(0.95);
-    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.4);
+    box-shadow: var(--shadow-green);
   }
 
   .fab:focus-visible {
-    outline: 2px solid #ffffff;
+    outline: 2px solid var(--text-on-green);
     outline-offset: 2px;
   }
 `;

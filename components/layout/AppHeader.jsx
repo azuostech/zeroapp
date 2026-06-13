@@ -7,8 +7,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 
-const THEME_KEY = 'zeroapp-theme';
-
 function getAvatarInitial(profile) {
   const base = profile?.full_name || profile?.email || '';
   return base.trim().charAt(0).toUpperCase() || 'U';
@@ -46,14 +44,7 @@ export default function AppHeader() {
 
   useEffect(() => {
     const readTheme = () => {
-      try {
-        const saved = localStorage.getItem(THEME_KEY);
-        if (saved === 'light' || saved === 'dark') return saved;
-      } catch (_) {
-        // no-op
-      }
-
-      return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      return 'light';
     };
 
     const syncTheme = () => {
@@ -194,9 +185,9 @@ export default function AppHeader() {
           position: sticky;
           top: 0;
           z-index: 140;
-          background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
-          border-bottom: 1px solid var(--border-2);
-          box-shadow: var(--shadow-sm);
+          background: var(--bg-header);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+          box-shadow: var(--shadow-green);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
         }
@@ -228,7 +219,7 @@ export default function AppHeader() {
           font-size: 18px;
           font-weight: 800;
           letter-spacing: 0.8px;
-          color: var(--green);
+          color: var(--text-on-green);
         }
 
         .header-actions {
@@ -239,6 +230,9 @@ export default function AppHeader() {
 
         :global(.header-coins) {
           flex-shrink: 0;
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.35);
+          color: var(--text-on-green);
         }
 
         :global(.jornada-shortcut-link) {
@@ -249,15 +243,21 @@ export default function AppHeader() {
         }
 
         :global(.jornada-shortcut-link:focus-visible) {
-          outline: 2px solid var(--green);
+          outline: 2px solid var(--text-on-green);
           outline-offset: 2px;
+        }
+
+        :global(.jornada-shortcut-link .badge) {
+          background: rgba(255, 255, 255, 0.2);
+          border-color: rgba(255, 255, 255, 0.35);
+          color: var(--text-on-green);
         }
 
         .user-name {
           font-family: var(--font-display);
           font-weight: 800;
           font-size: 14px;
-          color: var(--text);
+          color: var(--text-on-green);
           max-width: 92px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -267,14 +267,14 @@ export default function AppHeader() {
         .user-avatar {
           width: 36px;
           height: 36px;
-          background: linear-gradient(135deg, var(--bg-surface), var(--bg-elevated));
-          border: 2px solid var(--green-mid);
+          background: rgba(255, 255, 255, 0.25);
+          border: 2px solid rgba(255, 255, 255, 0.5);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           font-size: 13px;
           font-weight: 700;
-          color: var(--text);
+          color: var(--text-on-green);
           text-transform: uppercase;
           text-decoration: none;
           transition: transform 0.2s ease, border-color 0.2s ease;
@@ -285,15 +285,15 @@ export default function AppHeader() {
         }
 
         .user-avatar:focus-visible {
-          outline: 2px solid var(--green);
+          outline: 2px solid var(--text-on-green);
           outline-offset: 2px;
         }
 
         .logout-btn {
-          border: 1px solid var(--border-2);
+          border: 1px solid rgba(255, 255, 255, 0.35);
           border-radius: var(--radius-full);
-          background: var(--bg-surface);
-          color: var(--text-2);
+          background: rgba(255, 255, 255, 0.2);
+          color: var(--text-on-green);
           min-height: 36px;
           padding: 0 12px;
           font-size: 12px;
@@ -303,9 +303,9 @@ export default function AppHeader() {
         }
 
         .logout-btn:hover {
-          border-color: var(--red);
-          color: var(--red);
-          background: var(--red-dim);
+          border-color: rgba(255, 255, 255, 0.65);
+          color: var(--text-on-green);
+          background: rgba(255, 255, 255, 0.28);
         }
 
         .logout-btn:disabled {
@@ -314,24 +314,24 @@ export default function AppHeader() {
         }
 
         .logout-btn:focus-visible {
-          outline: 2px solid var(--green);
+          outline: 2px solid var(--text-on-green);
           outline-offset: 2px;
         }
 
         .tier-despertar {
-          border-color: var(--green-mid);
+          border-color: rgba(255, 255, 255, 0.5);
         }
 
         .tier-movimento {
-          border-color: rgba(255, 215, 0, 0.6);
+          border-color: rgba(255, 255, 255, 0.5);
         }
 
         .tier-aceleracao {
-          border-color: rgba(100, 181, 255, 0.7);
+          border-color: rgba(255, 255, 255, 0.5);
         }
 
         .tier-autogoverno {
-          border-color: rgba(179, 157, 219, 0.72);
+          border-color: rgba(255, 255, 255, 0.5);
         }
 
         .fase-progress-mobile {
@@ -357,12 +357,12 @@ export default function AppHeader() {
           }
 
           .fase-progress-fill {
-            background: linear-gradient(90deg, var(--gold), var(--green));
+            background: var(--text-on-green);
           }
 
           .fase-progress-label {
             font-size: 10px;
-            color: var(--text-3);
+            color: rgba(255, 255, 255, 0.75);
             white-space: nowrap;
           }
 
