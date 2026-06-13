@@ -94,12 +94,8 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         }
 
         .practice-card.gains {
-          background: linear-gradient(
-            145deg,
-            color-mix(in srgb, var(--green-dim) 44%, var(--bg-card)),
-            var(--bg-elevated)
-          );
-          border-color: color-mix(in srgb, var(--green) 18%, var(--border-2));
+          background: var(--bg-card);
+          border-color: var(--border);
           box-shadow: var(--shadow-card);
         }
 
@@ -128,13 +124,12 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
         }
 
         .head-title {
-          color: var(--green);
+          color: var(--text);
           font-size: 17px;
           font-family: var(--font-body);
           font-weight: 700;
           line-height: 1.15;
           margin-bottom: 4px;
-          filter: drop-shadow(0 3px 8px var(--green-glow));
         }
 
         .head-meta {
@@ -179,7 +174,7 @@ export default function GanhosCard({ summary, expanded, onToggle, onUpdate, targ
 
         .primary-btn {
           background: var(--green);
-          color: var(--bg);
+          color: var(--text-on-green);
           box-shadow: var(--shadow-green);
         }
 

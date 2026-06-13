@@ -58,6 +58,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
           border-radius: 16px;
           background: var(--green-dim);
           padding: 14px;
+          box-shadow: var(--shadow-sm);
         }
 
         .challenge-top {
@@ -72,7 +73,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
         }
 
         .challenge-top strong {
-          color: var(--green);
+          color: var(--green-dark);
           font-size: 18px;
           font-weight: 700;
           line-height: 1.15;
@@ -86,7 +87,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
 
         .challenge-progress-track {
           height: 5px;
-          background: var(--bg3);
+          background: var(--green-mid);
         }
 
         .challenge-progress-fill {
@@ -110,7 +111,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
           padding: 5px 10px;
           border-radius: var(--radius-full);
           border: 1px solid var(--green-mid);
-          color: var(--green);
+          color: var(--green-dark);
           background: var(--green-dim);
           font-size: 12px;
           font-weight: 700;
@@ -121,7 +122,7 @@ export default function DesafioCard({ challenge, participations = 0, progressPct
           border: 1px solid var(--green-mid);
           border-radius: var(--radius-md);
           background: var(--green);
-          color: var(--bg);
+          color: var(--text-on-green);
           font-size: 13px;
           font-weight: 700;
           padding: 8px 12px;

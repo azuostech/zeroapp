@@ -112,12 +112,8 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .practice-card.identity {
-          background: linear-gradient(
-            145deg,
-            color-mix(in srgb, var(--purple-dim) 44%, var(--bg-card)),
-            var(--bg-elevated)
-          );
-          border-color: color-mix(in srgb, var(--purple) 20%, var(--border-2));
+          background: var(--bg-card);
+          border-color: var(--border);
           box-shadow: var(--shadow-card);
         }
 
@@ -146,7 +142,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
         }
 
         .head-title {
-          color: var(--purple);
+          color: var(--text);
           font-size: 17px;
           font-family: var(--font-body);
           font-weight: 700;
@@ -196,7 +192,7 @@ export default function IdentidadeCard({ summary, expanded, onToggle, onUpdate, 
 
         .primary-btn {
           background: var(--purple);
-          color: var(--bg);
+          color: var(--text-on-green);
         }
 
         .ghost-btn {

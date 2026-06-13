@@ -281,8 +281,8 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
         <style jsx>{`
           .state-wrap {
             min-height: 100vh;
-            background: #101010;
-            color: #fff;
+            background: var(--bg);
+            color: var(--text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -290,8 +290,8 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           }
 
           .state-card {
-            border: 1px solid #303030;
-            background: #1a1a1a;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
             border-radius: 12px;
             padding: 14px 18px;
             font-size: 14px;
@@ -585,10 +585,10 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
         input,
         select,
         textarea {
-          border: 1px solid #2f363d;
-          background: #11161a;
+          border: 1px solid var(--border);
+          background: var(--bg-input);
           border-radius: 10px;
-          color: #f3f3f3;
+          color: var(--text);
           font-size: 14px;
           padding: 10px 11px;
           font-family: inherit;
@@ -610,8 +610,8 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
         }
 
         .tier-help {
-          border: 1px solid #2f363d;
-          background: #11161a;
+          border: 1px solid var(--border);
+          background: var(--bg-input);
           border-radius: 10px;
           padding: 10px;
           display: grid;

@@ -52,7 +52,7 @@ function AuthorLine({ author, createdAt }) {
 
         .mentor-badge {
           background: var(--green);
-          color: #03150a;
+          color: var(--text-on-green);
           border-radius: 4px;
           padding: 2px 5px;
           font-size: 9px;
@@ -146,7 +146,8 @@ export default function CommentItem({ comment, onReply, onDelete, onDeleteReply 
           gap: 10px;
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
-          background: var(--bg2);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           padding: 10px;
         }
 
@@ -154,9 +155,9 @@ export default function CommentItem({ comment, onReply, onDelete, onDeleteReply 
           width: 34px;
           height: 34px;
           border-radius: 50%;
-          background: var(--green-dim);
-          border: 1px solid var(--green-mid);
-          color: var(--green);
+          background: var(--green);
+          border: 1px solid var(--green);
+          color: var(--text-on-green);
           display: grid;
           place-items: center;
           font-size: 13px;
@@ -175,7 +176,7 @@ export default function CommentItem({ comment, onReply, onDelete, onDeleteReply 
 
         p {
           margin: 6px 0 0;
-          color: var(--text);
+          color: var(--text2);
           font-size: 13px;
           line-height: 1.45;
           white-space: pre-wrap;
@@ -230,6 +231,7 @@ export default function CommentItem({ comment, onReply, onDelete, onDeleteReply 
           border: 1px solid var(--green-mid);
           border-radius: var(--radius-sm);
           background: var(--green-dim);
+          color: var(--green-dark);
           padding: 7px 10px;
           min-height: 34px;
         }
@@ -251,6 +253,10 @@ export default function CommentItem({ comment, onReply, onDelete, onDeleteReply 
           display: grid;
           grid-template-columns: 28px 1fr;
           gap: 8px;
+          border-left: 2px solid var(--green);
+          background: var(--bg);
+          border-radius: var(--radius-sm);
+          padding: 8px;
         }
 
         .reply p {

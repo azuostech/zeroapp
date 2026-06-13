@@ -91,7 +91,7 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
         .swipe-delete-bg {
           position: absolute;
           inset: 0;
-          background: #ff3b30;
+          background: var(--red);
           display: flex;
           align-items: center;
           justify-content: flex-end;
@@ -104,7 +104,7 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
           flex-direction: column;
           align-items: center;
           gap: 2px;
-          color: #fff;
+          color: var(--text-on-green);
         }
 
         .swipe-delete-bg strong {
@@ -151,15 +151,16 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.5);
         }
 
         .swipe-confirm-sheet {
           width: 100%;
           max-width: 480px;
-          border-top: 1px solid #2a2a2a;
+          border-top: 1px solid var(--border);
           border-radius: 24px 24px 0 0;
-          background: #1a1a1a;
+          background: var(--bg-card);
+          box-shadow: var(--shadow-lg);
           padding: 0 20px 36px;
         }
 
@@ -167,19 +168,19 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
           width: 40px;
           height: 4px;
           border-radius: 2px;
-          background: #333;
+          background: var(--border-strong);
           margin: 12px auto 16px;
         }
 
         h3 {
           margin: 0 0 6px;
-          color: #f0f0f0;
+          color: var(--text);
           font-size: 17px;
         }
 
         p {
           margin: 0 0 20px;
-          color: #888;
+          color: var(--text2);
           font-size: 13px;
           line-height: 1.6;
         }
@@ -191,7 +192,7 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
 
         button {
           flex: 1;
-          border: 1px solid #333;
+          border: 1px solid var(--border);
           border-radius: 12px;
           padding: 14px;
           font-size: 14px;
@@ -200,14 +201,14 @@ export default function SwipeableItem({ children, itemName, onDelete, disabled =
         }
 
         .btn-cancel {
-          background: #2a2a2a;
-          color: #f0f0f0;
+          background: var(--bg-input);
+          color: var(--text);
         }
 
         .btn-delete {
-          border-color: #ff3b30;
-          background: #ff3b30;
-          color: #fff;
+          border-color: var(--red);
+          background: var(--red);
+          color: var(--text-on-green);
         }
       `}</style>
     </>

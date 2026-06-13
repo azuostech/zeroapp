@@ -64,7 +64,7 @@ export default function FeedEventCard({ event, onReact }) {
   return (
     <article className="feed-card card">
       <div className="feed-card-top">
-        <div className="feed-author-avatar avatar" style={{ background: avatarColor }} aria-hidden="true">
+        <div className="feed-author-avatar avatar" style={{ '--avatar-accent': avatarColor }} aria-hidden="true">
           {initial}
         </div>
 
@@ -93,7 +93,7 @@ export default function FeedEventCard({ event, onReact }) {
         .feed-card {
           border: 1px solid var(--border);
           border-radius: 16px;
-          background: var(--bg2);
+          background: var(--bg-card);
           padding: 14px;
           box-shadow: var(--shadow-card);
         }
@@ -113,9 +113,10 @@ export default function FeedEventCard({ event, onReact }) {
           justify-content: center;
           font-size: 14px;
           font-weight: 800;
-          color: var(--bg);
+          background: var(--green-dim);
+          color: var(--green-dark);
           flex-shrink: 0;
-          border: 1px solid var(--border-3);
+          border: 1px solid var(--border-green);
           box-shadow: var(--shadow-sm);
         }
 
@@ -159,7 +160,7 @@ export default function FeedEventCard({ event, onReact }) {
 
         .feed-body {
           margin: 0 0 12px;
-          color: var(--text);
+          color: var(--text2);
           font-size: 14px;
           line-height: 1.4;
         }
@@ -177,13 +178,13 @@ export default function FeedEventCard({ event, onReact }) {
 
         .feed-react-btn:hover {
           border-color: var(--green-mid);
-          color: var(--green);
+          color: var(--green-dark);
         }
 
         .feed-react-btn.active {
           border-color: var(--green-mid);
           background: var(--green-dim);
-          color: var(--green);
+          color: var(--green-dark);
         }
 
         .reaction-count {

@@ -81,6 +81,7 @@ export default function CommentsSection({ aulaId }) {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-lg);
           background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           padding: 14px;
         }
 
@@ -114,9 +115,9 @@ export default function CommentsSection({ aulaId }) {
           width: 34px;
           height: 34px;
           border-radius: 50%;
-          background: var(--green-dim);
-          border: 1px solid var(--green-mid);
-          color: var(--green);
+          background: var(--green);
+          border: 1px solid var(--green);
+          color: var(--text-on-green);
           display: grid;
           place-items: center;
           font-size: 13px;
@@ -127,7 +128,7 @@ export default function CommentsSection({ aulaId }) {
           width: 100%;
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
-          background: var(--bg2);
+          background: var(--bg-input);
           color: var(--text);
           padding: 10px;
           resize: vertical;
@@ -139,7 +140,7 @@ export default function CommentsSection({ aulaId }) {
           border: 1px solid var(--green);
           border-radius: var(--radius-md);
           background: var(--green);
-          color: #03150a;
+          color: var(--text-on-green);
           padding: 8px 11px;
           min-height: 38px;
           font-size: 12px;
@@ -155,7 +156,7 @@ export default function CommentsSection({ aulaId }) {
         .state {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
-          background: var(--bg2);
+          background: var(--bg-input);
           color: var(--text-2);
           padding: 10px 12px;
           font-size: 13px;

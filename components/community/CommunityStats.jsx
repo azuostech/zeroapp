@@ -36,23 +36,24 @@ export default function CommunityStats({ stats }) {
 
         .stat-pill {
           border: 1px solid var(--border);
-          background: var(--bg2);
+          background: var(--bg-card);
           border-radius: 12px;
           padding: 12px;
           display: inline-flex;
           flex-direction: column;
           gap: 2px;
+          box-shadow: var(--shadow-sm);
         }
 
         .stat-pill strong {
-          color: var(--green);
+          color: var(--green-dark);
           font-size: 18px;
           line-height: 1.1;
           font-family: var(--font-mono);
         }
 
         .stat-pill span {
-          color: var(--muted);
+          color: var(--text3);
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
