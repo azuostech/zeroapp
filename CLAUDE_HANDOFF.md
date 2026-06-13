@@ -854,7 +854,7 @@ Não relacionadas ao prompt de Fase 3 visual:
 ### Implementado
 - `app/api/content/programs/route.js`
   - adiciona calculo servidor-side de `accessible`, `locked`, `locked_reason`, `access_label` e `interest_cta`.
-  - usa `getServiceSupabase()` para montar o catalogo visivel completo, mantendo `requireUser()` para autenticar e calcular acesso do usuario atual.
+  - versao final usa `supabase.rpc('get_content_program_catalog')` para montar o catalogo visivel completo, mantendo `requireUser()` para autenticar e calcular acesso do usuario atual.
   - mantem `visibility = hidden` fora da resposta.
   - trata tier, `visibility = locked` e multiturma separada por `,` ou `;`.
   - para programas bloqueados, retorna `total_aulas`, `aulas_concluidas` e `progresso_pct` como `null`, evitando `0/0`.
@@ -874,6 +874,26 @@ Não relacionadas ao prompt de Fase 3 visual:
 ### Validacao
 - `git diff --check` passou.
 - `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
+
+---
+
+## Atualizacao 2026-06-13 — Fechamento programa vitrine para main
+
+### Estado final validado pelo usuario
+- Usuario `sza.treinamentos@gmail.com` (`ACELERACAO`, sem turma) passou a ver os programas bloqueados como vitrine, com cadeado/CTA em vez de parecer que nao ha conteudo.
+- `Fundamentos Financeiros` continua acessivel com progresso real.
+- `Workshop Finanças do Zero` e `Mentoria Maio 2026` aparecem como programas de interesse/bloqueados quando a turma nao bate.
+
+### Commits da entrega na branch `feature/programa-vitrine`
+- `f1851c6` — `feat(content): programas bloqueados como vitrine com CTA de interesse`
+- `586b996` — `fix(content): lock programs with no accessible lessons`
+- `41edd61` — `fix(content): list locked program catalog safely`
+
+### Antes do merge em `main`
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
+- Migração `scripts/migrate-conteudo-programa-vitrine-catalog.sql` ja foi aplicada no banco da `.env.local`.
+- `backup.dump` permanece nao rastreado, vazio (`0B`) e fora do commit.
 
 ---
 
