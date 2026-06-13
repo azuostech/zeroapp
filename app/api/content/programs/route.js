@@ -19,7 +19,29 @@ function canAccessTurma(requiredTurmas, userTurmas, isAdmin = false) {
   return required.some((turma) => userList.has(turma));
 }
 
-function calcularAcesso(program, profile) {
+function createLockedAccess(lockedReason = 'Conteúdo exclusivo', interestCta = 'Tenho interesse') {
+  return {
+    accessible: false,
+    locked: true,
+    locked_reason: lockedReason,
+    access_label: '🔒 Acesso exclusivo',
+    interest_cta: interestCta
+  };
+}
+
+function resolveTierLockedAccess(requiredTier) {
+  if (requiredTier === 'MOVIMENTO') {
+    return createLockedAccess('Exclusivo da Mentoria em Grupo', 'Quero entrar para a Mentoria');
+  }
+
+  if (requiredTier === 'ACELERACAO') {
+    return createLockedAccess('Exclusivo da Mentoria Individual', 'Quero a Mentoria Individual');
+  }
+
+  return createLockedAccess('Conteúdo exclusivo para mentorados', 'Quero saber mais');
+}
+
+function calcularAcessoPrograma(program, profile) {
   const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
   const tierOk = canAccessTier(program?.tier_required, profile?.tier, isAdmin);
   const turmaOk = canAccessTurma(program?.turma_exclusiva, profile?.turma, isAdmin);
@@ -39,36 +61,54 @@ function calcularAcesso(program, profile) {
   let interestCta = 'Tenho interesse';
 
   if (visibilityLocked) {
-    lockedReason = 'Acesso exclusivo';
-    interestCta = 'Quero saber mais';
+    return createLockedAccess('Acesso exclusivo', 'Quero saber mais');
   } else if (program?.turma_exclusiva && !turmaOk) {
-    lockedReason = `Exclusivo da turma ${program.turma_exclusiva}`;
-    interestCta = 'Quero participar da próxima turma';
+    return createLockedAccess(`Exclusivo da turma ${program.turma_exclusiva}`, 'Quero participar da próxima turma');
   } else if (!tierOk) {
-    if (program?.tier_required === 'MOVIMENTO') {
-      lockedReason = 'Exclusivo da Mentoria em Grupo';
-      interestCta = 'Quero entrar para a Mentoria';
-    } else if (program?.tier_required === 'ACELERACAO') {
-      lockedReason = 'Exclusivo da Mentoria Individual';
-      interestCta = 'Quero a Mentoria Individual';
-    } else {
-      lockedReason = 'Conteúdo exclusivo para mentorados';
-      interestCta = 'Quero saber mais';
-    }
+    return resolveTierLockedAccess(program?.tier_required);
   }
 
-  return {
-    accessible: false,
-    locked: true,
-    locked_reason: lockedReason,
-    access_label: '🔒 Acesso exclusivo',
-    interest_cta: interestCta
-  };
+  return createLockedAccess(lockedReason, interestCta);
 }
 
 function canCountAulaForProgress(aula, profile) {
   const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
   return canAccessTier(aula?.tier_required, profile?.tier, isAdmin) && canAccessTurma(aula?.turma_exclusiva, profile?.turma, isAdmin);
+}
+
+function resolveLockedAccessFromAulas(aulas, profile) {
+  const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
+  const turmaLocked = (aulas || []).find((aula) => splitTurmas(aula?.turma_exclusiva).length > 0 && !canAccessTurma(aula?.turma_exclusiva, profile?.turma, isAdmin));
+
+  if (turmaLocked?.turma_exclusiva) {
+    return createLockedAccess(`Exclusivo da turma ${turmaLocked.turma_exclusiva}`, 'Quero participar da próxima turma');
+  }
+
+  const tierLocked = (aulas || []).find((aula) => !canAccessTier(aula?.tier_required, profile?.tier, isAdmin));
+  if (tierLocked) return resolveTierLockedAccess(tierLocked?.tier_required);
+
+  return createLockedAccess(
+    profile?.turma ? 'Conteúdo exclusivo para outra turma' : 'Exclusivo para alunos de uma turma ativa',
+    'Tenho interesse'
+  );
+}
+
+function getVisiblePublishedAulas(sessions) {
+  return flattenSessionContent(sessions).filter((content) => content?.is_published && content?.visibility !== 'hidden');
+}
+
+function mapSessionsByProgramId(sessions) {
+  const sessionsByProgramId = new Map();
+
+  for (const session of sessions || []) {
+    const programId = session?.program_id;
+    if (!programId) continue;
+    const current = sessionsByProgramId.get(programId) || [];
+    current.push(session);
+    sessionsByProgramId.set(programId, current);
+  }
+
+  return sessionsByProgramId;
 }
 
 export async function GET() {
@@ -83,6 +123,7 @@ export async function GET() {
         *,
         content_sessions (
           id,
+          program_id,
           title,
           visibility,
           order_index,
@@ -104,11 +145,61 @@ export async function GET() {
     return NextResponse.json({ error: queryError.message || 'programs_query_failed' }, { status: 500 });
   }
 
-  const accessByProgramId = new Map((programs || []).map((program) => [program?.id, calcularAcesso(program, profile)]));
-  const contentIds = (programs || [])
-    .filter((program) => accessByProgramId.get(program?.id)?.accessible)
-    .flatMap((program) => flattenSessionContent(program?.content_sessions || []))
-    .filter((content) => content?.is_published && content?.visibility !== 'hidden' && canCountAulaForProgress(content, profile))
+  const programIds = (programs || []).map((program) => program?.id).filter(Boolean);
+  let authenticatedSessions = [];
+
+  if (programIds.length > 0) {
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('content_sessions')
+      .select(
+        `
+          id,
+          program_id,
+          title,
+          visibility,
+          order_index,
+          member_area_content (
+            id,
+            is_published,
+            visibility,
+            tier_required,
+            turma_exclusiva
+          )
+        `
+      )
+      .in('program_id', programIds)
+      .neq('visibility', 'hidden')
+      .order('order_index', { ascending: true });
+
+    if (sessionsError) {
+      return NextResponse.json({ error: sessionsError.message || 'sessions_query_failed' }, { status: 500 });
+    }
+
+    authenticatedSessions = sessions || [];
+  }
+
+  const authenticatedSessionsByProgramId = mapSessionsByProgramId(authenticatedSessions);
+  const programRows = (programs || []).map((program) => {
+    const catalogSessions = program?.content_sessions || [];
+    const userSessions = authenticatedSessionsByProgramId.get(program?.id) || [];
+    const catalogAulas = getVisiblePublishedAulas(catalogSessions);
+    const accessibleAulas = getVisiblePublishedAulas(userSessions).filter((content) => canCountAulaForProgress(content, profile));
+    const programAccess = calcularAcessoPrograma(program, profile);
+    const hasVisibleSessions = catalogSessions.some((session) => session?.visibility !== 'hidden') || userSessions.length > 0;
+    const shouldLockEmptyAccessibleProgram = programAccess.accessible && hasVisibleSessions && accessibleAulas.length === 0;
+    const access = shouldLockEmptyAccessibleProgram ? resolveLockedAccessFromAulas(catalogAulas, profile) : programAccess;
+
+    return {
+      program,
+      catalogSessions,
+      accessibleAulas,
+      access
+    };
+  });
+
+  const contentIds = programRows
+    .filter((row) => row.access.accessible)
+    .flatMap((row) => row.accessibleAulas)
     .map((content) => content.id);
 
   let progressRows = [];
@@ -126,24 +217,19 @@ export async function GET() {
   }
 
   const completedIds = new Set(progressRows.filter((item) => item?.completed_at).map((item) => item.content_id));
-  const programsWithProgress = (programs || []).map((program) => {
-    const sessions = program?.content_sessions || [];
-    const acesso = accessByProgramId.get(program?.id) || calcularAcesso(program, profile);
-    const aulas = flattenSessionContent(sessions).filter(
-      (content) => content?.is_published && content?.visibility !== 'hidden' && canCountAulaForProgress(content, profile)
-    );
-    const totalAulas = aulas.length;
-    const aulasConcluidas = aulas.filter((content) => completedIds.has(content.id)).length;
+  const programsWithProgress = programRows.map(({ program, catalogSessions, accessibleAulas, access }) => {
+    const totalAulas = accessibleAulas.length;
+    const aulasConcluidas = accessibleAulas.filter((content) => completedIds.has(content.id)).length;
 
     return {
       ...program,
       content_sessions: undefined,
       tier_usuario: profile?.tier || 'DESPERTAR',
-      ...acesso,
-      sessions_count: sessions.filter((session) => session?.visibility !== 'hidden').length,
-      total_aulas: acesso.accessible ? totalAulas : null,
-      aulas_concluidas: acesso.accessible ? aulasConcluidas : null,
-      progresso_pct: acesso.accessible && totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : null
+      ...access,
+      sessions_count: catalogSessions.filter((session) => session?.visibility !== 'hidden').length,
+      total_aulas: access.accessible ? totalAulas : null,
+      aulas_concluidas: access.accessible ? aulasConcluidas : null,
+      progresso_pct: access.accessible && totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : null
     };
   });
 

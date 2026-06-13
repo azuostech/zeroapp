@@ -887,3 +887,28 @@ Não relacionadas ao prompt de Fase 3 visual:
 - Nao foi implementado `POST /api/content/interest`; fica para V2.
 - Nao houve alteracao em finance, coins, mavf, auth, AppHeader, BottomNav ou FAB.
 - `backup.dump` continua nao rastreado, vazio (`0B`) e fora do escopo.
+
+---
+
+## Atualizacao 2026-06-13 — Correcao vitrine quando aulas ficam bloqueadas por turma
+
+### Problema reportado
+- Usuario `sza.treinamentos@gmail.com` nao pertence a nenhuma turma.
+- Programas como `Workshop Finanças do Zero` e `Mentoria Maio 2026` apareciam sem cadeado e com `0/0`, porque o programa em si passava por tier/programa, mas as aulas internas eram filtradas por turma/RLS.
+- Isso dava a percepcao errada de que o programa nao tinha conteudo.
+
+### Correcao aplicada
+- `app/api/content/programs/route.js` agora calcula acesso tambem a partir das aulas autenticadas do usuario.
+- Se o programa tem sessao visivel, mas o usuario fica com `0` aulas acessiveis, o programa passa a retornar:
+  - `accessible: false`
+  - `locked: true`
+  - `access_label: 🔒 Acesso exclusivo`
+  - `total_aulas: null`
+  - `aulas_concluidas: null`
+  - `progresso_pct: null`
+- Quando a turma bloqueada esta disponivel no catalogo, o motivo usa `Exclusivo da turma {turma}`.
+- Quando a turma nao aparece por RLS/service env, o fallback deixa claro: `Exclusivo para alunos de uma turma ativa`.
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
