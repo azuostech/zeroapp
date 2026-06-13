@@ -77,7 +77,7 @@ export default function LoginPage() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
 
   const getClient = () => {
     try {
@@ -88,11 +88,9 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    let nextTheme = 'dark';
+    let nextTheme = 'light';
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark') nextTheme = saved;
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) nextTheme = 'light';
+      localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
@@ -309,9 +307,6 @@ export default function LoginPage() {
           <div className="theme-switch">
             <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
               Claro
-            </button>
-            <button type="button" className={`theme-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')}>
-              Escuro
             </button>
           </div>
         </div>

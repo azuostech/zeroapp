@@ -370,7 +370,7 @@ export default function AdminMAVFPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f141c] text-[#c3cedd]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] text-[var(--text2)]">
         Carregando painel MAVF...
       </div>
     );
@@ -378,28 +378,28 @@ export default function AdminMAVFPage() {
 
   if (accessDenied) {
     return (
-      <div className="min-h-screen bg-[#0f141c] text-[#fff] flex items-center justify-center p-6">
-        <div className="bg-[#1a212c] border border-[#2e3947] rounded-[14px] p-7 max-w-md text-center">
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center p-6">
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] p-7 max-w-md text-center shadow-[var(--shadow-sm)]">
           <div className="text-4xl mb-4">⛔</div>
           <h2 className="text-xl font-semibold mb-2">Acesso restrito</h2>
-          <p className="text-[#91a1b7] text-sm">Esta página é exclusiva para administradores.</p>
+          <p className="text-[var(--text2)] text-sm">Esta página é exclusiva para administradores.</p>
         </div>
       </div>
     );
   }
 
   const renderSessionSection = (title, subtitle, list, accentClass) => (
-    <section className="rounded-[14px] border border-[#263343] bg-[#141b24] p-4 md:p-5">
+    <section className="rounded-[14px] border border-[var(--border)] bg-[var(--bg-card)] p-4 md:p-5 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h2 className={`text-lg md:text-xl font-bold ${accentClass}`}>{title}</h2>
-          <p className="text-xs md:text-sm text-[#8ea1b7]">{subtitle}</p>
+          <p className="text-xs md:text-sm text-[var(--text2)]">{subtitle}</p>
         </div>
-        <div className="text-xs text-[#8ea1b7]">{list.length} sessão(ões)</div>
+        <div className="text-xs text-[var(--text2)]">{list.length} sessão(ões)</div>
       </div>
 
       {list.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-[#324355] bg-[#111823] p-5 text-sm text-[#8ea1b7]">
+        <div className="rounded-[10px] border border-dashed border-[var(--border)] bg-[var(--bg-input)] p-5 text-sm text-[var(--text2)]">
           Nenhuma sessão nesta categoria.
         </div>
       ) : (
@@ -420,23 +420,21 @@ export default function AdminMAVFPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0f141c] p-4 md:p-8 text-[#f4f7fb]">
+    <div className="min-h-screen bg-[var(--bg)] p-4 md:p-8 text-[var(--text)]">
       <div className="max-w-7xl mx-auto space-y-6">
-        <header className="relative overflow-hidden rounded-[16px] border border-[#324a68] bg-gradient-to-r from-[#142335] via-[#1a2f48] to-[#173f3a] p-5 md:p-7">
-          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[rgba(101,184,255,0.13)] blur-2xl" />
-          <div className="absolute -left-16 -bottom-16 h-44 w-44 rounded-full bg-[rgba(0,200,131,0.1)] blur-2xl" />
+        <header className="relative overflow-hidden rounded-[16px] border border-[var(--border-green)] bg-[var(--bg-header)] p-5 md:p-7 shadow-[var(--shadow-green)]">
           <div className="relative flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.9px] text-[#9ab9da] mb-2">Painel Operacional</p>
+              <p className="text-xs uppercase tracking-[0.9px] text-white/80 mb-2">Painel Operacional</p>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF Admin</h1>
-              <p className="text-sm text-[#bbd0e8] max-w-2xl">
+              <p className="text-sm text-white/85 max-w-2xl">
                 Gerencie sessões, participantes e pilares em um único fluxo. Reative sessões finalizadas quando necessário.
               </p>
             </div>
             <button
               type="button"
               onClick={openCreateSessionModal}
-              className="px-5 py-3 rounded-[10px] bg-[#3dd598] text-[#06311f] font-bold text-sm shadow-[0_10px_30px_rgba(61,213,152,0.25)] hover:brightness-105"
+              className="px-5 py-3 rounded-[10px] bg-white/20 text-white border border-white/35 font-bold text-sm hover:bg-white/25"
             >
               + Nova Sessão
             </button>
@@ -456,21 +454,21 @@ export default function AdminMAVFPage() {
         ) : null}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-[#141b24] border border-[#2b394b] rounded-[12px] p-4">
-            <div className="text-xs text-[#8ea1b7] mb-1">Total de Sessões</div>
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
+            <div className="text-xs text-[var(--text3)] mb-1">Total de Sessões</div>
             <div className="text-3xl font-bold">{sessions.length}</div>
           </div>
-          <div className="bg-[#141b24] border border-[#245747] rounded-[12px] p-4">
-            <div className="text-xs text-[#8ea1b7] mb-1">Ativas</div>
-            <div className="text-3xl font-bold text-[#3dd598]">{activeSessions.length}</div>
+          <div className="bg-[var(--bg-card)] border border-[var(--border-green)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
+            <div className="text-xs text-[var(--text3)] mb-1">Ativas</div>
+            <div className="text-3xl font-bold text-[var(--green-dark)]">{activeSessions.length}</div>
           </div>
-          <div className="bg-[#141b24] border border-[#5a4a26] rounded-[12px] p-4">
-            <div className="text-xs text-[#8ea1b7] mb-1">Rascunhos</div>
-            <div className="text-3xl font-bold text-[#ffd166]">{draftSessions.length}</div>
+          <div className="bg-[var(--bg-card)] border border-[var(--gold-mid)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
+            <div className="text-xs text-[var(--text3)] mb-1">Rascunhos</div>
+            <div className="text-3xl font-bold text-[var(--gold-dark)]">{draftSessions.length}</div>
           </div>
-          <div className="bg-[#141b24] border border-[#3c4655] rounded-[12px] p-4">
-            <div className="text-xs text-[#8ea1b7] mb-1">Finalizadas</div>
-            <div className="text-3xl font-bold text-[#b4bfce]">{completedSessions.length}</div>
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
+            <div className="text-xs text-[var(--text3)] mb-1">Finalizadas</div>
+            <div className="text-3xl font-bold text-[var(--text2)]">{completedSessions.length}</div>
           </div>
         </div>
 
@@ -497,11 +495,11 @@ export default function AdminMAVFPage() {
       </div>
 
       {sessionModal.open ? (
-        <div className="fixed inset-0 z-50 bg-[rgba(6,10,14,0.78)] flex items-center justify-center p-4">
-          <div className="w-full max-w-xl bg-[#121a24] border border-[#2a3c50] rounded-[14px] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#2a3c50]">
+        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] overflow-hidden shadow-[var(--shadow-lg)]">
+            <div className="px-5 py-4 border-b border-[var(--border)]">
               <h3 className="text-lg font-semibold">{sessionModal.mode === 'edit' ? 'Editar Sessão' : 'Nova Sessão MAVF'}</h3>
-              <p className="text-xs text-[#8ea1b7] mt-1">
+              <p className="text-xs text-[var(--text2)] mt-1">
                 {sessionModal.mode === 'edit'
                   ? 'Atualize nome e identidade visual da sessão.'
                   : 'Crie a sessão e depois selecione participantes para liberar acesso.'}
@@ -510,18 +508,18 @@ export default function AdminMAVFPage() {
 
             <div className="px-5 py-4 space-y-4">
               <label className="block">
-                <span className="text-xs text-[#8ea1b7]">Título da sessão</span>
+                <span className="text-xs text-[var(--text2)]">Título da sessão</span>
                 <input
                   type="text"
                   value={sessionTitle}
                   onChange={(event) => setSessionTitle(event.target.value)}
                   placeholder="Ex.: Sessão de abril - turma A"
-                  className="mt-1 w-full bg-[#0f151e] border border-[#314255] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#64b4ff]"
+                  className="mt-1 w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
                 />
               </label>
 
               <div>
-                <div className="text-xs text-[#8ea1b7] mb-2">Cor da sessão</div>
+                <div className="text-xs text-[var(--text2)] mb-2">Cor da sessão</div>
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   {SESSION_COLORS.map((color) => {
                     const active = sessionColor.toLowerCase() === color.toLowerCase();
@@ -530,7 +528,7 @@ export default function AdminMAVFPage() {
                         key={color}
                         type="button"
                         onClick={() => setSessionColor(color)}
-                        className={`h-8 w-8 rounded-full border-2 ${active ? 'border-[#fff]' : 'border-[#2d3d52]'}`}
+                        className={`h-8 w-8 rounded-full border-2 ${active ? 'border-[var(--green)]' : 'border-[var(--border)]'}`}
                         style={{ background: color }}
                         aria-label={`Selecionar cor ${color}`}
                       />
@@ -538,18 +536,18 @@ export default function AdminMAVFPage() {
                   })}
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="color" value={sessionColor} onChange={(event) => setSessionColor(event.target.value)} className="h-9 w-12 rounded border border-[#314255] bg-transparent" />
+                  <input type="color" value={sessionColor} onChange={(event) => setSessionColor(event.target.value)} className="h-9 w-12 rounded border border-[var(--border)] bg-transparent" />
                   <input
                     type="text"
                     value={sessionColor}
                     onChange={(event) => setSessionColor(event.target.value)}
-                    className="w-full bg-[#0f151e] border border-[#314255] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#64b4ff]"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[#2a3c50]">
+            <div className="px-5 py-4 border-t border-[var(--border)]">
               {sessionFormError ? <div className="mb-3 text-sm text-[#ff9f9f]">{sessionFormError}</div> : null}
               <div className="flex items-center justify-end gap-2">
                 <button
@@ -564,7 +562,7 @@ export default function AdminMAVFPage() {
                   type="button"
                   onClick={saveSession}
                   disabled={sessionSubmitting}
-                  className="px-4 py-2 text-xs rounded-[8px] bg-[#64b4ff] text-[#08253d] font-bold disabled:opacity-60"
+                  className="px-4 py-2 text-xs rounded-[8px] bg-[var(--green)] text-[var(--text-on-green)] font-bold disabled:opacity-60"
                 >
                   {sessionSubmitting ? 'Salvando...' : sessionModal.mode === 'edit' ? 'Salvar Alterações' : 'Criar Sessão'}
                 </button>
@@ -575,12 +573,12 @@ export default function AdminMAVFPage() {
       ) : null}
 
       {participantsModalSession ? (
-        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.72)] flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-[#181818] border border-[#333] rounded-[14px] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#2c2c2c] flex items-center justify-between gap-3">
+        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] overflow-hidden shadow-[var(--shadow-lg)]">
+            <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Participantes da Sessão</h3>
-                <p className="text-xs text-[#9aa1ad] mt-1">
+                <p className="text-xs text-[var(--text2)] mt-1">
                   {participantsModalSession.title} • {formatDateBR(participantsModalSession.created_at)}
                 </p>
               </div>
@@ -588,14 +586,14 @@ export default function AdminMAVFPage() {
                 type="button"
                 onClick={closeParticipantsModal}
                 disabled={participantsSaving}
-                className="px-3 py-2 text-xs border border-[#444] rounded-[8px] text-[#bbb] disabled:opacity-50"
+                className="px-3 py-2 text-xs border border-[var(--border)] rounded-[8px] text-[var(--text2)] disabled:opacity-50"
               >
                 Fechar
               </button>
             </div>
 
-            <div className="px-5 py-4 border-b border-[#2c2c2c]">
-              <div className="text-xs text-[#8da0b8] mb-2">
+            <div className="px-5 py-4 border-b border-[var(--border)]">
+              <div className="text-xs text-[var(--text2)] mb-2">
                 Selecione quem pode visualizar e responder esta sessão. Apenas perfis `active` com tier MOVIMENTO+ aparecem aqui.
               </div>
               <input
@@ -603,15 +601,15 @@ export default function AdminMAVFPage() {
                 value={participantsQuery}
                 onChange={(event) => setParticipantsQuery(event.target.value)}
                 placeholder="Buscar por nome ou e-mail"
-                className="w-full bg-[#101010] border border-[#343434] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[#64b4ff]"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
               />
             </div>
 
             <div className="px-5 py-4 max-h-[52vh] overflow-y-auto">
               {usersLoading || participantsLoading ? (
-                <div className="text-sm text-[#999]">Carregando participantes...</div>
+                <div className="text-sm text-[var(--text3)]">Carregando participantes...</div>
               ) : filteredEligibleUsers.length === 0 ? (
-                <div className="text-sm text-[#999]">Nenhum usuário elegível encontrado.</div>
+                <div className="text-sm text-[var(--text3)]">Nenhum usuário elegível encontrado.</div>
               ) : (
                 <div className="space-y-2">
                   {filteredEligibleUsers.map((user) => {
@@ -620,7 +618,7 @@ export default function AdminMAVFPage() {
                       <label
                         key={user.id}
                         className={`flex items-center justify-between gap-3 p-3 rounded-[10px] border cursor-pointer ${
-                          checked ? 'border-[#64b4ff] bg-[rgba(100,180,255,0.08)]' : 'border-[#2f2f2f] bg-[#141414]'
+                          checked ? 'border-[var(--green)] bg-[var(--green-dim)]' : 'border-[var(--border)] bg-[var(--bg-input)]'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">

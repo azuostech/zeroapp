@@ -8,20 +8,16 @@ import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { useJornada } from '@/hooks/useJornada';
 
 const UPGRADE_LINK = 'https://wa.me/';
-const THEME_KEY = 'zeroapp-theme';
 
 function formatCoins(value) {
   return Number(value || 0).toLocaleString('pt-BR');
 }
 
 function ensureThemeAttribute() {
+  document.documentElement.setAttribute('data-theme', 'light');
   try {
-    const saved = localStorage.getItem(THEME_KEY);
-    const theme = saved === 'dark' || saved === 'light' ? saved : 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
-  } catch (_) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
+    localStorage.setItem('zeroapp-theme', 'light');
+  } catch (_) {}
 }
 
 // CLAUDE-HANDOFF-MARKER: Design System Fase 3 consolidado para telas internas; manter logica/hooks intactos.

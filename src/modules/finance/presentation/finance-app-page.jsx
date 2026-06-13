@@ -256,8 +256,7 @@ export default function FinanceAppPage({
   useEffect(() => {
     let nextTheme = 'light';
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark') nextTheme = saved;
+      localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
@@ -1598,9 +1597,6 @@ export default function FinanceAppPage({
             <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
               Claro
             </button>
-            <button type="button" className={`theme-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')}>
-              Escuro
-            </button>
           </div>
           <button className="btn-logout" onClick={() => window.logout?.()}>
             Sair
@@ -2005,60 +2001,6 @@ export default function FinanceAppPage({
       <div className="toast" id="toast" />
 
       <style jsx global>{`
-        :global(:root) {
-          --bg: #0a0a0a;
-          --bg2: #141414;
-          --bg3: #1c1c1c;
-          --bg4: #222;
-          --border: #2a2a2a;
-          --border2: #242424;
-          --green: #00c853;
-          --green-dim: rgba(0, 200, 83, 0.08);
-          --green-glow: rgba(0, 200, 83, 0.25);
-          --red: #ff4444;
-          --gold: #ffd700;
-          --text: #f0f0f0;
-          --muted: #555;
-          --dim: #888;
-          --line-soft: rgba(255, 255, 255, 0.025);
-          --line-softer: rgba(255, 255, 255, 0.02);
-          --hover-soft: rgba(255, 255, 255, 0.018);
-          --hover-softer: rgba(255, 255, 255, 0.012);
-          --btn-outline-hover-border: #444;
-          --theme-pill: #171717;
-          --theme-pill-border: #2a2a2a;
-          --theme-pill-text: #b6cdbf;
-          --theme-pill-active-bg: #00c853;
-          --theme-pill-active-text: #05110a;
-        }
-
-        :global(:root[data-theme='light']) {
-          --bg: #edf4ef;
-          --bg2: #ffffff;
-          --bg3: #e8f0ea;
-          --bg4: #dfe8e1;
-          --border: #cad8cf;
-          --border2: #d7e2da;
-          --green: #00a54a;
-          --green-dim: rgba(0, 165, 74, 0.12);
-          --green-glow: rgba(0, 165, 74, 0.2);
-          --red: #d74141;
-          --gold: #b79100;
-          --text: #16261d;
-          --muted: #5c7467;
-          --dim: #3d5348;
-          --line-soft: rgba(22, 38, 29, 0.08);
-          --line-softer: rgba(22, 38, 29, 0.06);
-          --hover-soft: rgba(22, 38, 29, 0.06);
-          --hover-softer: rgba(22, 38, 29, 0.04);
-          --btn-outline-hover-border: #8ba496;
-          --theme-pill: #f6faf7;
-          --theme-pill-border: #c4d5ca;
-          --theme-pill-text: #385146;
-          --theme-pill-active-bg: #00a54a;
-          --theme-pill-active-text: #ffffff;
-        }
-
         :global(body) {
           background: var(--bg);
           color: var(--text);
@@ -3013,16 +2955,17 @@ export default function FinanceAppPage({
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.5);
           animation: fadeIn 0.15s ease;
         }
 
         .swipe-delete-sheet {
           width: 100%;
           max-width: 480px;
-          border-top: 1px solid #2a2a2a;
+          border-top: 1px solid var(--border);
           border-radius: 24px 24px 0 0;
-          background: #1a1a1a;
+          background: var(--bg-card);
+          box-shadow: var(--shadow-lg);
           padding: 0 20px 36px;
           animation: valueSheetIn 0.2s ease;
         }
@@ -3031,20 +2974,20 @@ export default function FinanceAppPage({
           width: 40px;
           height: 4px;
           border-radius: 2px;
-          background: #333;
+          background: var(--border-strong);
           margin: 12px auto 16px;
         }
 
         .swipe-delete-title {
           margin-bottom: 6px;
-          color: #f0f0f0;
+          color: var(--text);
           font-size: 17px;
           font-weight: 900;
         }
 
         .swipe-delete-desc {
           margin-bottom: 20px;
-          color: #888;
+          color: var(--text2);
           font-size: 13px;
           line-height: 1.6;
         }
@@ -3065,15 +3008,15 @@ export default function FinanceAppPage({
         }
 
         .swipe-delete-cancel {
-          border: 1px solid #333;
-          background: #2a2a2a;
-          color: #f0f0f0;
+          border: 1px solid var(--border);
+          background: var(--bg-input);
+          color: var(--text);
         }
 
         .swipe-delete-confirm {
-          border: 1px solid #ff3b30;
-          background: #ff3b30;
-          color: #fff;
+          border: 1px solid var(--red);
+          background: var(--red);
+          color: var(--text-on-green);
         }
 
         .cat-nome {

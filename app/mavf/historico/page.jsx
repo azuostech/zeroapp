@@ -90,7 +90,7 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
     return (
       <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
         <div className="max-w-6xl mx-auto min-h-[50vh] flex items-center justify-center">
-          <div className="text-[#888]">Carregando histórico...</div>
+          <div className="text-[var(--text2)]">Carregando histórico...</div>
         </div>
       </MAVFAppShell>
     );
@@ -108,7 +108,7 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
 
   return (
     <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-      <div className="max-w-6xl mx-auto text-[#fff]">
+      <div className="max-w-6xl mx-auto text-[var(--text)]">
         {adminMode ? (
           <div className="mb-4 rounded-[10px] border border-[rgba(68,136,255,0.35)] bg-[rgba(68,136,255,0.1)] px-4 py-3 text-sm">
             <span className="font-semibold text-[#64b4ff]">Modo admin:</span>{' '}
@@ -121,15 +121,15 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1">MAVF Histórico</h1>
-            <p className="text-[#888]">Selecione até 3 sessões finalizadas para comparar sua evolução.</p>
+            <p className="text-[var(--text2)]">Selecione até 3 sessões finalizadas para comparar sua evolução.</p>
           </div>
-          <Link href={backHref} className="px-4 py-2 border border-[#333333] rounded-[8px] text-sm text-[#aaa]">
+          <Link href={backHref} className="px-4 py-2 border border-[var(--border)] rounded-[8px] text-sm text-[var(--text2)]">
             Voltar
           </Link>
         </div>
 
-        <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4 mb-6">
-          <div className="text-xs uppercase tracking-[0.5px] text-[#888] mb-3">Sessões disponíveis</div>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 mb-6 shadow-[var(--shadow-sm)]">
+          <div className="text-xs uppercase tracking-[0.5px] text-[var(--text3)] mb-3">Sessões disponíveis</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {sessions.map((session) => {
               const checked = selectedIds.includes(session.id);
@@ -138,7 +138,7 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
                 <label
                   key={session.id}
                   className={`flex items-center gap-3 p-3 rounded-[8px] border cursor-pointer ${
-                    checked ? 'border-[#00C853] bg-[rgba(0,200,83,0.08)]' : 'border-[#333333] bg-[#1a1a1a]'
+                    checked ? 'border-[var(--green)] bg-[var(--green-dim)]' : 'border-[var(--border)] bg-[var(--bg-input)]'
                   } ${disabled ? 'opacity-45 cursor-not-allowed' : ''}`}
                 >
                   <input
@@ -148,10 +148,10 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
                     onChange={() => toggleSession(session.id)}
                     className="accent-[#00C853]"
                   />
-                  <span className="w-3 h-3 rounded-full border border-[#333]" style={{ background: session.color_hex }} />
+                  <span className="w-3 h-3 rounded-full border border-[var(--border)]" style={{ background: session.color_hex }} />
                   <div>
                     <div className="text-sm font-semibold">{session.title}</div>
-                    <div className="text-[11px] text-[#888]">
+                    <div className="text-[11px] text-[var(--text3)]">
                       {session.completed_at ? new Date(session.completed_at).toLocaleDateString('pt-BR') : '—'}
                     </div>
                   </div>
@@ -162,22 +162,22 @@ export default function MAVFHistoricoPage({ adminViewUserId = null, adminClientL
         </div>
 
         {selectedSessions.length === 0 ? (
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-8 text-center text-[#888]">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-8 text-center text-[var(--text2)] shadow-[var(--shadow-sm)]">
             Selecione pelo menos uma sessão para visualizar a comparação.
           </div>
         ) : (
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-5 mb-6">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-5 mb-6 shadow-[var(--shadow-sm)]">
             <WheelChart sessions={selectedSessions} responsesMap={responsesMap} />
           </div>
         )}
 
         {selectedSessions.length > 0 ? (
-          <div className="bg-[#222222] border border-[#333333] rounded-[12px] p-4">
-            <div className="text-xs uppercase tracking-[0.5px] text-[#888] mb-3">Legenda</div>
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
+            <div className="text-xs uppercase tracking-[0.5px] text-[var(--text3)] mb-3">Legenda</div>
             <div className="flex flex-wrap gap-3">
               {selectedSessions.map((session) => (
-                <div key={session.id} className="flex items-center gap-2 bg-[#1a1a1a] border border-[#333] rounded-[8px] px-3 py-2">
-                  <span className="w-3 h-3 rounded-full border border-[#333]" style={{ background: session.color_hex }} />
+                <div key={session.id} className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2">
+                  <span className="w-3 h-3 rounded-full border border-[var(--border)]" style={{ background: session.color_hex }} />
                   <span className="text-sm">{session.title}</span>
                 </div>
               ))}

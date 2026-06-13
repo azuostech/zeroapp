@@ -45,8 +45,7 @@ export default function AdminPage() {
   useEffect(() => {
     let nextTheme = 'light';
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark') nextTheme = saved;
+      localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
@@ -672,9 +671,6 @@ export default function AdminPage() {
             <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
               Claro
             </button>
-            <button type="button" className={`theme-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')}>
-              Escuro
-            </button>
           </div>
           <button className="btn-logout" onClick={() => window.logout?.()}>
             Sair
@@ -871,56 +867,6 @@ export default function AdminPage() {
       <div className="toast" id="toast" />
 
       <style jsx global>{`
-        :global(:root) {
-          --bg: #0a0a0a;
-          --bg2: #111;
-          --bg3: #181818;
-          --bg4: #1e1e1e;
-          --border: #222;
-          --green: #00c853;
-          --green-dim: rgba(0, 200, 83, 0.08);
-          --gold: #ffd700;
-          --red: #ff4444;
-          --blue: #4488ff;
-          --text: #f0f0f0;
-          --muted: #555;
-          --dim: #888;
-          --line-soft: rgba(255, 255, 255, 0.03);
-          --hover-soft: rgba(255, 255, 255, 0.015);
-          --btn-hover-border: #444;
-          --overlay: rgba(0, 0, 0, 0.75);
-          --theme-pill: #171717;
-          --theme-pill-border: #2a2a2a;
-          --theme-pill-text: #b6cdbf;
-          --theme-pill-active-bg: #00c853;
-          --theme-pill-active-text: #05110a;
-        }
-
-        :global(:root[data-theme='light']) {
-          --bg: #edf4ef;
-          --bg2: #ffffff;
-          --bg3: #e8f0ea;
-          --bg4: #dfe8e1;
-          --border: #cad8cf;
-          --green: #00a54a;
-          --green-dim: rgba(0, 165, 74, 0.12);
-          --gold: #b79100;
-          --red: #d74141;
-          --blue: #2d70e2;
-          --text: #16261d;
-          --muted: #5c7467;
-          --dim: #3d5348;
-          --line-soft: rgba(22, 38, 29, 0.08);
-          --hover-soft: rgba(22, 38, 29, 0.06);
-          --btn-hover-border: #8ba496;
-          --overlay: rgba(17, 35, 24, 0.45);
-          --theme-pill: #f6faf7;
-          --theme-pill-border: #c4d5ca;
-          --theme-pill-text: #385146;
-          --theme-pill-active-bg: #00a54a;
-          --theme-pill-active-text: #ffffff;
-        }
-
         :global(body) {
           background: var(--bg);
           color: var(--text);
