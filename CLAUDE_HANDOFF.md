@@ -970,3 +970,54 @@ Não relacionadas ao prompt de Fase 3 visual:
 ### Validacao
 - `git diff --check` passou.
 - `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
+
+---
+
+## Atualizacao 2026-06-13 — Redesign completo Light Mode v2
+
+### Pedido / prompt
+- Prompt implementado:
+  - `/Users/jacksonsouza/Library/CloudStorage/GoogleDrive-jksouza@gmail.com/My Drive/Projetos/Mentoria Financeira/Lives Financeiras Diarias/Projetos das Mentorias/ZeroApp/prompts/NovoDesign_Vrs5/codex-light-mode-completo.md`
+- Branch criada a partir de `main`:
+  - `feature/light-mode`
+
+### Commits da entrega
+- `7273736` — `style(theme): design system light mode - tokens e utilitarios - fase A`
+- `dfa5448` — `style(components): layout e componentes principais light mode - fase B`
+- `036b533` — `style(screens): todas as telas light mode - fase C`
+- `cb4f475` — `style(components): componentes internos light mode - fase D`
+
+### Implementado
+- `styles/theme.css`
+  - substituido por tokens Light Mode v2 em verde/branco/cinza suave.
+  - mantidos aliases legados (`--bg2`, `--bg3`, `--bg-deep`, `--text-2`, `--border-2`, etc.) para nao quebrar telas existentes.
+  - adicionados aliases usados por Admin/Financeiro (`--line-soft`, `--hover-soft`, `--theme-pill*`, `--overlay`, etc.).
+- Layout principal
+  - `AppHeader` verde com texto branco, chips/avatars translucidos e progresso em branco.
+  - `BottomNav`, `BottomNavHub`, `FAB`, `JacksonAIModal` e `FinanceSummaryCard` ajustados para light mode.
+  - `ThemeAssetSync` e leituras de tema antigo passaram a forcar `light`, evitando que `zeroapp-theme=dark` antigo reactive o escuro.
+- Telas
+  - Home, Jornada, Conteudo, Detalhe de programa, Player, Resumo, Login, Reset Password, Admin Email, Admin MAVF, MAVF Historico e Financeiro ajustados para fundo claro, cards brancos e acentos verdes.
+  - Financeiro removeu overrides locais escuros de `:root` e manteve o player/embed preto apenas onde faz sentido.
+  - Email base template tambem foi clareado para evitar contraste de marca antigo em envios.
+- Componentes internos
+  - Cards MAVF (`GanhosCard`, `GratidaoCard`, `IdentidadeCard`) ficaram brancos com borda lateral colorida e titulo em texto principal.
+  - Comunidade (`FeedEventCard`, `DesafioCard`, `CommunityStats`) ajustada para cards brancos, numeros verdes e desafio em `green-dim`.
+  - Conteudo (`AulaItem`, `CommentsSection`, `CommentItem`) ajustado para cards claros, avatars verdes e badges claros.
+  - Financeiro (`SwipeableItem`, `ItemRow`) ajustado para sheets brancas, inputs claros e delete vermelho.
+  - Toasts agora usam tokens do tema.
+
+### Validacao
+- `git diff --check` passou.
+- `rg '#0a0a0a|#1a1a1a|#2a2a2a|#f0f0f0|setTheme\\('dark'\\)|Escuro|color-scheme: dark' app src components styles/theme.css` sem ocorrencias.
+- `npm run build` passou apos a Fase C com Next.js 15.5.15 e 62/62 paginas.
+- `npm run build` passou novamente apos a Fase D com Next.js 15.5.15 e 62/62 paginas.
+- Dev server subiu em `http://localhost:3001` porque a porta `3000` estava ocupada.
+- `HEAD /conteudo` respondeu `200 OK`.
+- `HEAD /auth/reset-password` respondeu `200 OK`.
+- `HEAD /app` respondeu `307 Temporary Redirect` sem sessao autenticada, comportamento esperado.
+
+### Observacoes
+- Nao houve alteracao intencional de API, hooks, schema ou banco; as mudancas foram visuais/tema.
+- `backup.dump` permanece nao rastreado e fora dos commits.
+- O Browser in-app (`iab`) nao estava disponivel nesta sessao; a validacao visual ficou limitada a build, grep e HTTP local.
