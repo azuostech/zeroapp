@@ -874,6 +874,44 @@ Não relacionadas ao prompt de Fase 3 visual:
 ### Validacao
 - `git diff --check` passou.
 - `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
+
+---
+
+## Atualizacao 2026-06-13 — Catalogo seguro para vitrines bloqueadas
+
+### Problema reportado
+- O usuario `sza.treinamentos@gmail.com` (`ACELERACAO`, sem turma) via apenas `Fundamentos Financeiros`.
+- `Workshop Finanças do Zero` e `Mentoria Maio 2026` nao apareciam como vitrine porque a listagem ainda dependia de RLS/service role no runtime.
+- No ambiente atual, `SUPABASE_SERVICE_ROLE_KEY` esta configurado como publishable key, entao `getServiceSupabase()` nao bypassava RLS.
+
+### Correcao aplicada
+- Criado script:
+  - `scripts/migrate-conteudo-programa-vitrine-catalog.sql`
+- Criada funcao SQL:
+  - `public.get_content_program_catalog()`
+- A funcao e `SECURITY DEFINER` e retorna apenas catalogo seguro:
+  - dados basicos do programa
+  - quantidade de sessoes
+  - quantidade de aulas publicadas
+  - tiers/turmas exigidos pelas aulas
+- A funcao nao retorna `url` das aulas.
+- `/api/content/programs` passou a usar `supabase.rpc('get_content_program_catalog')` para listar todos os programas publicados/visiveis.
+- A API continua usando RLS normal para buscar as sessoes/aulas realmente acessiveis pelo usuario e calcular progresso.
+
+### Validacao no banco
+- Migração aplicada no banco da `.env.local`.
+- Notice da migração:
+  - `Programa vitrine catalog: programas visiveis = 3`
+- Perfil validado:
+  - `sza.treinamentos@gmail.com | ACELERACAO | turma vazia`
+- Catalogo validado:
+  - `Workshop Finanças do Zero` — `LIVRE`, turma `Workshop, Maio 2026`, `1` sessao, `8` aulas
+  - `Mentoria Maio 2026` — `MOVIMENTO`, turma `Maio 2026`, `1` sessao, `3` aulas
+  - `Fundamentos Financeiros` — `LIVRE`, sem turma, `1` sessao, `2` aulas
+
+### Validacao local
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
 - Dev server subiu em `http://localhost:3000`.
 - `HEAD /conteudo` respondeu `200 OK`.
 - `GET /api/content/programs` sem sessao respondeu `401 Unauthorized`, mantendo autenticacao.

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { canAccessTier, flattenSessionContent, requireUser } from './content-program-utils';
 
 function splitTurmas(rawTurmas) {
@@ -76,16 +75,22 @@ function canCountAulaForProgress(aula, profile) {
   return canAccessTier(aula?.tier_required, profile?.tier, isAdmin) && canAccessTurma(aula?.turma_exclusiva, profile?.turma, isAdmin);
 }
 
-function resolveLockedAccessFromAulas(aulas, profile) {
-  const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
-  const turmaLocked = (aulas || []).find((aula) => splitTurmas(aula?.turma_exclusiva).length > 0 && !canAccessTurma(aula?.turma_exclusiva, profile?.turma, isAdmin));
+function toArray(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (value === undefined || value === null) return [];
+  return [value].filter(Boolean);
+}
 
-  if (turmaLocked?.turma_exclusiva) {
-    return createLockedAccess(`Exclusivo da turma ${turmaLocked.turma_exclusiva}`, 'Quero participar da próxima turma');
+function resolveLockedAccessFromCatalog(program, profile) {
+  const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
+  const turmaLocked = toArray(program?.aula_turmas).find((turma) => !canAccessTurma(turma, profile?.turma, isAdmin));
+
+  if (turmaLocked) {
+    return createLockedAccess(`Exclusivo da turma ${turmaLocked}`, 'Quero participar da próxima turma');
   }
 
-  const tierLocked = (aulas || []).find((aula) => !canAccessTier(aula?.tier_required, profile?.tier, isAdmin));
-  if (tierLocked) return resolveTierLockedAccess(tierLocked?.tier_required);
+  const tierLocked = toArray(program?.aula_tiers).find((tier) => !canAccessTier(tier, profile?.tier, isAdmin));
+  if (tierLocked) return resolveTierLockedAccess(tierLocked);
 
   return createLockedAccess(
     profile?.turma ? 'Conteúdo exclusivo para outra turma' : 'Exclusivo para alunos de uma turma ativa',
@@ -111,40 +116,34 @@ function mapSessionsByProgramId(sessions) {
   return sessionsByProgramId;
 }
 
+function mapCatalogProgram(row) {
+  return {
+    id: row?.id,
+    title: row?.title,
+    description: row?.description,
+    thumbnail_url: row?.thumbnail_url,
+    tier_required: row?.tier_required || 'LIVRE',
+    turma_exclusiva: row?.turma_exclusiva || null,
+    visibility: row?.visibility || 'visible',
+    order_index: Number(row?.order_index || 0),
+    sessions_count: Number(row?.sessions_count || 0),
+    catalog_total_aulas: Number(row?.catalog_total_aulas || 0),
+    aula_tiers: toArray(row?.aula_tiers),
+    aula_turmas: toArray(row?.aula_turmas)
+  };
+}
+
 export async function GET() {
   const { supabase, user, profile, error } = await requireUser();
   if (error) return error;
 
-  const serviceSupabase = getServiceSupabase();
-  const { data: programs, error: queryError } = await serviceSupabase
-    .from('content_programs')
-    .select(
-      `
-        *,
-        content_sessions (
-          id,
-          program_id,
-          title,
-          visibility,
-          order_index,
-          member_area_content (
-            id,
-            is_published,
-            visibility,
-            tier_required,
-            turma_exclusiva
-          )
-        )
-      `
-    )
-    .eq('is_published', true)
-    .neq('visibility', 'hidden')
-    .order('order_index', { ascending: true });
+  const { data: catalogRows, error: queryError } = await supabase.rpc('get_content_program_catalog');
 
   if (queryError) {
     return NextResponse.json({ error: queryError.message || 'programs_query_failed' }, { status: 500 });
   }
 
+  const programs = (catalogRows || []).map(mapCatalogProgram);
   const programIds = (programs || []).map((program) => program?.id).filter(Boolean);
   let authenticatedSessions = [];
 
@@ -180,18 +179,16 @@ export async function GET() {
 
   const authenticatedSessionsByProgramId = mapSessionsByProgramId(authenticatedSessions);
   const programRows = (programs || []).map((program) => {
-    const catalogSessions = program?.content_sessions || [];
     const userSessions = authenticatedSessionsByProgramId.get(program?.id) || [];
-    const catalogAulas = getVisiblePublishedAulas(catalogSessions);
     const accessibleAulas = getVisiblePublishedAulas(userSessions).filter((content) => canCountAulaForProgress(content, profile));
     const programAccess = calcularAcessoPrograma(program, profile);
-    const hasVisibleSessions = catalogSessions.some((session) => session?.visibility !== 'hidden') || userSessions.length > 0;
+    const hasVisibleSessions = Number(program?.sessions_count || 0) > 0 || userSessions.length > 0;
+    const hasCatalogAulas = Number(program?.catalog_total_aulas || 0) > 0;
     const shouldLockEmptyAccessibleProgram = programAccess.accessible && hasVisibleSessions && accessibleAulas.length === 0;
-    const access = shouldLockEmptyAccessibleProgram ? resolveLockedAccessFromAulas(catalogAulas, profile) : programAccess;
+    const access = shouldLockEmptyAccessibleProgram && hasCatalogAulas ? resolveLockedAccessFromCatalog(program, profile) : programAccess;
 
     return {
       program,
-      catalogSessions,
       accessibleAulas,
       access
     };
@@ -217,16 +214,17 @@ export async function GET() {
   }
 
   const completedIds = new Set(progressRows.filter((item) => item?.completed_at).map((item) => item.content_id));
-  const programsWithProgress = programRows.map(({ program, catalogSessions, accessibleAulas, access }) => {
+  const programsWithProgress = programRows.map(({ program, accessibleAulas, access }) => {
     const totalAulas = accessibleAulas.length;
     const aulasConcluidas = accessibleAulas.filter((content) => completedIds.has(content.id)).length;
+    const { aula_tiers, aula_turmas, catalog_total_aulas, ...publicProgram } = program;
 
     return {
-      ...program,
+      ...publicProgram,
       content_sessions: undefined,
       tier_usuario: profile?.tier || 'DESPERTAR',
       ...access,
-      sessions_count: catalogSessions.filter((session) => session?.visibility !== 'hidden').length,
+      sessions_count: Number(program?.sessions_count || 0),
       total_aulas: access.accessible ? totalAulas : null,
       aulas_concluidas: access.accessible ? aulasConcluidas : null,
       progresso_pct: access.accessible && totalAulas > 0 ? Math.round((aulasConcluidas / totalAulas) * 100) : null
