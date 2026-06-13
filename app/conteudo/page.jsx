@@ -9,6 +9,7 @@ import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import ProgramCard from '@/components/content/ProgramCard';
 import ContentEmpty from '@/components/content/ContentEmpty';
+import InterestModal from '@/components/content/InterestModal';
 import { usePrograms } from '@/hooks/usePrograms';
 
 function resolveTierLabel(tier) {
@@ -22,7 +23,25 @@ function resolveTierLabel(tier) {
 export default function ConteudoPage() {
   const router = useRouter();
   const [isIAOpen, setIsIAOpen] = useState(false);
+  const [interestModal, setInterestModal] = useState({ open: false, program: null });
   const { programs, tierUsuario, isLoading, error, refresh } = usePrograms();
+
+  const openInterestModal = (program) => {
+    setInterestModal({ open: true, program });
+  };
+
+  const closeInterestModal = () => {
+    setInterestModal({ open: false, program: null });
+  };
+
+  const handleProgramClick = (program) => {
+    if (program?.locked) {
+      openInterestModal(program);
+      return;
+    }
+
+    router.push(`/conteudo/${program.id}`);
+  };
 
   return (
     <div className="conteudo-screen">
@@ -50,7 +69,7 @@ export default function ConteudoPage() {
           {!isLoading && !error && programs.length === 0 ? <ContentEmpty /> : null}
 
           {programs.map((program) => (
-            <ProgramCard key={program.id} program={program} onClick={(selected) => router.push(`/conteudo/${selected.id}`)} />
+            <ProgramCard key={program.id} program={program} onClick={handleProgramClick} onInterest={openInterestModal} />
           ))}
         </section>
       </main>
@@ -58,6 +77,7 @@ export default function ConteudoPage() {
       <BottomNav activeTab="inicio" />
       <FAB onClick={() => setIsIAOpen(true)} />
       <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
+      <InterestModal isOpen={interestModal.open} onClose={closeInterestModal} program={interestModal.program} />
 
       <style jsx>{`
         .conteudo-screen {

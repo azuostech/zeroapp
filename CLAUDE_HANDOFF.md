@@ -837,3 +837,53 @@ Não relacionadas ao prompt de Fase 3 visual:
 ### Observacoes
 - `backup.dump` permanece nao rastreado, vazio (`0B`) e fora do commit.
 - `main` foi usado como branch de trabalho para o commit e push desta entrega.
+
+---
+
+## Atualizacao 2026-06-13 — Programa vitrine com CTA de interesse
+
+### Branch
+- Criada a branch `feature/programa-vitrine` a partir de `main`.
+
+### Auditoria previa solicitada no prompt
+1. A API `/api/content/programs` buscava programas publicados e nao hidden via Supabase do usuario autenticado; por causa da RLS, programas sem acesso por tier/turma podiam nem chegar ao front.
+2. `ProgramCard` recebia `program` e `onClick`.
+3. A API ainda nao calculava `locked`; o card so reconhecia `program.locked`/`visibility === 'locked'` se algum payload trouxesse isso.
+4. `app/conteudo/page.jsx` nao tratava estado locked; o clique sempre navegava para `/conteudo/{id}`.
+
+### Implementado
+- `app/api/content/programs/route.js`
+  - adiciona calculo servidor-side de `accessible`, `locked`, `locked_reason`, `access_label` e `interest_cta`.
+  - usa `getServiceSupabase()` para montar o catalogo visivel completo, mantendo `requireUser()` para autenticar e calcular acesso do usuario atual.
+  - mantem `visibility = hidden` fora da resposta.
+  - trata tier, `visibility = locked` e multiturma separada por `,` ou `;`.
+  - para programas bloqueados, retorna `total_aulas`, `aulas_concluidas` e `progresso_pct` como `null`, evitando `0/0`.
+  - para programas acessiveis, preserva progresso real usando apenas aulas publicadas, nao hidden e acessiveis por tier/turma.
+- `components/content/ProgramCard.jsx`
+  - renderiza card bloqueado como vitrine: opacidade reduzida, capa em grayscale/brightness, badge de acesso exclusivo e CTA de interesse.
+  - remove exibicao de progresso para locked e substitui por `locked_reason` + botao de interesse.
+  - card bloqueado continua clicavel e tambem reconhece teclado (`Enter`/espaco).
+- `components/content/InterestModal.jsx`
+  - novo bottom sheet com titulo do programa, motivo do bloqueio, CTA e link de WhatsApp com mensagem pre-preenchida.
+  - usa `NEXT_PUBLIC_WHATSAPP_NUMBER`; se ausente, abre `wa.me` apenas com a mensagem.
+- `app/conteudo/page.jsx`
+  - integra modal e roteia clique: acessivel navega para o programa, locked abre modal.
+- `.env.example`
+  - adiciona `NEXT_PUBLIC_WHATSAPP_NUMBER=55XXXXXXXXXXX`.
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 62/62 paginas.
+- Dev server subiu em `http://localhost:3000`.
+- `HEAD /conteudo` respondeu `200 OK`.
+- `GET /api/content/programs` sem sessao respondeu `401 Unauthorized`, mantendo autenticacao.
+
+### Limitacoes da validacao
+- O Browser in-app (`iab`) nao estava disponivel nesta sessao, entao nao foi possivel fazer inspecao visual/click real no navegador embutido.
+- Playwright nao esta instalado no projeto; a verificacao visual automatizada foi limitada a build + resposta HTTP local.
+- Validacao autenticada de usuario Workshop/Mentoria depende de sessao real no browser ou token/cookie de teste.
+
+### Observacoes
+- Nao foi implementado `POST /api/content/interest`; fica para V2.
+- Nao houve alteracao em finance, coins, mavf, auth, AppHeader, BottomNav ou FAB.
+- `backup.dump` continua nao rastreado, vazio (`0B`) e fora do escopo.

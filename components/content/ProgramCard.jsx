@@ -9,16 +9,40 @@ const TIER_LABELS = {
   AUTOGOVERNO: 'Autogoverno'
 };
 
-export default function ProgramCard({ program, onClick }) {
-  const isLocked = program?.visibility === 'locked' || Boolean(program?.locked);
-  const progress = Math.max(0, Math.min(100, Number(program?.progresso_pct || 0)));
+export default function ProgramCard({ program, onClick, onInterest }) {
+  const isLocked = Boolean(program?.locked) || program?.visibility === 'locked';
+  const progress = isLocked ? 0 : Math.max(0, Math.min(100, Number(program?.progresso_pct || 0)));
   const thumbnailUrl = resolveImageUrlForDisplay(program?.thumbnail_url);
+  const accessLabel = program?.access_label || (isLocked ? '🔒 Acesso exclusivo' : TIER_LABELS[program?.tier_required] || 'Programa');
+  const interestCta = program?.interest_cta || 'Tenho interesse';
+
+  const handleCardClick = () => {
+    onClick?.(program);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    handleCardClick();
+  };
+
+  const handleInterestClick = (event) => {
+    event.stopPropagation();
+    onInterest?.(program);
+  };
 
   return (
-    <button type="button" className={`program-card ${isLocked ? 'locked' : ''}`} onClick={() => !isLocked && onClick?.(program)} disabled={isLocked}>
+    <article
+      className={`program-card ${isLocked ? 'locked' : ''}`}
+      role="button"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      aria-label={isLocked ? `${program?.title || 'Programa'}: ${program?.locked_reason || 'acesso exclusivo'}` : program?.title || 'Programa'}
+    >
       <div className="cover">
         {thumbnailUrl ? <img src={thumbnailUrl} alt="" /> : <span className="cover-icon">📚</span>}
-        <span className="tier-badge">{isLocked ? 'Bloqueado' : TIER_LABELS[program?.tier_required] || 'Programa'}</span>
+        <span className="tier-badge">{accessLabel}</span>
         <div className="progress-track">
           <span style={{ width: `${progress}%` }} />
         </div>
@@ -28,11 +52,22 @@ export default function ProgramCard({ program, onClick }) {
         <h2>{program?.title || 'Programa'}</h2>
         <p>{program?.description || 'Conteúdo da área de membros.'}</p>
         <footer>
-          <span>{program?.sessions_count || 0} sessões</span>
-          <span>{program?.total_aulas || 0} aulas</span>
-          <strong>
-            {program?.aulas_concluidas || 0}/{program?.total_aulas || 0} ✓
-          </strong>
+          {isLocked ? (
+            <>
+              <span className="locked-reason">{program?.locked_reason || 'Conteúdo exclusivo'}</span>
+              <button type="button" className="interest-button" onClick={handleInterestClick}>
+                {interestCta}
+              </button>
+            </>
+          ) : (
+            <>
+              <span>{program?.sessions_count || 0} sessões</span>
+              <span>{program?.total_aulas || 0} aulas</span>
+              <strong>
+                {program?.aulas_concluidas || 0}/{program?.total_aulas || 0} ✓
+              </strong>
+            </>
+          )}
         </footer>
       </div>
 
@@ -49,6 +84,7 @@ export default function ProgramCard({ program, onClick }) {
           cursor: pointer;
           transition: var(--transition);
           min-height: 0;
+          font: inherit;
         }
 
         .program-card:not(.locked):hover {
@@ -56,9 +92,13 @@ export default function ProgramCard({ program, onClick }) {
           transform: translateY(-1px);
         }
 
+        .program-card:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 3px;
+        }
+
         .program-card.locked {
-          opacity: 0.5;
-          cursor: default;
+          opacity: 0.72;
         }
 
         .cover {
@@ -70,6 +110,14 @@ export default function ProgramCard({ program, onClick }) {
           overflow: hidden;
         }
 
+        .locked .cover::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: color-mix(in srgb, var(--bg) 32%, transparent);
+          pointer-events: none;
+        }
+
         .cover img {
           width: 100%;
           height: 100%;
@@ -79,17 +127,19 @@ export default function ProgramCard({ program, onClick }) {
 
         .locked .cover img,
         .locked .cover-icon {
-          filter: grayscale(1);
+          filter: grayscale(0.65) brightness(0.72);
         }
 
         .cover-icon {
           font-size: 44px;
+          transition: var(--transition);
         }
 
         .tier-badge {
           position: absolute;
           top: 10px;
           left: 10px;
+          z-index: 1;
           border: 1px solid var(--green-mid);
           border-radius: var(--radius-full);
           background: color-mix(in srgb, var(--bg) 72%, transparent);
@@ -97,6 +147,12 @@ export default function ProgramCard({ program, onClick }) {
           padding: 5px 9px;
           font-size: 11px;
           font-weight: 900;
+        }
+
+        .locked .tier-badge {
+          border-color: var(--border-2);
+          background: color-mix(in srgb, var(--bg) 82%, transparent);
+          color: var(--text-2);
         }
 
         .progress-track {
@@ -146,6 +202,40 @@ export default function ProgramCard({ program, onClick }) {
           font-variant-numeric: tabular-nums;
         }
 
+        .locked-reason {
+          min-width: 0;
+          max-width: 52%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: var(--text-2);
+          font-family: var(--font-body);
+          font-weight: 700;
+          font-variant-numeric: normal;
+        }
+
+        .interest-button {
+          margin-left: auto;
+          border: 1px solid var(--green-mid);
+          border-radius: var(--radius-full);
+          background: var(--green-dim);
+          color: var(--green);
+          min-height: 32px;
+          padding: 6px 14px;
+          font-family: var(--font-body);
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: var(--transition);
+          white-space: nowrap;
+        }
+
+        .interest-button:hover,
+        .interest-button:focus-visible {
+          border-color: var(--green);
+          outline: none;
+        }
+
         footer strong {
           margin-left: auto;
           color: var(--green);
@@ -157,7 +247,24 @@ export default function ProgramCard({ program, onClick }) {
           font-family: var(--font-mono);
           font-variant-numeric: tabular-nums;
         }
+
+        @media (max-width: 420px) {
+          footer {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .locked-reason {
+            max-width: 100%;
+            white-space: normal;
+          }
+
+          .interest-button {
+            margin-left: 0;
+            width: 100%;
+          }
+        }
       `}</style>
-    </button>
+    </article>
   );
 }
