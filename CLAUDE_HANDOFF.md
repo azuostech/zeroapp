@@ -724,3 +724,116 @@ Verificação exibida pelo próprio script:
 - `profiles.turma` continua sendo texto simples; agora o padrão suportado é lista separada por `,` ou `;`.
 - Se futuramente houver UI própria para múltiplas turmas, o ideal é evoluir para estrutura normalizada ou array, mas esta correção resolve o formato já usado em produção.
 - `backup.dump` continua não rastreado e não deve entrar em commits.
+
+---
+
+## Atualização 2026-06-12 — Consolidação até Design System Fase 3
+
+### Marcador de código
+- Adicionado marcador em `app/jornada/page.jsx`:
+  - `CLAUDE-HANDOFF-MARKER: Design System Fase 3 consolidado para telas internas; manter logica/hooks intactos.`
+- A intenção é deixar uma âncora clara para futuras rodadas de design, sem espalhar comentários nos componentes.
+
+### Commits recentes já concluídos
+
+1. `c7432b3` — `style(screens): apply design system phase 3`
+- Escopo:
+  - `app/jornada/page.jsx`
+  - `app/turma/page.jsx`
+  - `app/conteudo/page.jsx`
+  - `app/perfil/page.jsx`
+  - `components/community/CommunityStats.jsx`
+  - `components/community/DesafioCard.jsx`
+  - `components/content/AulaItem.jsx`
+  - `components/content/ContentCard.jsx`
+  - `components/content/ProgramCard.jsx`
+- Resultado:
+  - Aplicados tokens e espaçamentos da Fase 3.
+  - `ProgramCard.jsx` deixou de ter cores hardcoded.
+  - Badge `Grátis` foi trocado para `Livre`.
+  - `app/turma/page.jsx` preservou contexto por turma, hooks e refresh com `Promise.allSettled`.
+  - `app/conteudo/page.jsx` foi tratado como listagem de programas, sem voltar para lista plana.
+- Validação:
+  - `npm run build` passou.
+  - Auditoria de cores hardcoded nos arquivos tocados passou.
+
+2. `72f44c0` — `fix(finance): separate desktop delete action`
+- Escopo:
+  - `src/modules/finance/presentation/finance-app-page.jsx`
+- Resultado:
+  - Corrigido overlap no desktop entre hint/botão de excluir e valor financeiro.
+  - Desktop usa botão de lixeira em coluna própria.
+  - Mobile preserva swipe delete.
+  - A mesma confirmação de exclusão existente foi reaproveitada.
+- Validação:
+  - `npm run build` passou.
+  - `git diff --cached --check` passou.
+
+3. `757ff42` — `style(screens): design sistema fase 3 - jornada e perfil`
+- Escopo pedido:
+  - somente `app/jornada/page.jsx`
+  - somente `app/perfil/page.jsx`
+- Resultado:
+  - Auditoria prévia confirmou `0` cores hardcoded em ambos.
+  - `jornada` já estava alinhada e não precisou de mudança visual adicional.
+  - `perfil` teve padding mobile ajustado para `calc(120px + env(safe-area-inset-bottom))`.
+- Validação:
+  - `npm run build` passou.
+  - `git diff --cached --check` passou.
+- Status:
+  - No momento desta atualização, `main` está `ahead 1` de `origin/main` por causa deste commit local.
+
+### Alterações pendentes no worktree
+
+Relacionadas ao prompt de Fase 3 em `/conteudo`:
+- `app/conteudo/page.jsx`
+  - padding mobile ajustado para `calc(120px + env(safe-area-inset-bottom))`.
+- `components/content/ContentEmpty.jsx`
+  - estado vazio ajustado para `padding: 40px 20px`.
+  - texto do estado vazio ajustado para `font-size: 14px`.
+
+Não relacionadas ao prompt de Fase 3 visual:
+- `app/api/content/route.js`
+  - ajustes adicionais de acesso por múltiplas turmas.
+- `components/admin/ContentAdminForm.jsx`
+  - ajustes de formulário/admin para múltiplas turmas.
+- `components/admin/ProgramAdminForm.jsx`
+  - placeholder, limite e dica para múltiplas turmas.
+- `scripts/migrate-conteudo-multiturma.sql`
+  - evolução do script de multiturma para required/user lists.
+- `backup.dump`
+  - arquivo não rastreado, vazio, não incluir sem pedido explícito.
+
+### Estado técnico consolidado
+- `AppHeader.jsx` não foi alterado nas rodadas de Fase 3.
+- Forms MAVF (`GanhoForm`, `GratidaoForm`, `IdentidadeForm`) não foram alterados.
+- `finance-app-page.jsx` não entrou na Fase 3 visual; a alteração feita nele foi separada e específica para o problema desktop do botão de excluir.
+- Próxima fase planejada pelo prompt original: Fase 4 dedicada para `finance-app-page.jsx`.
+
+---
+
+## Atualização 2026-06-13 — Fechamento multiturma, conteudo e push main
+
+### Escopo consolidado nesta entrega
+- Acesso multiturma foi alinhado ponta a ponta para aceitar listas separadas por virgula ou ponto-e-virgula tanto no perfil do usuario quanto em `turma_exclusiva`.
+- Admin de programas e conteudos agora orienta explicitamente o uso de multiplas turmas e permite entradas maiores.
+- Criacao de conteudo herda automaticamente a `turma_exclusiva` do programa selecionado quando o conteudo novo ainda nao tem turma propria.
+- `/conteudo` recebeu ajuste final de padding mobile para respeitar melhor a bottom nav.
+- `ContentEmpty` recebeu ajuste de densidade visual para o estado vazio.
+
+### Arquivos incluidos no commit desta rodada
+- `app/api/content/route.js`
+- `app/conteudo/page.jsx`
+- `components/admin/ContentAdminForm.jsx`
+- `components/admin/ProgramAdminForm.jsx`
+- `components/content/ContentEmpty.jsx`
+- `scripts/migrate-conteudo-multiturma.sql`
+- `CLAUDE_HANDOFF.md`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15.
+
+### Observacoes
+- `backup.dump` permanece nao rastreado, vazio (`0B`) e fora do commit.
+- `main` foi usado como branch de trabalho para o commit e push desta entrega.

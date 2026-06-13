@@ -10,7 +10,7 @@ export default function ContentEmpty() {
         .content-empty {
           border: 1px dashed var(--border);
           border-radius: 16px;
-          padding: 26px 14px;
+          padding: 40px 20px;
           text-align: center;
           background: color-mix(in srgb, var(--bg2) 72%, transparent);
         }
@@ -22,7 +22,7 @@ export default function ContentEmpty() {
 
         h3 {
           margin: 0;
-          font-size: 18px;
+          font-size: 14px;
           color: var(--muted);
           font-weight: 600;
         }

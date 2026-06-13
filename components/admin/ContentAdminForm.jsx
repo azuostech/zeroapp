@@ -139,6 +139,7 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
             nextSessions.push({
               ...session,
               program_title: program?.title || 'Programa',
+              program_turma_exclusiva: program?.turma_exclusiva || '',
               program_order: Number(program?.order_index || 0)
             });
           }
@@ -174,6 +175,18 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
     if (isEdit || !presetSessionId) return;
     setForm((current) => (current.session_id ? current : { ...current, session_id: presetSessionId }));
   }, [isEdit, presetSessionId]);
+
+  useEffect(() => {
+    if (isEdit || !selectedSession?.program_turma_exclusiva) return;
+    setForm((current) =>
+      current.turma_exclusiva
+        ? current
+        : {
+            ...current,
+            turma_exclusiva: selectedSession.program_turma_exclusiva
+          }
+    );
+  }, [isEdit, selectedSession?.program_turma_exclusiva]);
 
   useEffect(() => {
     if (!isEdit || !contentId) return;
@@ -304,6 +317,7 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
             <div className="session-context">
               <strong>{selectedSession.program_title}</strong>
               <span>{selectedSession.title}</span>
+              {selectedSession.program_turma_exclusiva ? <small>Turmas: {selectedSession.program_turma_exclusiva}</small> : null}
             </div>
           ) : null}
 
@@ -368,11 +382,11 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
               type="text"
               value={form.turma_exclusiva}
               onChange={(event) => setField('turma_exclusiva', event.target.value)}
-              placeholder="Ex: Maio 2026 — deixe vazio para todos os mentorados"
-              maxLength={80}
+              placeholder="Ex: Workshop, Maio 2026 — vazio libera para todos"
+              maxLength={160}
             />
             <span className="field-tip">
-              Se preenchido, apenas alunos desta turma verão este conteúdo. Outras turmas não verão nem o card.
+              Separe múltiplas turmas por vírgula. Quem não estiver em nenhuma delas não verá nem o card.
             </span>
           </label>
 
@@ -554,6 +568,11 @@ export default function ContentAdminForm({ mode = 'create', contentId = null }) 
           font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+        }
+
+        .session-context small {
+          color: #9bc8aa;
+          font-size: 12px;
         }
 
         label {

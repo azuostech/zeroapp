@@ -22,6 +22,13 @@ function normalizeTurma(rawTurma) {
   return turma || null;
 }
 
+function splitTurmas(rawTurmas) {
+  return String(rawTurmas || '')
+    .split(/[;,]/)
+    .map((turma) => turma.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function getAccessibleTiers(tier) {
   const normalized = normalizeUserTier(tier);
   if (normalized === 'DESPERTAR') return ['LIVRE'];
@@ -61,13 +68,11 @@ function formatarData(dateValue) {
 }
 
 function canPreviewForTurma(itemTurma, userTurma) {
-  const requiredTurma = normalizeTurma(itemTurma);
-  if (!requiredTurma) return true;
-  return String(userTurma || '')
-    .split(/[;,]/)
-    .map((turma) => turma.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(requiredTurma.toLowerCase());
+  const requiredTurmas = splitTurmas(itemTurma);
+  if (requiredTurmas.length === 0) return true;
+
+  const userTurmas = new Set(splitTurmas(userTurma));
+  return requiredTurmas.some((turma) => userTurmas.has(turma));
 }
 
 function isTierAcessivel(requiredTier, accessibleTiers) {

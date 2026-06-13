@@ -122,9 +122,10 @@ export default function ProgramAdminForm() {
             <input
               value={form.turma_exclusiva}
               onChange={(event) => setField('turma_exclusiva', event.target.value)}
-              placeholder='Ex: "Maio 2026"'
-              maxLength={80}
+              placeholder='Ex: "Workshop, Maio 2026"'
+              maxLength={160}
             />
+            <small>Separe múltiplas turmas por vírgula. Vazio libera para todos os usuários elegíveis pelo tier.</small>
           </label>
 
           <label>

@@ -149,7 +149,7 @@ export default function ConteudoPage() {
 
         @media (max-width: 760px) {
           .conteudo-shell {
-            padding: 14px 10px calc(106px + env(safe-area-inset-bottom));
+            padding: 14px 10px calc(120px + env(safe-area-inset-bottom));
           }
 
           .conteudo-header {

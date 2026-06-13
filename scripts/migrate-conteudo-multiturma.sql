@@ -1,8 +1,11 @@
 -- ============================================================================
 -- CONTEUDO - ACESSO POR MULTIPLAS TURMAS
 -- Projeto: ZeroApp
--- Objetivo: permitir profiles.turma com lista separada por virgula/ponto-e-virgula
--- Exemplo: "Maio 2026, Workshop" acessa conteudos de "Maio 2026" e "Workshop".
+-- Objetivo: permitir profiles.turma e turma_exclusiva com lista separada por
+-- virgula/ponto-e-virgula.
+-- Exemplos:
+-- - Usuario "Maio 2026, Workshop" acessa conteudos de "Workshop".
+-- - Usuario "Maio 2026" acessa conteudos de "Workshop, Maio 2026".
 -- Script idempotente.
 -- ============================================================================
 
@@ -13,12 +16,22 @@ RETURNS boolean
 LANGUAGE sql
 IMMUTABLE
 AS $$
+  WITH required AS (
+    SELECT lower(btrim(turma_item)) AS turma
+    FROM regexp_split_to_table(COALESCE(required_turma, ''), '[[:space:]]*[,;][[:space:]]*') AS turma_item
+    WHERE NULLIF(btrim(turma_item), '') IS NOT NULL
+  ),
+  user_list AS (
+    SELECT lower(btrim(turma_item)) AS turma
+    FROM regexp_split_to_table(COALESCE(user_turmas, ''), '[[:space:]]*[,;][[:space:]]*') AS turma_item
+    WHERE NULLIF(btrim(turma_item), '') IS NOT NULL
+  )
   SELECT
-    NULLIF(btrim(COALESCE(required_turma, '')), '') IS NULL
+    NOT EXISTS (SELECT 1 FROM required)
     OR EXISTS (
       SELECT 1
-      FROM regexp_split_to_table(COALESCE(user_turmas, ''), '[[:space:]]*[,;][[:space:]]*') AS turma_item
-      WHERE lower(btrim(turma_item)) = lower(btrim(required_turma))
+      FROM required
+      INNER JOIN user_list USING (turma)
     );
 $$;
 
@@ -129,6 +142,8 @@ DECLARE
   v_user_turma text;
   v_workshop_ok boolean;
   v_maio_ok boolean;
+  v_content_list_ok boolean;
+  v_content_list_blocked boolean;
   v_policy_count integer;
 BEGIN
   SELECT turma
@@ -143,6 +158,12 @@ BEGIN
   SELECT public.profile_has_turma(v_user_turma, 'Maio 2026')
   INTO v_maio_ok;
 
+  SELECT public.profile_has_turma('Maio 2026', 'Workshop, Maio 2026')
+  INTO v_content_list_ok;
+
+  SELECT public.profile_has_turma('Livre', 'Workshop, Maio 2026')
+  INTO v_content_list_blocked;
+
   SELECT COUNT(*)
   INTO v_policy_count
   FROM pg_policies
@@ -152,6 +173,8 @@ BEGIN
   RAISE NOTICE 'Multiturma: turma usuario teste = %', v_user_turma;
   RAISE NOTICE 'Multiturma: acesso Workshop = %', v_workshop_ok;
   RAISE NOTICE 'Multiturma: acesso Maio 2026 = %', v_maio_ok;
+  RAISE NOTICE 'Multiturma: conteudo Workshop/Maio para usuario Maio = %', v_content_list_ok;
+  RAISE NOTICE 'Multiturma: conteudo Workshop/Maio para usuario Livre = %', v_content_list_blocked;
   RAISE NOTICE 'Multiturma: policies recriadas = %', v_policy_count;
 END $$;
 
