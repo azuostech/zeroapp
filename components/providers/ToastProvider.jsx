@@ -9,22 +9,22 @@ export function ToastProvider() {
       toastOptions={{
         duration: 4000,
         style: {
-          background: '#1a1a1a',
-          color: '#ffffff',
-          border: '1px solid #2f2f2f',
+          background: 'var(--bg-card)',
+          color: 'var(--text)',
+          border: '1px solid var(--border)',
           borderRadius: '12px',
-          boxShadow: '0 14px 34px rgba(0,0,0,0.35)'
+          boxShadow: 'var(--shadow-lg)'
         },
         success: {
           iconTheme: {
-            primary: '#00C853',
-            secondary: '#07130c'
+            primary: 'var(--green)',
+            secondary: 'var(--text-on-green)'
           }
         },
         error: {
           iconTheme: {
-            primary: '#d74141',
-            secondary: '#ffffff'
+            primary: 'var(--red)',
+            secondary: 'var(--text-on-green)'
           }
         }
       }}
@@ -34,4 +34,3 @@ export function ToastProvider() {
     />
   );
 }
-

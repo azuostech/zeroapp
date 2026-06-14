@@ -45,7 +45,8 @@ export default function AulaItem({ aula, onClick }) {
           width: 100%;
           border: 1px solid var(--border-2);
           border-radius: var(--radius-md);
-          background: var(--bg2);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           color: var(--text);
           padding: 9px;
           display: grid;
@@ -94,7 +95,8 @@ export default function AulaItem({ aula, onClick }) {
 
         .badges span {
           border-radius: var(--radius-full);
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--bg-input);
+          border: 1px solid var(--border);
           color: var(--text-2);
           padding: 3px 7px;
           font-size: 10px;
@@ -119,7 +121,7 @@ export default function AulaItem({ aula, onClick }) {
         .status.done {
           background: var(--green);
           border-color: var(--green);
-          color: #03150a;
+          color: var(--text-on-green);
         }
 
         .status.started {

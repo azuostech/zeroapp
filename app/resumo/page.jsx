@@ -254,7 +254,7 @@ export default function ResumoPage() {
           margin: 0 auto;
           padding: 28px 16px 120px;
           color: var(--text);
-          background: var(--bg-deep);
+          background: var(--bg);
         }
 
         .resumo-header {
@@ -313,23 +313,25 @@ export default function ResumoPage() {
         }
 
         .feedback.error {
-          border-color: rgba(239, 68, 68, 0.5);
-          color: #fca5a5;
+          border-color: color-mix(in srgb, var(--red) 38%, transparent);
+          color: var(--red);
+          background: var(--red-dim);
         }
 
         .saldo-card {
-          border: 1px solid var(--green-mid);
+          border: 1px solid var(--border-green);
           border-radius: var(--radius-xl);
-          background: var(--green-accent);
+          background: var(--green-dim);
           padding: 14px;
           margin-bottom: 14px;
+          box-shadow: var(--shadow-card);
         }
 
         .saldo-main {
           display: block;
           margin-top: 8px;
           font-size: 32px;
-          color: var(--green);
+          color: var(--green-text);
           font-family: var(--font-mono);
           line-height: 1.1;
         }
@@ -378,6 +380,7 @@ export default function ResumoPage() {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-lg);
           background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -393,6 +396,13 @@ export default function ResumoPage() {
         .bloco-card .icon {
           font-size: 22px;
           line-height: 1;
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-full);
+          background: var(--green-dim);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .bloco-card h3 {

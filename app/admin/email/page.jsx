@@ -148,11 +148,11 @@ export default function AdminEmailPage() {
   }, [loadLogs, monthlyPeriod, monthlyUserId]);
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-[#fff] p-4 md:p-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Envio de Emails</h1>
-          <p className="text-[#888]">Painel de disparo e auditoria de emails da Etapa 5.</p>
+          <p className="text-[var(--text2)]">Painel de disparo e auditoria de emails da Etapa 5.</p>
         </div>
 
         {error ? (
@@ -162,66 +162,66 @@ export default function AdminEmailPage() {
         ) : null}
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <section className="bg-[#222222] border border-[#333333] rounded-[12px] p-5">
+          <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-5 shadow-[var(--shadow-sm)]">
             <h2 className="text-lg font-semibold mb-2">Teste de Email</h2>
-            <p className="text-sm text-[#8f8f8f] mb-4">Envia um email de teste para o administrador logado.</p>
+            <p className="text-sm text-[var(--text2)] mb-4">Envia um email de teste para o administrador logado.</p>
 
             <button
               onClick={handleSendTest}
               disabled={sendingTest}
-              className="bg-[#00C853] text-[#000] font-bold px-4 py-2 rounded-[8px] disabled:opacity-50"
+              className="bg-[var(--green)] text-[var(--text-on-green)] font-bold px-4 py-2 rounded-[8px] disabled:opacity-50"
             >
               {sendingTest ? 'Enviando...' : 'Enviar email de teste para mim'}
             </button>
 
-            {testResult ? <p className="text-sm mt-3 text-[#c7f7d3]">{testResult}</p> : null}
+            {testResult ? <p className="text-sm mt-3 text-[var(--green-dark)]">{testResult}</p> : null}
           </section>
 
-          <section className="bg-[#222222] border border-[#333333] rounded-[12px] p-5">
+          <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-5 shadow-[var(--shadow-sm)]">
             <h2 className="text-lg font-semibold mb-2">Relatorio Mensal</h2>
-            <p className="text-sm text-[#8f8f8f] mb-4">Dispara email para um usuario especifico ou para todos os ativos.</p>
+            <p className="text-sm text-[var(--text2)] mb-4">Dispara email para um usuario especifico ou para todos os ativos.</p>
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs uppercase tracking-[1px] text-[#9a9a9a] block mb-1">Mes de referencia</label>
+                <label className="text-xs uppercase tracking-[1px] text-[var(--text3)] block mb-1">Mes de referencia</label>
                 <input
                   type="month"
                   value={monthlyPeriod}
                   onChange={(event) => setMonthlyPeriod(event.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-[#3b3b3b] rounded-[8px] px-3 py-2 text-sm"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="text-xs uppercase tracking-[1px] text-[#9a9a9a] block mb-1">User ID (opcional)</label>
+                <label className="text-xs uppercase tracking-[1px] text-[var(--text3)] block mb-1">User ID (opcional)</label>
                 <input
                   type="text"
                   value={monthlyUserId}
                   onChange={(event) => setMonthlyUserId(event.target.value)}
                   placeholder="vazio = todos os ativos"
-                  className="w-full bg-[#1a1a1a] border border-[#3b3b3b] rounded-[8px] px-3 py-2 text-sm"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm"
                 />
               </div>
 
               <button
                 onClick={handleSendMonthly}
                 disabled={sendingMonthly || !canSendMonthly}
-                className="bg-[#FFD700] text-[#111] font-bold px-4 py-2 rounded-[8px] disabled:opacity-50"
+                className="bg-[var(--gold)] text-[var(--text)] font-bold px-4 py-2 rounded-[8px] disabled:opacity-50"
               >
                 {sendingMonthly ? 'Disparando...' : 'Disparar relatorio'}
               </button>
             </div>
 
-            {monthlyResult ? <p className="text-sm mt-3 text-[#ffe9a8]">{monthlyResult}</p> : null}
+            {monthlyResult ? <p className="text-sm mt-3 text-[var(--gold-dark)]">{monthlyResult}</p> : null}
           </section>
         </div>
 
-        <section className="bg-[#222222] border border-[#333333] rounded-[12px] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#333333] flex items-center justify-between">
+        <section className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] overflow-hidden shadow-[var(--shadow-sm)]">
+          <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
             <h2 className="text-lg font-semibold">Log de Emails</h2>
             <button
               onClick={loadLogs}
-              className="text-xs uppercase tracking-[1px] text-[#8ad6a2] border border-[#2e5d3e] px-3 py-1 rounded-[6px]"
+              className="text-xs uppercase tracking-[1px] text-[var(--green-dark)] border border-[var(--border-green)] px-3 py-1 rounded-[6px]"
             >
               Atualizar
             </button>
@@ -229,7 +229,7 @@ export default function AdminEmailPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[780px]">
-              <thead className="bg-[#1d1d1d] text-[#8f8f8f] text-xs uppercase tracking-[1px]">
+              <thead className="bg-[var(--bg-section)] text-[var(--text3)] text-xs uppercase tracking-[1px]">
                 <tr>
                   <th className="text-left px-4 py-3">Data</th>
                   <th className="text-left px-4 py-3">Tipo</th>
@@ -241,22 +241,22 @@ export default function AdminEmailPage() {
               <tbody>
                 {loadingLogs ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-[#9a9a9a]">
+                    <td colSpan={5} className="px-4 py-6 text-center text-[var(--text3)]">
                       Carregando logs...
                     </td>
                   </tr>
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-[#9a9a9a]">
+                    <td colSpan={5} className="px-4 py-6 text-center text-[var(--text3)]">
                       Nenhum log encontrado.
                     </td>
                   </tr>
                 ) : (
                   logs.map((log) => (
-                    <tr key={log.id} className="border-t border-[#2e2e2e]">
-                      <td className="px-4 py-3 text-sm text-[#d6d6d6]">{formatDateTime(log.sent_at)}</td>
-                      <td className="px-4 py-3 text-sm text-[#b8b8b8]">{log.email_type}</td>
-                      <td className="px-4 py-3 text-sm text-[#b8b8b8]">{log.recipient}</td>
+                    <tr key={log.id} className="border-t border-[var(--border)]">
+                      <td className="px-4 py-3 text-sm text-[var(--text)]">{formatDateTime(log.sent_at)}</td>
+                      <td className="px-4 py-3 text-sm text-[var(--text2)]">{log.email_type}</td>
+                      <td className="px-4 py-3 text-sm text-[var(--text2)]">{log.recipient}</td>
                       <td className="px-4 py-3 text-sm">
                         <span
                           className={`inline-flex px-2 py-1 rounded-[999px] border text-xs ${
@@ -268,7 +268,7 @@ export default function AdminEmailPage() {
                           {log.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#dcdcdc]">{log.subject}</td>
+                      <td className="px-4 py-3 text-sm text-[var(--text)]">{log.subject}</td>
                     </tr>
                   ))
                 )}

@@ -104,23 +104,24 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
           display: flex;
           align-items: flex-start;
           gap: 10px;
-          border: 1px solid var(--line, #2f2f2f);
-          border-radius: 12px;
-          background: var(--surface, #1c1c1c);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           padding: 10px;
           transition: all 0.25s ease;
         }
 
         .item-row.is-realized {
-          background: rgba(0, 200, 83, 0.05);
-          border-color: rgba(0, 200, 83, 0.32);
+          background: var(--green-dim);
+          border-color: var(--border-green);
         }
 
         .item-check {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          border: 2px solid #616161;
+          border: 2px solid var(--green);
           background: transparent;
           color: transparent;
           font-weight: 700;
@@ -131,9 +132,9 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
         }
 
         .item-check.checked {
-          border-color: #00c853;
-          background: #00c853;
-          color: #03250f;
+          border-color: var(--green);
+          background: var(--green);
+          color: var(--text-on-green);
         }
 
         .item-content {
@@ -154,7 +155,7 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
           border: 0;
           outline: none;
           background: transparent;
-          color: var(--text, #f3f3f3);
+          color: var(--text);
           font-weight: 600;
           text-decoration: ${realized ? 'line-through' : 'none'};
         }
@@ -191,18 +192,18 @@ export default function ItemRow({ item, onToggle, onUpdate, onRemove, readOnly =
         }
 
         .field input {
-          border: 1px solid #383838;
+          border: 1px solid var(--border);
           border-radius: 8px;
-          background: #141414;
-          color: ${realized ? '#00c853' : '#f3f3f3'};
+          background: var(--bg-input);
+          color: ${realized ? 'var(--green-dark)' : 'var(--text)'};
           font-size: 13px;
           padding: 7px 8px;
         }
 
         .field-realizado input {
-          border-color: rgba(0, 200, 83, 0.42);
-          background: rgba(0, 200, 83, 0.08);
-          color: #00c853;
+          border-color: var(--border-green);
+          background: var(--green-dim);
+          color: var(--green-dark);
         }
 
       `}</style>

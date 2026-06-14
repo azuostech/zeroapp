@@ -175,7 +175,7 @@ const styles = `
     left: 0;
     width: 100vw;
     height: var(--ia-visual-height, 100dvh);
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 200;
     display: flex;
     flex-direction: column;
@@ -189,9 +189,10 @@ const styles = `
     max-width: 100%;
     min-width: 0;
     margin: 0 auto;
-    background: var(--bg2);
+    background: var(--bg-card);
     border-radius: 24px 24px 0 0;
     border-top: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
     height: min(75vh, calc(var(--ia-visual-height, 100dvh) - 8px));
     max-height: calc(var(--ia-visual-height, 100dvh) - 8px);
     display: flex;
@@ -214,7 +215,8 @@ const styles = `
     display: flex;
     align-items: center;
     gap: 12px;
-    border-bottom: 1px solid var(--border);
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--green-dark);
     flex-shrink: 0;
   }
 
@@ -222,12 +224,12 @@ const styles = `
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--green), #00694a);
+    background: rgba(255, 255, 255, 0.25);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
-    box-shadow: 0 0 12px var(--green-glow);
+    box-shadow: none;
     flex-shrink: 0;
   }
 
@@ -238,12 +240,12 @@ const styles = `
   .ia-name {
     font-size: 16px;
     font-weight: 800;
-    color: var(--text);
+    color: var(--text-on-green);
   }
 
   .ia-status {
     font-size: 11px;
-    color: var(--green);
+    color: rgba(255, 255, 255, 0.78);
   }
 
   .ia-close {
@@ -252,9 +254,9 @@ const styles = `
     height: 28px;
     min-height: unset;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg3);
-    color: var(--muted);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-on-green);
     cursor: pointer;
   }
 
@@ -270,9 +272,9 @@ const styles = `
   .ia-chip {
     min-height: unset;
     border-radius: 20px;
-    border: 1px solid var(--border);
-    background: var(--bg3);
-    color: var(--muted);
+    border: 1px solid var(--border-green);
+    background: var(--bg-input);
+    color: var(--green-dark);
     font-family: var(--font-body);
     font-size: 11px;
     white-space: nowrap;
@@ -322,7 +324,7 @@ const styles = `
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--green), #00694a);
+    background: var(--green);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -342,14 +344,14 @@ const styles = `
 
   .bubble-ai {
     border: 1px solid var(--border);
-    background: var(--bg3);
+    background: var(--bg-input);
     color: var(--text);
     border-top-left-radius: 3px;
   }
 
   .bubble-user {
     background: var(--green);
-    color: #000000;
+    color: var(--text-on-green);
     font-weight: 600;
     border-top-right-radius: 3px;
   }
@@ -374,7 +376,8 @@ const styles = `
     min-width: 0;
     border: 1px solid var(--border);
     border-radius: 14px;
-    background: var(--bg3);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -403,7 +406,7 @@ const styles = `
     border-radius: 50%;
     border: none;
     background: var(--green);
-    color: #000000;
+    color: var(--text-on-green);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;

@@ -46,8 +46,9 @@ const styles = `
     right: 0;
     bottom: 0;
     height: var(--bottom-nav-height);
-    background: rgba(10, 10, 10, 0.95);
+    background: color-mix(in srgb, var(--bg-nav) 94%, transparent);
     border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     display: flex;
@@ -82,7 +83,7 @@ const styles = `
   .nav-tab-label {
     font-size: 9px;
     font-weight: 700;
-    color: var(--muted);
+    color: var(--text3);
     text-transform: uppercase;
     letter-spacing: 0.4px;
     line-height: 1.2;
@@ -94,7 +95,7 @@ const styles = `
   }
 
   .nav-tab.active .nav-tab-label {
-    color: var(--green);
+    color: var(--green-dark);
   }
 
   .nav-tab:focus-visible {

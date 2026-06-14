@@ -43,8 +43,9 @@ export default function BottomNav({ activeTab = '' }) {
           display: flex;
           justify-content: space-around;
           gap: 6px;
-          background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
-          border-top: 1px solid var(--border-2);
+          background: color-mix(in srgb, var(--bg-nav) 94%, transparent);
+          border-top: 1px solid var(--border);
+          box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
           padding: 8px 10px calc(24px + env(safe-area-inset-bottom));
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
@@ -60,14 +61,14 @@ export default function BottomNav({ activeTab = '' }) {
           align-items: center;
           justify-content: center;
           gap: 4px;
-          color: var(--text-2);
+          color: var(--text3);
           text-decoration: none;
           padding: 8px 4px;
           transition: var(--transition);
         }
 
         :global(.nav-item.active) {
-          color: var(--green);
+          color: var(--green-dark);
           background: var(--green-dim);
         }
 

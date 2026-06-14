@@ -155,8 +155,9 @@ export default function AulaPlayerPage() {
           top: 0;
           z-index: 2;
           height: 58px;
-          border-bottom: 1px solid var(--border-2);
-          background: color-mix(in srgb, var(--bg) 92%, transparent);
+          border-bottom: 1px solid var(--green-dark);
+          background: var(--bg-header);
+          color: var(--text-on-green);
           backdrop-filter: blur(14px);
           display: flex;
           align-items: center;
@@ -167,11 +168,12 @@ export default function AulaPlayerPage() {
         .back-btn {
           width: 42px;
           height: 42px;
-          border: 1px solid var(--border-2);
+          border: 1px solid rgba(255, 255, 255, 0.35);
           border-radius: 50%;
           display: grid;
           place-items: center;
-          background: var(--bg2);
+          background: rgba(255, 255, 255, 0.2);
+          color: var(--text-on-green);
           font-size: 18px;
           font-weight: 900;
           flex: 0 0 auto;
@@ -200,7 +202,8 @@ export default function AulaPlayerPage() {
         .error-inline {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-lg);
-          background: var(--bg2);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
         }
 
         .player-wrapper {
@@ -281,7 +284,7 @@ export default function AulaPlayerPage() {
         .complete-btn {
           background: var(--green);
           border-color: var(--green);
-          color: #03150a;
+          color: var(--text-on-green);
         }
 
         .uncomplete-btn {

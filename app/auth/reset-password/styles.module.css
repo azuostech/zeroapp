@@ -3,18 +3,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 10% 10%, rgba(0, 200, 83, 0.08), transparent 40%), #0a0a0a;
+  background: radial-gradient(circle at 10% 10%, var(--green-dim), transparent 40%), var(--bg);
   padding: 20px;
 }
 
 .card {
   width: 100%;
   max-width: 460px;
-  background: #151515;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 32px;
-  color: #f3f3f3;
+  color: var(--text);
 }
 
 .title {
@@ -26,13 +26,13 @@
 
 .subtitle {
   margin: 0 0 22px;
-  color: #9aa19d;
+  color: var(--text2);
   font-size: 14px;
 }
 
 .info {
   margin: 0 0 16px;
-  color: #b2b2b2;
+  color: var(--text2);
   font-size: 13px;
 }
 
@@ -46,15 +46,15 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #b6cdbf;
+  color: var(--green-dark);
 }
 
 .input {
   width: 100%;
-  background: #222;
-  border: 1px solid #313131;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: #fff;
+  color: var(--text);
   padding: 12px 14px;
   font-size: 14px;
   margin-bottom: 8px;
@@ -62,7 +62,7 @@
 
 .input:focus {
   outline: none;
-  border-color: #00c853;
+  border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.14);
 }
 
@@ -78,8 +78,8 @@
   padding: 13px;
   margin-top: 8px;
   cursor: pointer;
-  background: linear-gradient(135deg, #00c853, #ffd700);
-  color: #061109;
+  background: var(--green);
+  color: var(--text-on-green);
   font-weight: 700;
 }
 
@@ -90,8 +90,8 @@
 
 .alertError {
   background: rgba(255, 68, 68, 0.12);
-  border: 1px solid #ff4444;
-  color: #ff7e7e;
+  border: 1px solid var(--red);
+  color: var(--red);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
@@ -105,8 +105,8 @@
   margin: 0 auto 18px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #00c853, #ffd700);
-  color: #041108;
+  background: var(--green);
+  color: var(--text-on-green);
   font-size: 42px;
   font-weight: 700;
 }
@@ -114,12 +114,12 @@
 .backLink {
   display: inline-block;
   margin-top: 22px;
-  color: #9aa19d;
+  color: var(--text2);
   font-size: 13px;
 }
 
 .backLink:hover {
-  color: #00c853;
+  color: var(--green-dark);
 }
 
 @media (max-width: 640px) {

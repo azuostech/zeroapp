@@ -19,7 +19,7 @@ export default function MAVFAppShell({ children, activeTab = 'mavf', hideNavigat
           flex-direction: column;
           background: var(--bg);
           color: var(--text);
-          color-scheme: dark;
+          color-scheme: light;
         }
 
         .mavf-app-content {
@@ -38,7 +38,7 @@ export default function MAVFAppShell({ children, activeTab = 'mavf', hideNavigat
       <style jsx global>{`
         .mavf-app-container,
         .mavf-app-container * {
-          color-scheme: dark;
+          color-scheme: light;
         }
       `}</style>
     </div>

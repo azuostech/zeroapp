@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 
 const THEME_KEY = 'zeroapp-theme';
@@ -40,27 +40,15 @@ async function apiRequest(path, options = {}) {
 }
 
 export default function AdminPage() {
-  const [theme, setTheme] = useState('light');
-
   useEffect(() => {
-    let nextTheme = 'light';
+    const nextTheme = 'light';
+    document.documentElement.setAttribute('data-theme', nextTheme);
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark') nextTheme = saved;
+      localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
-    setTheme(nextTheme);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (_) {
-      // no-op
-    }
-  }, [theme]);
 
   useEffect(() => {
     let allUsers = [];
@@ -668,14 +656,6 @@ export default function AdminPage() {
           <div className="header-title">Painel de Administração</div>
         </div>
         <div className="header-right">
-          <div className="theme-switch">
-            <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
-              Claro
-            </button>
-            <button type="button" className={`theme-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')}>
-              Escuro
-            </button>
-          </div>
           <button className="btn-logout" onClick={() => window.logout?.()}>
             Sair
           </button>
@@ -708,6 +688,9 @@ export default function AdminPage() {
           </a>
           <a className="nav-item nav-item-link" href="/admin/conteudo" id="nav-content">
             <span className="nav-icon">📚</span> Conteúdo
+          </a>
+          <a className="nav-item nav-item-link" href="/admin/emails" id="nav-emails">
+            <span className="nav-icon">📧</span> Emails
           </a>
           <div className="nav-sep" />
           <div className="nav-item" onClick={() => window.showView?.('stats')} id="nav-stats">
@@ -871,56 +854,6 @@ export default function AdminPage() {
       <div className="toast" id="toast" />
 
       <style jsx global>{`
-        :global(:root) {
-          --bg: #0a0a0a;
-          --bg2: #111;
-          --bg3: #181818;
-          --bg4: #1e1e1e;
-          --border: #222;
-          --green: #00c853;
-          --green-dim: rgba(0, 200, 83, 0.08);
-          --gold: #ffd700;
-          --red: #ff4444;
-          --blue: #4488ff;
-          --text: #f0f0f0;
-          --muted: #555;
-          --dim: #888;
-          --line-soft: rgba(255, 255, 255, 0.03);
-          --hover-soft: rgba(255, 255, 255, 0.015);
-          --btn-hover-border: #444;
-          --overlay: rgba(0, 0, 0, 0.75);
-          --theme-pill: #171717;
-          --theme-pill-border: #2a2a2a;
-          --theme-pill-text: #b6cdbf;
-          --theme-pill-active-bg: #00c853;
-          --theme-pill-active-text: #05110a;
-        }
-
-        :global(:root[data-theme='light']) {
-          --bg: #edf4ef;
-          --bg2: #ffffff;
-          --bg3: #e8f0ea;
-          --bg4: #dfe8e1;
-          --border: #cad8cf;
-          --green: #00a54a;
-          --green-dim: rgba(0, 165, 74, 0.12);
-          --gold: #b79100;
-          --red: #d74141;
-          --blue: #2d70e2;
-          --text: #16261d;
-          --muted: #5c7467;
-          --dim: #3d5348;
-          --line-soft: rgba(22, 38, 29, 0.08);
-          --hover-soft: rgba(22, 38, 29, 0.06);
-          --btn-hover-border: #8ba496;
-          --overlay: rgba(17, 35, 24, 0.45);
-          --theme-pill: #f6faf7;
-          --theme-pill-border: #c4d5ca;
-          --theme-pill-text: #385146;
-          --theme-pill-active-bg: #00a54a;
-          --theme-pill-active-text: #ffffff;
-        }
-
         :global(body) {
           background: var(--bg);
           color: var(--text);
@@ -951,33 +884,6 @@ export default function AdminPage() {
           display: flex;
           align-items: center;
           gap: 10px;
-        }
-
-        .theme-switch {
-          display: inline-flex;
-          background: var(--theme-pill);
-          border: 1px solid var(--theme-pill-border);
-          border-radius: 999px;
-          padding: 3px;
-          gap: 3px;
-        }
-
-        .theme-btn {
-          border: none;
-          background: transparent;
-          color: var(--theme-pill-text);
-          border-radius: 999px;
-          font-family: 'Sora', sans-serif;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 5px 10px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .theme-btn.active {
-          background: var(--theme-pill-active-bg);
-          color: var(--theme-pill-active-text);
         }
 
         .admin-badge {
@@ -1020,9 +926,6 @@ export default function AdminPage() {
           }
           .header-title {
             font-size: 14px;
-          }
-          .theme-btn {
-            padding: 4px 8px;
           }
           .btn-logout {
             padding: 6px 10px;

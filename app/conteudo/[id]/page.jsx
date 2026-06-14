@@ -113,17 +113,20 @@ export default function ProgramaDetalhePage() {
         .hero {
           min-height: 210px;
           padding: 18px 14px 22px;
-          background: linear-gradient(135deg, #082a17, #0e191f);
+          background: var(--bg-header);
+          color: var(--text-on-green);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          box-shadow: var(--shadow-green);
         }
 
         .back-btn {
           width: fit-content;
-          border: 1px solid rgba(255, 255, 255, 0.16);
+          border: 1px solid rgba(255, 255, 255, 0.35);
           border-radius: var(--radius-full);
-          color: var(--text);
+          background: rgba(255, 255, 255, 0.2);
+          color: var(--text-on-green);
           padding: 8px 12px;
           font-size: 12px;
           font-weight: 900;
@@ -138,7 +141,7 @@ export default function ProgramaDetalhePage() {
 
         p {
           margin: 0;
-          color: var(--text-2);
+          color: rgba(255, 255, 255, 0.82);
           font-size: 13px;
         }
 
@@ -154,12 +157,15 @@ export default function ProgramaDetalhePage() {
         .error-inline {
           border: 1px solid var(--border-2);
           border-radius: var(--radius-lg);
-          background: var(--bg2);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
         }
 
         .progress-card {
           padding: 13px;
           margin-bottom: 12px;
+          background: var(--green-dim);
+          border-color: var(--border-green);
         }
 
         .progress-head {
@@ -179,7 +185,7 @@ export default function ProgramaDetalhePage() {
         .progress-track {
           height: 8px;
           border-radius: var(--radius-full);
-          background: var(--bg3);
+          background: var(--green-mid);
           overflow: hidden;
         }
 

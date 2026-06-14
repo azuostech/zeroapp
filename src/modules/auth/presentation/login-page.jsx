@@ -77,8 +77,6 @@ export default function LoginPage() {
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
 
-  const [theme, setTheme] = useState('dark');
-
   const getClient = () => {
     try {
       return getBrowserSupabase();
@@ -88,25 +86,14 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    let nextTheme = 'dark';
+    const nextTheme = 'light';
+    document.documentElement.setAttribute('data-theme', nextTheme);
     try {
-      const saved = localStorage.getItem(THEME_KEY);
-      if (saved === 'light' || saved === 'dark') nextTheme = saved;
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) nextTheme = 'light';
+      localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
-    setTheme(nextTheme);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (_) {
-      // no-op
-    }
-  }, [theme]);
 
   useEffect(() => {
     let cancelled = false;
@@ -298,24 +285,13 @@ export default function LoginPage() {
     }
   };
 
-  const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
+  const logoSrc = '/logo-zeroapp-light.png';
 
   return (
     <div className="login-shell">
       <div className="bg-glow" />
 
       <div className="card">
-        <div className="theme-switch-wrap">
-          <div className="theme-switch">
-            <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
-              Claro
-            </button>
-            <button type="button" className={`theme-btn ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme('dark')}>
-              Escuro
-            </button>
-          </div>
-        </div>
-
         <div className="brand">
           <Image className="brand-logo" src={logoSrc} alt="Logo ZeroApp" width={124} height={124} priority />
         </div>
@@ -461,23 +437,6 @@ export default function LoginPage() {
       </div>
 
       <style jsx>{`
-        :global(:root) {
-          --theme-pill: var(--bg-surface);
-          --theme-pill-border: var(--border-2);
-          --theme-pill-btn: transparent;
-          --theme-pill-active-bg: var(--green);
-          --theme-pill-active-text: #04110a;
-          --theme-pill-text: var(--text-2);
-        }
-
-        :global(:root[data-theme='light']) {
-          --theme-pill: #f6faf7;
-          --theme-pill-border: #c6d6cb;
-          --theme-pill-active-bg: #00c853;
-          --theme-pill-active-text: #ffffff;
-          --theme-pill-text: #385146;
-        }
-
         .login-shell {
           background: var(--bg-deep);
           background-image: radial-gradient(
@@ -535,39 +494,6 @@ export default function LoginPage() {
           max-width: 380px;
           padding: 20px;
           animation: fadeUp 0.5s ease both;
-        }
-
-        .theme-switch-wrap {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 14px;
-        }
-
-        .theme-switch {
-          display: inline-flex;
-          background: var(--theme-pill);
-          border: 1px solid var(--theme-pill-border);
-          border-radius: 999px;
-          padding: 3px;
-          gap: 3px;
-        }
-
-        .theme-btn {
-          border: none;
-          background: var(--theme-pill-btn);
-          color: var(--theme-pill-text);
-          border-radius: 999px;
-          font-family: 'Sora', sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 6px 11px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .theme-btn.active {
-          background: var(--theme-pill-active-bg);
-          color: var(--theme-pill-active-text);
         }
 
         @keyframes fadeUp {
