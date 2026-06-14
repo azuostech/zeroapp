@@ -121,7 +121,6 @@ export default function FinanceAppPage({
   focusSectionId = null,
   showJourneySections = true
 }) {
-  const [theme, setTheme] = useState('light');
   const [canAccessMavf, setCanAccessMavf] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
   const [impersonationLabel, setImpersonationLabel] = useState('');
@@ -254,23 +253,14 @@ export default function FinanceAppPage({
   };
 
   useEffect(() => {
-    let nextTheme = 'light';
+    const nextTheme = 'light';
+    document.documentElement.setAttribute('data-theme', nextTheme);
     try {
       localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
-    setTheme(nextTheme);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (_) {
-      // no-op
-    }
-  }, [theme]);
 
   useEffect(() => {
     let dados = {};
@@ -1514,7 +1504,7 @@ export default function FinanceAppPage({
   const homeHref = encodedTargetId ? `/admin/users/${encodedTargetId}/dashboard` : '/app';
   const adminMavfHref = encodedTargetId ? `/admin/users/${encodedTargetId}/mavf` : '/mavf';
   const mavfHref = mavfLocked ? '#' : adminMavfHref;
-  const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
+  const logoSrc = '/logo-zeroapp-light.png';
 
   return (
     <>
@@ -1592,11 +1582,6 @@ export default function FinanceAppPage({
               <option value="2027">2027</option>
               <option value="2028">2028</option>
             </select>
-          </div>
-          <div className="theme-switch">
-            <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
-              Claro
-            </button>
           </div>
           <button className="btn-logout" onClick={() => window.logout?.()}>
             Sair
@@ -2142,33 +2127,6 @@ export default function FinanceAppPage({
           display: none;
         }
 
-        .theme-switch {
-          display: inline-flex;
-          background: var(--theme-pill);
-          border: 1px solid var(--theme-pill-border);
-          border-radius: 999px;
-          padding: 3px;
-          gap: 3px;
-        }
-
-        .theme-btn {
-          border: none;
-          background: transparent;
-          color: var(--theme-pill-text);
-          border-radius: 999px;
-          font-family: 'Sora', sans-serif;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 5px 10px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .theme-btn.active {
-          background: var(--theme-pill-active-bg);
-          color: var(--theme-pill-active-text);
-        }
-
         .user-name {
           font-size: 12px;
           color: var(--dim);
@@ -2252,9 +2210,6 @@ export default function FinanceAppPage({
           .month-select {
             font-size: 11px;
             padding: 6px 8px;
-          }
-          .theme-btn {
-            padding: 4px 8px;
           }
         }
 
@@ -3810,15 +3765,6 @@ export default function FinanceAppPage({
           .month-select {
             font-size: 10px;
             padding: 5px 7px;
-          }
-
-          .theme-switch {
-            padding: 2px;
-          }
-
-          .theme-btn {
-            font-size: 9px;
-            padding: 4px 7px;
           }
 
           .cat-row,

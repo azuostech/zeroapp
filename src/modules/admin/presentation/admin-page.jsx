@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 
 const THEME_KEY = 'zeroapp-theme';
@@ -40,26 +40,15 @@ async function apiRequest(path, options = {}) {
 }
 
 export default function AdminPage() {
-  const [theme, setTheme] = useState('light');
-
   useEffect(() => {
-    let nextTheme = 'light';
+    const nextTheme = 'light';
+    document.documentElement.setAttribute('data-theme', nextTheme);
     try {
       localStorage.setItem(THEME_KEY, nextTheme);
     } catch (_) {
       // no-op
     }
-    setTheme(nextTheme);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (_) {
-      // no-op
-    }
-  }, [theme]);
 
   useEffect(() => {
     let allUsers = [];
@@ -667,11 +656,6 @@ export default function AdminPage() {
           <div className="header-title">Painel de Administração</div>
         </div>
         <div className="header-right">
-          <div className="theme-switch">
-            <button type="button" className={`theme-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => setTheme('light')}>
-              Claro
-            </button>
-          </div>
           <button className="btn-logout" onClick={() => window.logout?.()}>
             Sair
           </button>
@@ -902,33 +886,6 @@ export default function AdminPage() {
           gap: 10px;
         }
 
-        .theme-switch {
-          display: inline-flex;
-          background: var(--theme-pill);
-          border: 1px solid var(--theme-pill-border);
-          border-radius: 999px;
-          padding: 3px;
-          gap: 3px;
-        }
-
-        .theme-btn {
-          border: none;
-          background: transparent;
-          color: var(--theme-pill-text);
-          border-radius: 999px;
-          font-family: 'Sora', sans-serif;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 5px 10px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .theme-btn.active {
-          background: var(--theme-pill-active-bg);
-          color: var(--theme-pill-active-text);
-        }
-
         .admin-badge {
           background: rgba(255, 215, 0, 0.1);
           border: 1px solid rgba(255, 215, 0, 0.3);
@@ -969,9 +926,6 @@ export default function AdminPage() {
           }
           .header-title {
             font-size: 14px;
-          }
-          .theme-btn {
-            padding: 4px 8px;
           }
           .btn-logout {
             padding: 6px 10px;
