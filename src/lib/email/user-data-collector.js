@@ -178,6 +178,14 @@ export async function coletarDadosUsuario(userId, mesRef, anoRef) {
 
   const saldoRealizado = totalReceitaRealizada - totalGastoRealizado;
   const saldoPrevisto = totalReceitaPrevista - totalGastoPrevisto;
+  const blocos = {
+    receitas: receitasCalc,
+    'pagar-primeiro': pagarPrimeiroCalc,
+    doar: doarCalc,
+    contas: contasCalc,
+    investimentos: investimentosCalc,
+    desfrute: desfruteCalc
+  };
 
   const coinsAtual = Number(coins?.coins || 0);
   const coinsTotal = Number(coins?.coins_total || 0);
@@ -200,7 +208,8 @@ export async function coletarDadosUsuario(userId, mesRef, anoRef) {
       totalGastoRealizado,
       totalGastoPrevisto,
       saldoRealizado,
-      saldoPrevisto
+      saldoPrevisto,
+      blocos
     },
     praticas: {
       gains,

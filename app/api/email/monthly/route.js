@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { authorizeCronOrAdmin } from '@/src/lib/email/request-auth';
 import { coletarDadosUsuario } from '@/src/lib/email/user-data-collector';
+import { buildMonthlyEmailSnapshot } from '@/src/lib/email/email-snapshot';
 import { monthlyReportTemplate } from '@/src/lib/email/templates/monthly-report';
 import { sendEmail } from '@/src/lib/email/email-service';
 
@@ -140,12 +141,14 @@ export async function POST(request) {
       }
 
       const { subject, html } = monthlyReportTemplate(dados);
+      const emailSnapshot = buildMonthlyEmailSnapshot(dados);
       const sent = await sendEmail({
         userId,
         to: recipient,
         subject,
         html,
-        emailType: 'monthly_report'
+        emailType: 'monthly_report',
+        emailSnapshot
       });
 
       results.push({ user_id: userId, ...sent });

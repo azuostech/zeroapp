@@ -1,17 +1,23 @@
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { EMAIL_FROM, getResendClient, isResendConfigured } from '@/src/lib/email/resend-client';
 
-async function writeEmailLog({ userId, to, subject, emailType, status, resendId = null }) {
+async function writeEmailLog({ userId, to, subject, emailType, status, resendId = null, emailSnapshot = null }) {
   try {
     const supabase = getServiceSupabase();
-    const { error } = await supabase.from('email_logs').insert({
+    const payload = {
       user_id: userId || null,
       email_type: emailType,
       recipient: to,
       subject,
       resend_id: resendId,
       status
-    });
+    };
+
+    if (emailSnapshot && typeof emailSnapshot === 'object') {
+      payload.email_snapshot = emailSnapshot;
+    }
+
+    const { error } = await supabase.from('email_logs').insert(payload);
 
     if (error) {
       console.error('[email-service] erro ao gravar email_logs:', error.message || error);
@@ -24,7 +30,7 @@ async function writeEmailLog({ userId, to, subject, emailType, status, resendId 
 /**
  * Envia email e registra no email_logs.
  */
-export async function sendEmail({ userId, to, subject, html, emailType }) {
+export async function sendEmail({ userId, to, subject, html, emailType, emailSnapshot = null }) {
   if (!to || !subject || !html || !emailType) {
     return { success: false, error: 'invalid_email_payload' };
   }
@@ -35,7 +41,8 @@ export async function sendEmail({ userId, to, subject, html, emailType }) {
       to,
       subject,
       emailType,
-      status: 'failed'
+      status: 'failed',
+      emailSnapshot
     });
 
     return { success: false, error: 'resend_not_configured' };
@@ -64,7 +71,8 @@ export async function sendEmail({ userId, to, subject, html, emailType }) {
       subject,
       emailType,
       status: 'sent',
-      resendId: data?.id || null
+      resendId: data?.id || null,
+      emailSnapshot
     });
 
     return { success: true, id: data?.id || null };
@@ -76,7 +84,8 @@ export async function sendEmail({ userId, to, subject, html, emailType }) {
       to,
       subject,
       emailType,
-      status: 'failed'
+      status: 'failed',
+      emailSnapshot
     });
 
     return { success: false, error: error?.message || 'email_send_failed' };

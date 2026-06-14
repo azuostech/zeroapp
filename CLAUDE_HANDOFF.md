@@ -1021,3 +1021,81 @@ Não relacionadas ao prompt de Fase 3 visual:
 - Nao houve alteracao intencional de API, hooks, schema ou banco; as mudancas foram visuais/tema.
 - `backup.dump` permanece nao rastreado e fora dos commits.
 - O Browser in-app (`iab`) nao estava disponivel nesta sessao; a validacao visual ficou limitada a build, grep e HTTP local.
+
+---
+
+## Atualizacao 2026-06-13 — Painel Admin de Emails com tracking
+
+### Pedido / prompt
+- Prompt implementado:
+  - `/Users/jacksonsouza/Library/CloudStorage/GoogleDrive-jksouza@gmail.com/My Drive/Projetos/Mentoria Financeira/Lives Financeiras Diarias/Projetos das Mentorias/ZeroApp/prompts/NovoDesign_Vrs5/codex-admin-email-panel.md`
+- Branch de trabalho:
+  - `feature/admin-email-panel`
+- Observacao de base:
+  - A branch foi criada a partir de `feature/light-mode`, pois o prompt depende do light mode.
+
+### Auditoria inicial
+- `email_logs` antes da migracao tinha:
+  - `id`, `user_id`, `email_type`, `recipient`, `subject`, `resend_id`, `status`, `sent_at`.
+- Policy existente:
+  - `email_logs_admin` (`ALL`).
+- Templates existentes em `src/lib/email/templates/`:
+  - `base-template.js`, `monthly-report.js`, `phase-milestone.js`, `reconnect.js`.
+- Nao havia pasta `app/api/webhooks`.
+- Nao foi encontrada configuracao local de webhook Resend ja implementada no codigo.
+
+### Implementado
+- SQL:
+  - criado `scripts/migrate-email-logs-tracking.sql`.
+  - adiciona `created_at`, `opened_at`, `clicked_at`, `open_count`, `click_count`, `last_event_at`, `email_snapshot`.
+  - cria indices `idx_email_logs_user_created`, `idx_email_logs_type`, `idx_email_logs_status_created`, `idx_email_logs_resend_id`.
+  - preserva/garante RLS admin.
+- Banco:
+  - migracao aplicada no Supabase da `.env.local`.
+  - schema validado com 15 colunas em `email_logs`.
+- Email service:
+  - `sendEmail` agora aceita `emailSnapshot`.
+  - envio mensal gera snapshot via `src/lib/email/email-snapshot.js`.
+  - `coletarDadosUsuario` passou a retornar `financeiro.blocos` para snapshot.
+- Webhook:
+  - criado `POST /api/webhooks/resend`.
+  - exige headers `svix-id` e `svix-signature`.
+  - processa `email.sent`, `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`.
+  - atualiza status, contadores e `last_event_at` por `resend_id`.
+- APIs admin:
+  - `GET /api/admin/email-logs` com filtros por `user_id`, `email_type`, `status`, `month`, `search`, `page`, `limit`.
+  - `GET /api/admin/email-logs/[id]` retorna log completo com snapshot.
+  - `GET /api/admin/email-logs/stats` retorna totais, taxas e agrupamentos.
+- Frontend:
+  - criado `/admin/emails` com metric cards, filtros, tabela e modal de snapshot/JSON.
+  - criado `/admin/emails/aluno/[userId]` com resumo e timeline de contatos.
+  - criados componentes:
+    - `EmailLogRow`
+    - `EmailSnapshotModal`
+    - `ContactTimeline`
+  - menu do admin ganhou link `Emails`.
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 66/66 paginas.
+- Dev server subiu em `http://localhost:3001` porque `3000` estava ocupada.
+- `HEAD /admin/emails` respondeu `307 Temporary Redirect` sem sessao autenticada, esperado.
+- `GET /api/admin/email-logs?limit=1` sem sessao respondeu `401 Unauthorized`, esperado.
+- `POST /api/webhooks/resend` sem headers respondeu `401 Unauthorized`.
+- `POST /api/webhooks/resend` com headers fake e `email_id` inexistente respondeu `200 OK`.
+
+### Pendencias operacionais
+- Configurar no Resend Dashboard:
+  - URL: `https://zeroapp.tech/api/webhooks/resend`
+  - eventos: `email.sent`, `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`.
+- Para validar visualmente a tabela real, entrar como admin no browser e abrir `/admin/emails`.
+
+### Limitacoes da validacao
+- O Browser in-app (`iab`) nao estava disponivel nesta sessao, entao nao houve inspecao visual autenticada.
+- Nao foi inserido log fake no banco para testar incremento real de `open_count`; o webhook foi validado sem side effect em dado real.
+- A assinatura Svix/Resend esta validada por presenca dos headers, conforme prompt; verificacao criptografica completa nao foi adicionada.
+
+### Observacoes
+- Nao houve reenvio de emails.
+- Nao foi salvo HTML completo, apenas snapshot JSON dos dados.
+- `backup.dump` permanece nao rastreado e fora dos commits.
