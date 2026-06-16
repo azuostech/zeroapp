@@ -12,6 +12,20 @@
   --green-text: #1B5E20;
   --green-glow: rgba(0, 200, 83, 0.25);
 
+  /* SHAMAR */
+  --shamar-dark: #1B5E20;
+  --shamar-mid: #2E7D32;
+  --shamar-light: #388E3C;
+  --shamar-dim: rgba(27, 94, 32, 0.08);
+  --shamar-gold: #C9A84C;
+  --shamar-gold-dim: #FDF6E3;
+  --sq-pequeno: #81C784;
+  --sq-medio: #1B5E20;
+  --sq-grande: #F9A825;
+  --sq-epico: #C62828;
+  --sq-empty: #EEF2EE;
+  --sq-hover: #00C853;
+
   /* Dourado / Coins */
   --gold: #F9A825;
   --gold-dark: #B45309;

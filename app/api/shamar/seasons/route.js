@@ -100,9 +100,58 @@ async function loadActiveSeason(supabase, userId) {
   return { season: data || null, error: null };
 }
 
+async function loadUnlockProgress(supabase, userId) {
+  const totalRequired = 3;
+
+  try {
+    const { count, error } = await supabase
+      .from('content_progress')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .not('completed_at', 'is', null);
+
+    if (error) throw error;
+
+    const completed = Math.min(totalRequired, Number(count || 0));
+    return {
+      completed,
+      total: totalRequired,
+      percentage: Math.round((completed / totalRequired) * 100)
+    };
+  } catch (_) {
+    return {
+      completed: 0,
+      total: totalRequired,
+      percentage: 0
+    };
+  }
+}
+
 export async function GET() {
   const context = await createAuthenticatedContext();
   if (context.error) return context.error;
+
+  const shamarProfileResult = await loadShamarProfile(context.supabase, context.user.id);
+  if (shamarProfileResult.error) {
+    return NextResponse.json({ error: shamarProfileResult.error }, { status: 500 });
+  }
+
+  if (!shamarProfileResult.profile?.shamar_unlocked) {
+    const unlockProgress = await loadUnlockProgress(context.supabase, context.user.id);
+    return NextResponse.json({
+      season: null,
+      config: null,
+      progress: null,
+      index: null,
+      profile: {
+        turma: shamarProfileResult.profile?.turma || null,
+        tier: shamarProfileResult.profile?.tier || null,
+        shamar_unlocked: false
+      },
+      locked: true,
+      unlock_progress: unlockProgress
+    });
+  }
 
   const { season, error: seasonError } = await loadActiveSeason(context.supabase, context.user.id);
   if (seasonError) {
@@ -110,7 +159,18 @@ export async function GET() {
   }
 
   if (!season) {
-    return NextResponse.json({ season: null, progress: null });
+    return NextResponse.json({
+      season: null,
+      config: null,
+      progress: null,
+      index: null,
+      profile: {
+        turma: shamarProfileResult.profile?.turma || null,
+        tier: shamarProfileResult.profile?.tier || null,
+        shamar_unlocked: true
+      },
+      locked: false
+    });
   }
 
   const { config, error: configError } = await loadConfig(context.supabase, season.tribo_config_id);
@@ -125,6 +185,14 @@ export async function GET() {
         ...season,
         config
       },
+      config,
+      index: progress.current_index,
+      profile: {
+        turma: shamarProfileResult.profile?.turma || null,
+        tier: shamarProfileResult.profile?.tier || null,
+        shamar_unlocked: true
+      },
+      locked: false,
       progress
     });
   } catch (error) {
