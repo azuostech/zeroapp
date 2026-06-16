@@ -155,6 +155,7 @@ export default function AdminPage() {
                 const safeEmail = jsEsc(u.email);
                 const safeName = jsEsc(u.full_name || u.email);
                 const safePathId = encodeURIComponent(String(u.id || ''));
+                const shamarUnlocked = Boolean(u.shamar_unlocked);
 
                 return `
                 <tr>
@@ -175,6 +176,7 @@ export default function AdminPage() {
                       ${u.status === 'active' ? `<button class="btn-action btn-disable" onclick="setStatus('${safeId}','disabled')">✗ Desativar</button>` : ''}
                       ${u.status === 'disabled' ? `<button class="btn-action btn-enable" onclick="setStatus('${safeId}','active')">↺ Reativar</button>` : ''}
                       <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Tier + Turma</button>
+                      <button class="btn-action btn-shamar ${shamarUnlocked ? 'active' : ''}" onclick="setShamarUnlocked('${safeId}',${shamarUnlocked ? 'false' : 'true'})">🛡️ SHAMAR ${shamarUnlocked ? 'ON' : 'OFF'}</button>
                       <button class="btn-action btn-reset" onclick="resetPassword('${safeEmail}')">🔑 Senha</button>
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
                       <a class="btn-action btn-open" href="/admin/users/${safePathId}/dashboard">↗ Dashboard</a>
@@ -288,6 +290,19 @@ export default function AdminPage() {
         await loadAll();
       } catch (_) {
         showToast('Erro ao atualizar', 'red');
+      }
+    };
+
+    const setShamarUnlocked = async (userId, shamarUnlocked) => {
+      try {
+        await apiRequest(`/api/admin/users/${userId}/shamar`, {
+          method: 'PATCH',
+          body: JSON.stringify({ shamar_unlocked: Boolean(shamarUnlocked) })
+        });
+        showToast(shamarUnlocked ? 'SHAMAR liberado' : 'SHAMAR bloqueado', 'green');
+        await loadAll();
+      } catch (error) {
+        showToast(error?.message || 'Erro ao atualizar SHAMAR', 'red');
       }
     };
 
@@ -618,6 +633,7 @@ export default function AdminPage() {
     window.showView = showView;
     window.filterUsers = filterUsers;
     window.setStatus = setStatus;
+    window.setShamarUnlocked = setShamarUnlocked;
     window.openTierModal = openTierModal;
     window.closeTierModal = closeTierModal;
     window.selectTierOption = selectTierOption;
@@ -635,6 +651,7 @@ export default function AdminPage() {
       delete window.showView;
       delete window.filterUsers;
       delete window.setStatus;
+      delete window.setShamarUnlocked;
       delete window.openTierModal;
       delete window.closeTierModal;
       delete window.selectTierOption;
@@ -688,6 +705,9 @@ export default function AdminPage() {
           </a>
           <a className="nav-item nav-item-link" href="/admin/conteudo" id="nav-content">
             <span className="nav-icon">📚</span> Conteúdo
+          </a>
+          <a className="nav-item nav-item-link" href="/admin/shamar" id="nav-shamar">
+            <span className="nav-icon">🛡️</span> SHAMAR
           </a>
           <a className="nav-item nav-item-link" href="/admin/emails" id="nav-emails">
             <span className="nav-icon">📧</span> Emails
@@ -1353,6 +1373,23 @@ export default function AdminPage() {
         }
 
         .btn-mavf:hover {
+          background: var(--green);
+          color: #000;
+        }
+
+        .btn-shamar {
+          background: rgba(27, 94, 32, 0.09);
+          color: #2e7d32;
+          border: 1px solid rgba(27, 94, 32, 0.22);
+        }
+
+        .btn-shamar.active {
+          background: rgba(255, 215, 0, 0.13);
+          color: var(--gold);
+          border-color: rgba(255, 215, 0, 0.28);
+        }
+
+        .btn-shamar:hover {
           background: var(--green);
           color: #000;
         }

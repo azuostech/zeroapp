@@ -13,6 +13,14 @@ function formatCoins(value) {
   return Number(value || 0).toLocaleString('pt-BR');
 }
 
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0
+  });
+}
+
 function ensureThemeAttribute() {
   document.documentElement.setAttribute('data-theme', 'light');
   try {
@@ -26,6 +34,7 @@ export default function JornadaPage() {
     useJornada();
   const [tier, setTier] = useState('DESPERTAR');
   const [isIAOpen, setIsIAOpen] = useState(false);
+  const [shamarSummary, setShamarSummary] = useState(null);
 
   useEffect(() => {
     ensureThemeAttribute();
@@ -34,20 +43,32 @@ export default function JornadaPage() {
   useEffect(() => {
     let mounted = true;
 
-    const loadTier = async () => {
+    const loadExtras = async () => {
       try {
         const response = await fetch('/api/user/tier', { cache: 'no-store' });
+        if (response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          if (mounted) {
+            setTier(String(payload?.tier || 'DESPERTAR').toUpperCase());
+          }
+        }
+      } catch (_) {
+        // no-op
+      }
+
+      try {
+        const response = await fetch('/api/shamar/seasons', { cache: 'no-store' });
         if (!response.ok) return;
         const payload = await response.json().catch(() => ({}));
         if (mounted) {
-          setTier(String(payload?.tier || 'DESPERTAR').toUpperCase());
+          setShamarSummary(!payload?.locked && payload?.season ? payload : null);
         }
       } catch (_) {
         // no-op
       }
     };
 
-    loadTier();
+    loadExtras();
     return () => {
       mounted = false;
     };
@@ -90,6 +111,20 @@ export default function JornadaPage() {
 
         {isLoading ? <div className="feedback">Carregando jornada...</div> : null}
         {error ? <div className="feedback error">{error}</div> : null}
+
+        {shamarSummary ? (
+          <section className="shamar-journey">
+            <div>
+              <span>🛡️ SHAMAR ativo</span>
+              <h2>{shamarSummary.config?.turma || 'Temporada SHAMAR'}</h2>
+              <p>
+                {formatMoney(shamarSummary.progress?.contributions_total || 0)} acumulados ·{' '}
+                {Number(shamarSummary.progress?.squares_marked || 0)} quadrinhos marcados
+              </p>
+            </div>
+            <a href="/shamar">Abrir</a>
+          </section>
+        ) : null}
 
         {!isLoading && !error ? (
           <section className="timeline">
@@ -285,6 +320,51 @@ export default function JornadaPage() {
         .feedback.error {
           border-color: color-mix(in srgb, var(--red) 45%, transparent);
           color: var(--red);
+        }
+
+        .shamar-journey {
+          border: 1px solid var(--border-green);
+          border-radius: var(--radius-lg);
+          background:
+            linear-gradient(135deg, color-mix(in srgb, var(--green) 12%, transparent), color-mix(in srgb, var(--gold) 10%, transparent)),
+            var(--bg-card);
+          padding: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+
+        .shamar-journey span {
+          color: var(--green-dark);
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .shamar-journey h2 {
+          margin: 4px 0;
+          font-size: 18px;
+          font-family: var(--font-body);
+          font-weight: 900;
+        }
+
+        .shamar-journey p {
+          margin: 0;
+          color: var(--text-2);
+          font-size: 12px;
+        }
+
+        .shamar-journey a {
+          border: 1px solid var(--green);
+          border-radius: var(--radius-md);
+          background: var(--green);
+          color: var(--bg);
+          padding: 9px 12px;
+          text-decoration: none;
+          font-weight: 900;
+          white-space: nowrap;
         }
 
         .timeline {
@@ -513,6 +593,11 @@ export default function JornadaPage() {
 
         @media (max-width: 768px) {
           .jornada-header {
+            flex-direction: column;
+          }
+
+          .shamar-journey {
+            align-items: flex-start;
             flex-direction: column;
           }
 

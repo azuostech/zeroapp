@@ -137,6 +137,10 @@ export default function ShamarPage() {
         <p>{emotionalTrigger(progress, indexData)}</p>
       </section>
 
+      <Link href="/shamar/encerramento" className="shamar-closing-link">
+        Encerrar temporada
+      </Link>
+
       <Link href="/shamar/aporte/novo" className="shamar-cta">
         + Registrar Aporte
       </Link>
@@ -204,6 +208,20 @@ export default function ShamarPage() {
           padding: 14px 18px;
           margin-bottom: 14px;
           box-shadow: 0 4px 16px rgba(27, 94, 32, 0.24);
+        }
+
+        .shamar-closing-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          border: 1px solid color-mix(in srgb, var(--shamar-gold) 55%, transparent);
+          border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--shamar-gold) 12%, transparent);
+          color: #7a5a00;
+          font-weight: 900;
+          padding: 12px 16px;
+          margin-bottom: 10px;
         }
 
         .shamar-recent-list {

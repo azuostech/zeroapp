@@ -50,6 +50,13 @@ function getEventTypeBadge(eventType) {
   if (key === 'content_completed') return { label: 'Aula concluída', className: 'badge-green' };
   if (key === 'tier_upgrade') return { label: 'Tier upgrade', className: 'badge-purple' };
   if (key === 'workshop_redeemed') return { label: 'Workshop', className: 'badge-gold' };
+  if (key === 'shamar_aporte_registered') return { label: '🛡️ Aporte SHAMAR', className: 'badge-green' };
+  if (key === 'shamar_identity_up') return { label: '🏆 Identidade SHAMAR', className: 'badge-gold' };
+  if (key === 'shamar_season_completed') return { label: '🏆 SHAMAR concluído', className: 'badge-gold' };
+  if (key === 'shamar_mission_completed') return { label: '🎯 Missão SHAMAR', className: 'badge-green' };
+  if (key === 'shamar_streak_7') return { label: '🔥 SHAMAR 7', className: 'badge-green' };
+  if (key === 'shamar_streak_30') return { label: '🔥 SHAMAR 30', className: 'badge-gold' };
+  if (key.startsWith('shamar_')) return { label: '🛡️ SHAMAR', className: 'badge-green' };
   return { label: 'Evento', className: 'badge-neutral' };
 }
 
