@@ -1099,3 +1099,275 @@ Não relacionadas ao prompt de Fase 3 visual:
 - Nao houve reenvio de emails.
 - Nao foi salvo HTML completo, apenas snapshot JSON dos dados.
 - `backup.dump` permanece nao rastreado e fora dos commits.
+
+---
+
+## Atualizacao 2026-06-16 — SHAMAR Etapas A-D
+
+### Pedido / prompts
+Foram executados os prompts da trilha SHAMAR:
+- `codex-shamar-etapa-a-sql.md`
+- `codex-shamar-etapa-b-apis.md`
+- `codex-shamar-etapa-c-frontend.md`
+- `codex-shamar-etapa-d-admin.md`
+
+Branch de trabalho:
+- `feature/shamar`
+
+Commits criados:
+- `7cc2de2` — `feat(shamar): SQL etapa A - 11 tabelas, RLS, funcoes, seeds - shamar`
+- `bbf5b18` — `feat(shamar): algoritmo tabuleiro e APIs core - etapa B`
+- `57a732c` — `feat(shamar): frontend completo - EU, tabuleiro, aporte, missoes, tribo, nos - etapa C`
+- `f09dddb` — `feat(shamar): admin e encerramento de temporada - etapa D`
+
+### Estado de banco e seguranca
+- A Etapa A gerou o SQL base em `scripts/migrate-shamar-etapa-a.sql`.
+- Em 2026-06-16, o SQL da Etapa A foi aplicado no Supabase da `.env.local` apos backup e dry-run transacional com `ROLLBACK`.
+- Backup antes da aplicacao:
+  - `backup_zeroapp.sql`
+  - `backups/backup_zeroapp_20260616_002700.sql`
+- Resultado aplicado:
+  - 12 tabelas SHAMAR em `public`
+  - coluna `profiles.shamar_unlocked`
+  - bucket privado `shamar-provas`
+  - 8 missoes globais
+  - 31 policies SHAMAR/storage
+  - 4 funcoes auxiliares
+- Para a seed `Maio 2026`, foi inserido tabuleiro operacional:
+  - 159 quadrinhos
+  - soma `125000`
+  - 100 pequenos, 50 medios, 8 grandes, 1 epico
+- As 8 missoes globais foram ativadas para a turma seed `Maio 2026`.
+- Em 2026-06-16, o SQL da Etapa D `scripts/migrate-shamar-etapa-d-feed-events.sql` tambem foi aplicado no Supabase da `.env.local` apos auditoria dos tipos existentes e dry-run transacional com `ROLLBACK`.
+- A constraint `feed_events_event_type_check` agora aceita os eventos SHAMAR:
+  - `shamar_aporte_registered`
+  - `shamar_identity_up`
+  - `shamar_season_completed`
+  - `shamar_streak_7`
+  - `shamar_streak_30`
+  - `shamar_mission_completed`
+- `backup.dump` permanece nao rastreado e fora dos commits.
+
+### Etapa A — SQL base SHAMAR
+Arquivo criado:
+- `scripts/migrate-shamar-etapa-a.sql`
+
+O script prepara:
+- coluna `profiles.shamar_unlocked`
+- bucket privado `shamar-provas`
+- funcoes auxiliares:
+  - `public.is_admin()`
+  - `public.profile_has_turma(...)`
+  - `public.shamar_profile_can_access_turma(...)`
+  - `public.award_shamar_points(...)`
+- tabelas SHAMAR:
+  - `shamar_tribo_configs`
+  - `shamar_board_squares`
+  - `shamar_seasons`
+  - `shamar_contributions`
+  - `shamar_marked_squares`
+  - `shamar_partnerships`
+  - `shamar_missions`
+  - `shamar_turma_missions`
+  - `shamar_mission_completions`
+  - `shamar_points_balance`
+  - `shamar_points_transactions`
+  - `shamar_index_history`
+- RLS e policies para usuario/admin.
+- Seeds de missoes globais.
+- Seed de config inicial `Maio 2026`.
+
+### Etapa B — Core APIs e algoritmo
+Arquivos principais criados:
+- `src/lib/shamar/board-generator.js`
+- `src/lib/shamar/api.js`
+- `src/lib/shamar/awards.js`
+- `src/lib/shamar/index-calculator.js`
+- `app/api/admin/shamar/board/route.js`
+- `app/api/shamar/seasons/route.js`
+- `app/api/shamar/board/route.js`
+- `app/api/shamar/contributions/route.js`
+- `app/api/shamar/index/route.js`
+- `app/api/shamar/proof-upload/route.js`
+
+Implementado:
+- gerador de tabuleiro por meta total, com categorias `pequeno`, `medio`, `grande`, `epico`.
+- validacao de soma do tabuleiro contra `meta_total`.
+- helpers de autenticacao/normalizacao/erro para SHAMAR.
+- APIs para iniciar temporada, ler progresso, carregar tabuleiro, registrar aporte, upload de comprovante e calcular indice.
+- premios seguros:
+  - ZeroCoins via `award_coins`
+  - Pontos SHAMAR via `award_shamar_points`
+- calculo e persistencia do Indice SHAMAR:
+  - constancia
+  - evolucao
+  - patrimonio
+  - participacao
+  - identidade (`guardiao`, `construtor`, `cultivador`, `multiplicador`, `legado`)
+
+### Etapa C — Frontend SHAMAR
+Arquivos principais criados/alterados:
+- `app/shamar/page.jsx`
+- `app/shamar/tabuleiro/page.jsx`
+- `app/shamar/aporte/novo/page.jsx`
+- `app/shamar/missoes/page.jsx`
+- `app/shamar/tribo/page.jsx`
+- `app/shamar/nos/page.jsx`
+- `components/shamar/ShamarUI.jsx`
+- `hooks/useShamar.js`
+- `hooks/useShamarBoard.js`
+- `hooks/useShamarMissions.js`
+- `src/lib/shamar/formatters.js`
+- `app/api/shamar/missions/route.js`
+- `app/api/shamar/tribo/route.js`
+- `app/api/shamar/nos/route.js`
+- `app/api/shamar/sessions/route.js`
+- `styles/theme.css`
+- `app/app/page.js`
+
+Implementado:
+- Hub `/shamar` com resumo da temporada, indice, progresso, tabuleiro preview e aportes recentes.
+- `/shamar/tabuleiro` com grade completa.
+- `/shamar/aporte/novo` com selecao de quadrinhos, upload/uso de comprovante e registro do aporte.
+- `/shamar/missoes` com missoes ativas, progresso e pontos.
+- `/shamar/tribo` com ranking/visao da turma.
+- `/shamar/nos` com experiencia de parceria.
+- Estado bloqueado quando `profiles.shamar_unlocked=false`.
+- Card SHAMAR na Home (`/app`) quando a API indica acesso/temporada, sem alterar o select global de perfil.
+- Tokens visuais SHAMAR adicionados ao tema.
+
+### Etapa D — Admin, encerramento, cron e feed
+Arquivos principais criados/alterados:
+- `app/admin/shamar/page.jsx`
+- `app/admin/shamar/missoes/[triboConfigId]/page.jsx`
+- `app/admin/shamar/comprovantes/page.jsx`
+- `app/api/admin/shamar/configs/route.js`
+- `app/api/admin/shamar/missions/[triboConfigId]/route.js`
+- `app/api/admin/shamar/contributions/route.js`
+- `app/api/admin/shamar/contributions/[id]/verify/route.js`
+- `app/api/admin/users/[id]/shamar/route.js`
+- `app/api/shamar/seasons/[id]/complete/route.js`
+- `app/api/cron/shamar-index/route.js`
+- `app/shamar/encerramento/page.jsx`
+- `app/shamar/page.jsx`
+- `app/jornada/page.jsx`
+- `components/community/FeedEventCard.jsx`
+- `src/modules/admin/presentation/admin-page.jsx`
+- `vercel.json`
+- `scripts/migrate-shamar-etapa-d-feed-events.sql`
+
+Implementado:
+- Admin SHAMAR em `/admin/shamar`:
+  - lista de temporadas/configuracoes por turma
+  - formulario para criar temporada/config
+  - geracao automatica do tabuleiro ao criar config
+  - preview de distribuicao
+  - visualizacao de tabuleiro
+  - ativar/encerrar config para novas entradas
+- Admin de missoes:
+  - `/admin/shamar/missoes/[triboConfigId]`
+  - lista missoes globais
+  - ativa/desativa por turma
+  - edita `due_date` e `custom_points`
+- Admin de comprovantes:
+  - `/admin/shamar/comprovantes`
+  - lista aportes com `proof_verified=false`
+  - gera signed URL do bucket `shamar-provas`
+  - valida/rejeita comprovante via PATCH
+  - ao validar, publica evento `shamar_aporte_registered` no feed
+- Toggle SHAMAR no admin atual de usuarios:
+  - botao `SHAMAR ON/OFF`
+  - endpoint `PATCH /api/admin/users/[id]/shamar`
+  - altera apenas `profiles.shamar_unlocked`
+- Encerramento de temporada:
+  - pagina `/shamar/encerramento`
+  - API `POST /api/shamar/seasons/[id]/complete`
+  - grava `patrimonio_final`, `status=completed`, `ended_at`
+  - recalcula indice
+  - concede `+500` ZeroCoins (`shamar_season_complete`)
+  - concede `+500` Pontos SHAMAR (`season_complete`)
+  - completa missao `season_closing` quando ativa
+  - publica evento `shamar_season_completed` no feed
+- Cron:
+  - `GET/POST /api/cron/shamar-index`
+  - protegido por `Authorization: Bearer ${CRON_SECRET}`
+  - recalcula indices de temporadas ativas
+  - `vercel.json` recebeu cron diario `0 6 * * *`
+- Feed:
+  - `FeedEventCard` reconhece eventos SHAMAR:
+    - `shamar_aporte_registered`
+    - `shamar_identity_up`
+    - `shamar_season_completed`
+    - `shamar_streak_7`
+    - `shamar_streak_30`
+    - `shamar_mission_completed`
+    - fallback para `shamar_*`
+- Jornada:
+  - `/jornada` mostra bloco SHAMAR quando existe temporada ativa e desbloqueada.
+  - Se a API SHAMAR falhar por falta de migracao/banco, a Jornada continua funcionando sem bloco.
+
+### Validacao realizada
+- `npm run build` passou apos a Etapa B.
+- `npm run build` passou apos a Etapa C.
+- `npm run build` passou apos a Etapa D com Next.js 15.5.15 e 88/88 paginas.
+- Em 2026-06-16, apos aplicar o SQL da Etapa A:
+  - dry-run com `ROLLBACK` passou sem erro.
+  - aplicacao real finalizou com `COMMIT`.
+  - verificacao final confirmou `Maio 2026` com 159 quadrinhos, soma igual a meta e 8 missoes ativas.
+  - `npm run build` passou novamente com Next.js 15.5.15 e 88/88 paginas.
+- Em 2026-06-16, apos aplicar o SQL da Etapa D:
+  - auditoria confirmou que os tipos existentes no feed (`gain_grande`, `gain_registered`, `identity_registered`) estavam todos contemplados na lista nova.
+  - dry-run com `ROLLBACK` passou sem erro.
+  - aplicacao real finalizou com `COMMIT`.
+  - smoke test transacional inseriu e aceitou os 6 tipos SHAMAR novos e fez `ROLLBACK`.
+  - verificacao final confirmou `0` linhas de smoke persistidas.
+- Dev server local foi iniciado em `http://127.0.0.1:3010` para smoke test da Etapa D.
+- Probes HTTP:
+  - `GET /admin/shamar` sem sessao -> `307 Temporary Redirect`, esperado.
+  - `GET /admin/shamar/comprovantes` sem sessao -> `307 Temporary Redirect`, esperado.
+  - `GET /shamar/encerramento` -> `200 OK`.
+  - `GET /api/cron/shamar-index` sem `CRON_SECRET` -> `401 Unauthorized`.
+- Dev server foi encerrado ao final.
+- `git diff --check` passou antes do commit da Etapa D.
+
+### Limitacoes da validacao
+- O Browser in-app (`iab`) nao estava disponivel nesta sessao; nao houve inspecao visual autenticada/click real.
+- Em `.env.local`, a `SUPABASE_SERVICE_ROLE_KEY` foi detectada como `publishable`, nao `service_role`; rotas admin/cron que dependem de service role real podem falhar por RLS ate a chave correta ser configurada no ambiente.
+- A persistencia de `rejection_reason` nao foi adicionada ao schema; a rejeicao registra auditoria com metadata, mas a tabela `shamar_contributions` segue sem coluna dedicada para motivo.
+
+### Correcao 2026-06-16 — Admin SHAMAR com service key publishable
+- Problema observado:
+  - `/admin/shamar` mostrava `Sem permissao para acessar dados SHAMAR. Verifique autenticacao e policies RLS.` ao carregar/criar temporada.
+- Causa:
+  - `.env.local` tinha `SUPABASE_SERVICE_ROLE_KEY` no formato `sb_publishable_...`.
+  - As rotas admin SHAMAR tentavam usar esse client como writer/service, mas ele nao tinha sessao nem bypass de RLS.
+- Correcao aplicada:
+  - `src/lib/shamar/api.js` ganhou `hasUsableServiceRoleKey()` e `getShamarWriterSupabase(fallbackSupabase)`.
+  - Rotas admin SHAMAR passaram a usar service role somente quando a chave e realmente `service_role`/`sb_secret_`.
+  - Quando a chave local e publishable, as rotas usam o Supabase autenticado do admin (`context.supabase`), que passa pelas policies RLS admin.
+- Arquivos alterados:
+  - `src/lib/shamar/api.js`
+  - `app/api/admin/shamar/configs/route.js`
+  - `app/api/admin/shamar/missions/[triboConfigId]/route.js`
+  - `app/api/admin/shamar/contributions/route.js`
+  - `app/api/admin/shamar/contributions/[id]/verify/route.js`
+  - `app/api/admin/users/[id]/shamar/route.js`
+- Validacao:
+  - `npm run build` passou com Next.js 15.5.15 e 88/88 paginas.
+
+### Pendencias operacionais antes de homologar SHAMAR em producao
+- Configurar `SUPABASE_SERVICE_ROLE_KEY` real no ambiente; em `.env.local` ela foi detectada como publishable key.
+- Configurar `CRON_SECRET` no ambiente da Vercel antes do cron rodar.
+- Entrar como admin e validar visualmente:
+  - `/admin/shamar`
+  - `/admin/shamar/comprovantes`
+  - `/admin/shamar/missoes/[triboConfigId]`
+  - toggle SHAMAR no painel de usuarios
+- Entrar como usuario liberado e validar:
+  - `/shamar`
+  - `/shamar/tabuleiro`
+  - `/shamar/aporte/novo`
+  - `/shamar/missoes`
+  - `/shamar/tribo`
+  - `/shamar/nos`
+  - `/shamar/encerramento`

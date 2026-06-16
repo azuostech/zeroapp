@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
-import { createAdminContext, normalizeId, parseJsonBody, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
-
-function writerClient(fallback) {
-  try {
-    return getServiceSupabase();
-  } catch (_) {
-    return fallback;
-  }
-}
+import { createAdminContext, getShamarWriterSupabase, normalizeId, parseJsonBody, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
 
 function normalizeDueDate(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -91,7 +82,7 @@ export async function GET(_request, { params }) {
   const triboConfigId = normalizeId(params?.triboConfigId);
   if (!triboConfigId) return NextResponse.json({ error: 'tribo_config_id_obrigatorio' }, { status: 422 });
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   try {
     const bundle = await loadMissionBundle(supabase, triboConfigId);
@@ -122,7 +113,7 @@ export async function PATCH(request, { params }) {
   if (dueDate === undefined) return NextResponse.json({ error: 'due_date_invalida' }, { status: 422 });
   if (customPoints === undefined) return NextResponse.json({ error: 'custom_points_invalido' }, { status: 422 });
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   const { data: mission, error: missionError } = await supabase
     .from('shamar_missions')

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
 import {
   createAdminContext,
+  getShamarWriterSupabase,
   normalizeId,
   normalizeIsoDate,
   normalizeMoney,
@@ -14,14 +14,6 @@ import {
 import { generateBoard, getBoardStats, validateBoard } from '@/src/lib/shamar/board-generator';
 
 const ALLOWED_DURATIONS = new Set([30, 90, 180, 365]);
-
-function writerClient(fallback) {
-  try {
-    return getServiceSupabase();
-  } catch (_) {
-    return fallback;
-  }
-}
 
 function countByStatus(seasons) {
   return (seasons || []).reduce(
@@ -103,7 +95,7 @@ export async function GET() {
   const context = await createAdminContext();
   if (context.error) return context.error;
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   try {
     const configs = await loadConfigs(supabase);
@@ -142,7 +134,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'validacao_do_tabuleiro_falhou', validation }, { status: 500 });
   }
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   const { data: config, error: insertError } = await supabase
     .from('shamar_tribo_configs')
@@ -216,7 +208,7 @@ export async function PATCH(request) {
   if (!id) return NextResponse.json({ error: 'config_id_obrigatorio' }, { status: 422 });
   if (typeof isActive !== 'boolean') return NextResponse.json({ error: 'is_active_invalido' }, { status: 422 });
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
   const { data, error } = await supabase
     .from('shamar_tribo_configs')
     .update({ is_active: isActive })

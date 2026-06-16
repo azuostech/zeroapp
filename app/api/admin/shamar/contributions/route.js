@@ -1,14 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
-import { createAdminContext, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
-
-function writerClient(fallback) {
-  try {
-    return getServiceSupabase();
-  } catch (_) {
-    return fallback;
-  }
-}
+import { createAdminContext, getShamarWriterSupabase, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
 
 async function signedProofUrl(supabase, path) {
   const proofPath = String(path || '').trim();
@@ -27,7 +18,7 @@ export async function GET() {
   const context = await createAdminContext();
   if (context.error) return context.error;
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   try {
     const { data: contributions, error } = await supabase

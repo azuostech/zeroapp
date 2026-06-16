@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
+import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 
 export const SHAMAR_ALLOWED_TIERS = new Set(['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
@@ -120,6 +121,36 @@ export async function createAdminContext() {
   }
 
   return context;
+}
+
+function resolveJwtRole(key) {
+  const parts = String(key || '').split('.');
+  if (parts.length !== 3) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return String(payload?.role || '').trim();
+  } catch (_) {
+    return null;
+  }
+}
+
+export function hasUsableServiceRoleKey() {
+  const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if (!key) return false;
+  if (key.startsWith('sb_publishable_')) return false;
+  if (key.startsWith('sb_secret_')) return true;
+  return resolveJwtRole(key) === 'service_role';
+}
+
+export function getShamarWriterSupabase(fallbackSupabase) {
+  if (!hasUsableServiceRoleKey()) return fallbackSupabase;
+
+  try {
+    return getServiceSupabase();
+  } catch (_) {
+    return fallbackSupabase;
+  }
 }
 
 export async function loadShamarProfile(supabase, userId) {

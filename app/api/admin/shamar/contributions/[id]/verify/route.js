@@ -1,16 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 import { recordAdminAudit } from '@/src/modules/admin/application/admin-audit-service';
-import { createAdminContext, parseJsonBody, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
-
-function writerClient(fallback) {
-  try {
-    return getServiceSupabase();
-  } catch (_) {
-    return fallback;
-  }
-}
+import { createAdminContext, getShamarWriterSupabase, parseJsonBody, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
 
 export async function PATCH(request, { params }) {
   const context = await createAdminContext();
@@ -29,7 +20,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'verified_invalido' }, { status: 422 });
   }
 
-  const supabase = writerClient(context.supabase);
+  const supabase = getShamarWriterSupabase(context.supabase);
 
   const { data, error } = await supabase
     .from('shamar_contributions')
