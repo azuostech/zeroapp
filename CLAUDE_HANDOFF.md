@@ -1,8 +1,16 @@
-# CLAUDE Handoff - ZeroApp Home Hub + Navegação v2 + Perfil Dedicado
+# CLAUDE Handoff - ZeroApp
 
-Data: 2026-05-30
+Data: 2026-06-17
 Branch atual: main
-Status funcional: fluxo validado pelo usuário
+Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
+
+## Resumo atual
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial e tabuleiro individual tambem na Tribo.
+- Ultimo commit publicado em `origin/main`: `96adb61` (`fix(shamar): exibe tabuleiro individual na tribo`).
+- `npm run build` passou apos o ultimo push.
+- `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Historico anterior — Home Hub + Navegacao v2 + Perfil Dedicado
 
 ## Objetivo da rodada
 Finalizar a Fase 2 de navegação e corrigir a experiência de perfil, separando `/perfil` da tela de finanças, com gestão real de conta (senha e e-mail) sem quebrar fluxos existentes.
@@ -1371,3 +1379,171 @@ Implementado:
   - `/shamar/tribo`
   - `/shamar/nos`
   - `/shamar/encerramento`
+
+---
+
+## Atualizacao 2026-06-17 — SHAMAR autonomia, convites e gestao admin
+
+### Estado atual do repo
+- Branch atual: `main`.
+- HEAD publicado: `96adb61` (`fix(shamar): exibe tabuleiro individual na tribo`).
+- `origin/main` esta sincronizado com `main`.
+- Working tree sem diff rastreado apos o push; existe apenas `backup.dump` nao rastreado e fora dos commits.
+- O Browser in-app (`iab`) nao estava disponivel nesta sessao; validacao visual autenticada ficou pendente.
+
+### Commits publicados na main
+- `7cc2de2` — `feat(shamar): SQL etapa A - 11 tabelas, RLS, funcoes, seeds - shamar`
+- `bbf5b18` — `feat(shamar): algoritmo tabuleiro e APIs core - etapa B`
+- `57a732c` — `feat(shamar): frontend completo - EU, tabuleiro, aporte, missoes, tribo, nos - etapa C`
+- `f09dddb` — `feat(shamar): admin e encerramento de temporada - etapa D`
+- `7fd0c87` — `fix(shamar): usar sessao admin quando service key nao for service role`
+- `874aa11` — `feat(shamar): habilita jornadas autonomas e gestao admin`
+- `96adb61` — `fix(shamar): exibe tabuleiro individual na tribo`
+
+### Decisoes de produto consolidadas
+- SHAMAR deixou de depender do 3o encontro; o mentor/admin nao precisa liberar por nivel para uso geral.
+- Cada usuario pode criar suas proprias modalidades:
+  - SHAMAR Individual
+  - SHAMAR Dupla
+  - SHAMAR Tribo
+- Regra de unicidade:
+  - o usuario pode ter no maximo 1 SHAMAR ativo por categoria.
+  - para iniciar outro na mesma categoria, precisa encerrar o atual.
+- Dupla sempre tem 2 participantes.
+- Tribo tem 3 ou mais participantes.
+- Em Dupla/Tribo, cada participante tem o proprio tabuleiro e controla seus proprios quadrinhos; o grupo apenas soma resultados para comparativo/meta coletiva.
+- Convites por e-mail exigem aceite:
+  - convidado recebe link.
+  - se nao tiver cadastro, precisa criar conta no ZeroApp.
+  - depois de aceito, aparece o SHAMAR correspondente para o convidado.
+
+### Tabuleiro e meta
+- A regra de quadrinhos foi simplificada para sequencial:
+  - quadrinho 1 vale R$ 1
+  - quadrinho 2 vale R$ 2
+  - quadrinho N vale R$ N
+- A meta total e ajustada para bater exatamente com a soma sequencial dos quadrinhos.
+- Implementacao principal:
+  - `src/lib/shamar/board-generator.js`
+  - `getSequentialSquareCount`
+  - `getSequentialMetaTotal`
+  - `generateBoard`
+- A tela admin de nova temporada tambem mostra a meta sequencial ajustada.
+
+### Experiencia do aluno
+- `/shamar` virou hub de modalidades, com cards separados para Individual, Dupla e Tribo.
+- `/shamar/criar` separa criacao da visualizacao de SHAMARs existentes.
+- `/shamar/individual` usa `ShamarDashboard` com tabuleiro, aporte, encerramento e aportes recentes.
+- `/shamar/dupla` aponta para a experiencia da dupla.
+- `/shamar/nos` mostra comparativo da dupla, estado de convite pendente, reenviar convite e copiar link.
+- `/shamar/tribo` mostra:
+  - meta coletiva da tribo.
+  - ranking de constancia.
+  - feed da tribo.
+  - card `Meu tabuleiro na TRIBO`, com:
+    - resumo do patrimonio individual.
+    - quadrinhos individuais.
+    - preview do tabuleiro individual.
+    - botao `Registrar Aporte`.
+    - botao `Abrir Tabuleiro`.
+- `/shamar/tabuleiro?mode=tribo` abre o tabuleiro individual do usuario dentro da modalidade Tribo.
+- `/shamar/aporte/novo?mode=tribo` registra aporte no tabuleiro individual do usuario e entra na soma coletiva da tribo.
+- O menu inferior da tela SHAMAR tem botao `Inicio` para voltar a `/app`.
+
+### Navegacao principal
+- A barra inferior principal do app permanece com `Conquistas`; SHAMAR nao fica como tab fixa da barra inferior principal.
+- O acesso ao SHAMAR fica como ferramenta/jornada dentro do ZeroApp.
+- `middleware.js` passou a proteger `/shamar` e `/api/shamar`.
+- Login preserva `next`, para links de convite abrirem a tela correta depois da autenticacao.
+
+### Convites e e-mail
+- Criada tabela `public.shamar_invites` via `scripts/migrate-shamar-invites.sql`.
+- Policies RLS foram ajustadas para leitura por:
+  - dono do convite.
+  - convidado por `invited_user_id`.
+  - convidado por e-mail usando `auth.jwt()->>'email'`.
+  - admin via `public.is_admin()`.
+- E-mail elegante de convite criado em:
+  - `src/lib/email/templates/shamar-invite.js`
+- Endpoint de convites do usuario:
+  - `app/api/shamar/invites/route.js`
+- Reenvio de convite disponivel:
+  - no hub `/shamar` para convites enviados.
+  - em telas de Dupla/Nos.
+  - no admin SHAMAR.
+- Copia de link de convite disponivel em telas operacionais para facilitar envio manual quando o e-mail nao chegar.
+
+### Admin SHAMAR
+- `/admin/shamar` agora tem gestao de jornadas dos alunos.
+- A nova secao `Jornadas dos alunos` permite:
+  - buscar por aluno, e-mail ou turma.
+  - filtrar por modalidade (`individual`, `dupla`, `tribo`).
+  - filtrar por status (`active`, `completed`, `abandoned`).
+  - editar nome/turma, status, inicio, duracao, patrimonio inicial/final e flag de config ativa.
+  - excluir uma jornada especifica.
+  - reenviar e-mail de convite pendente.
+  - copiar link de convite pendente.
+- Endpoint admin novo:
+  - `app/api/admin/shamar/journeys/route.js`
+  - `GET` lista jornadas com perfil, config, stats e convites.
+  - `POST` reenvia convite.
+  - `PATCH` edita jornada/config.
+  - `DELETE` remove jornada, limpa vinculos de parceria e cancela convites pendentes.
+- Cuidado aplicado na exclusao:
+  - `shamar_partnerships` nao tinha cascade para `shamar_seasons`, entao o endpoint remove os vinculos antes de excluir a jornada.
+
+### Banco/Supabase executado nesta rodada
+- `scripts/migrate-shamar-invites.sql` foi aplicado no Supabase.
+- Schema cache do PostgREST foi recarregado via `NOTIFY pgrst, 'reload schema'`.
+- RLS de `shamar_invites` foi corrigida para evitar erro ao consultar `auth.users` diretamente.
+- Para testes, as jornadas ativas do usuario `sza.treinamentos@gmail.com` nas categorias Individual e Dupla foram encerradas, permitindo recomecar os testes.
+
+### Arquivos principais criados/alterados em 2026-06-17
+- `app/admin/shamar/page.jsx`
+- `app/api/admin/shamar/journeys/route.js`
+- `app/api/shamar/invites/route.js`
+- `app/api/shamar/seasons/route.js`
+- `app/shamar/page.jsx`
+- `app/shamar/criar/page.jsx`
+- `app/shamar/convites/page.jsx`
+- `app/shamar/individual/page.jsx`
+- `app/shamar/dupla/page.jsx`
+- `app/shamar/nos/page.jsx`
+- `app/shamar/tribo/page.jsx`
+- `app/shamar/tabuleiro/page.jsx`
+- `app/shamar/aporte/novo/page.jsx`
+- `components/shamar/ShamarDashboard.jsx`
+- `components/shamar/ShamarModeCreator.jsx`
+- `components/shamar/ShamarUI.jsx`
+- `hooks/useShamar.js`
+- `src/lib/email/templates/shamar-invite.js`
+- `src/lib/shamar/board-generator.js`
+- `src/lib/shamar/api.js`
+- `middleware.js`
+- `src/modules/auth/presentation/login-page.jsx`
+- `src/modules/finance/presentation/finance-app-page.jsx`
+- `scripts/migrate-shamar-invites.sql`
+
+### Validacao realizada em 2026-06-17
+- `git diff --check` passou antes dos commits.
+- `git diff --cached --check` passou antes dos commits.
+- `npm run build` passou antes do commit `874aa11`.
+- `npm run build` passou apos a correcao do tabuleiro individual na Tribo.
+- `npm run build` passou novamente apos push do `96adb61`.
+- Build atual gerou 94/94 paginas com Next.js 15.5.15.
+
+### Pendencias e pontos de atencao
+- Validar visualmente com usuario autenticado em producao/Vercel:
+  - criacao de Individual, Dupla e Tribo.
+  - aceite de convite com conta ja existente.
+  - aceite de convite apos cadastro novo.
+  - reenvio de convite por usuario e admin.
+  - copia manual do link de convite.
+  - aporte na Tribo usando `/shamar/aporte/novo?mode=tribo`.
+  - soma coletiva da Tribo apos aporte individual.
+- Conferir no ambiente Vercel:
+  - `NEXT_PUBLIC_SITE_URL` para links de convite corretos.
+  - chave Resend/e-mail transacional.
+  - `SUPABASE_SERVICE_ROLE_KEY` real, se as rotas admin/cron forem depender de bypass de RLS.
+  - `CRON_SECRET`.
+- `backup.dump` continua nao rastreado e nao deve ser incluido em commit sem uma decisao explicita.
