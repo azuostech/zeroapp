@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
+  BoardGrid,
+  CategoryLegend,
   ShamarCard,
   ShamarHeader,
   ShamarLoading,
@@ -11,10 +14,13 @@ import {
   ShamarShell
 } from '@/components/shamar/ShamarUI';
 import { useShamar } from '@/hooks/useShamar';
+import { useShamarBoard } from '@/hooks/useShamarBoard';
 import { formatMoney, formatPercent, identityLabel } from '@/src/lib/shamar/formatters';
 
 export default function ShamarTriboPage() {
-  const { season, config, locked, unlockProgress, error, isLoading } = useShamar('tribo');
+  const router = useRouter();
+  const { season, config, progress, locked, unlockProgress, error, isLoading } = useShamar('tribo');
+  const { squares, stats: boardStats, error: boardError, isLoading: isBoardLoading } = useShamarBoard(season?.id);
   const [tribo, setTribo] = useState(null);
   const [triboError, setTriboError] = useState(null);
   const [isTriboLoading, setIsTriboLoading] = useState(false);
@@ -101,6 +107,10 @@ export default function ShamarTriboPage() {
   const stats = tribo?.stats || {};
   const ranking = tribo?.ranking || [];
   const feed = tribo?.feed || [];
+  const modeQuery = 'mode=tribo';
+  const markedSquares = Number(progress?.squares_marked || boardStats?.marked || 0);
+  const totalSquares = Number(progress?.squares_total || boardStats?.total || 0);
+  const accumulated = Number(progress?.contributions_total || boardStats?.sum_marked || 0);
 
   return (
     <ShamarShell activeTab="tribo">
@@ -137,6 +147,51 @@ export default function ShamarTriboPage() {
           </div>
         </div>
       </section>
+
+      <ShamarCard
+        title="Meu tabuleiro na TRIBO"
+        action={<Link className="tribo-card-link" href={`/shamar/tabuleiro?${modeQuery}`}>Ver completo</Link>}
+      >
+        <div className="tribo-board-summary">
+          <div>
+            <strong>{formatMoney(accumulated, { compact: true })}</strong>
+            <span>meu patrimônio</span>
+          </div>
+          <div>
+            <strong>{markedSquares}/{totalSquares || '—'}</strong>
+            <span>meus quadrinhos</span>
+          </div>
+          <div>
+            <strong>{formatMoney(config?.meta_total || boardStats?.sum_total || 0, { compact: true })}</strong>
+            <span>minha meta</span>
+          </div>
+        </div>
+
+        <p className="tribo-board-note">
+          Seus aportes são lançados no seu próprio tabuleiro e também entram na soma coletiva da TRIBO.
+        </p>
+
+        {boardError ? <p className="tribo-muted">{boardError}</p> : null}
+        {isBoardLoading ? <p className="tribo-muted">Carregando seu tabuleiro...</p> : null}
+        {!isBoardLoading && squares.length > 0 ? (
+          <>
+            <CategoryLegend compact />
+            <BoardGrid squares={squares} preview onSquareClick={() => router.push(`/shamar/tabuleiro?${modeQuery}`)} />
+          </>
+        ) : null}
+        {!isBoardLoading && !boardError && squares.length === 0 ? (
+          <p className="tribo-muted">Seu tabuleiro ainda não foi gerado.</p>
+        ) : null}
+
+        <div className="tribo-board-actions">
+          <Link href={`/shamar/aporte/novo?${modeQuery}`} className="tribo-primary-action">
+            Registrar Aporte
+          </Link>
+          <Link href={`/shamar/tabuleiro?${modeQuery}`} className="tribo-secondary-action">
+            Abrir Tabuleiro
+          </Link>
+        </div>
+      </ShamarCard>
 
       <ShamarCard title="Ranking Constância">
         {ranking.length === 0 ? <p className="tribo-muted">Ranking ainda sem dados.</p> : null}
@@ -178,6 +233,79 @@ export default function ShamarTriboPage() {
           margin: 0;
           color: var(--text2);
           font-size: 13px;
+        }
+
+        .tribo-card-link {
+          color: var(--shamar-dark);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .tribo-board-summary {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .tribo-board-summary div {
+          border-radius: 12px;
+          background: var(--shamar-dim);
+          padding: 12px;
+          text-align: center;
+        }
+
+        .tribo-board-summary strong {
+          display: block;
+          color: var(--shamar-dark);
+          font-family: var(--font-mono);
+          font-size: 14px;
+        }
+
+        .tribo-board-summary span {
+          display: block;
+          color: var(--text3);
+          font-size: 9px;
+          font-weight: 800;
+          text-transform: uppercase;
+          margin-top: 2px;
+        }
+
+        .tribo-board-note {
+          margin: 0 0 12px;
+          color: var(--text2);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .tribo-board-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+
+        .tribo-board-actions a {
+          min-height: 46px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--radius-md);
+          font-weight: 900;
+          padding: 12px 14px;
+          text-align: center;
+        }
+
+        .tribo-primary-action {
+          background: var(--shamar-dark);
+          color: white;
+          box-shadow: 0 4px 16px rgba(27, 94, 32, 0.24);
+        }
+
+        .tribo-secondary-action {
+          border: 1px solid rgba(27, 94, 32, 0.22);
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
         }
 
         .tribo-meta-card {
@@ -341,6 +469,13 @@ export default function ShamarTriboPage() {
         .ranking-right strong {
           color: var(--shamar-dark);
           font-family: var(--font-mono);
+        }
+
+        @media (max-width: 560px) {
+          .tribo-board-summary,
+          .tribo-board-actions {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </ShamarShell>
