@@ -6,7 +6,7 @@ Status funcional: main sincronizada com origin/main; SHAMAR publicado e build va
 
 ## Resumo atual
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial e tabuleiro individual tambem na Tribo.
-- Ultimo commit publicado em `origin/main`: `96adb61` (`fix(shamar): exibe tabuleiro individual na tribo`).
+- Ultimo commit publicado em `origin/main`: `f438abe` (`feat(shamar): envia email ao registrar aporte`).
 - `npm run build` passou apos o ultimo push.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
 
@@ -1386,7 +1386,7 @@ Implementado:
 
 ### Estado atual do repo
 - Branch atual: `main`.
-- HEAD publicado: `96adb61` (`fix(shamar): exibe tabuleiro individual na tribo`).
+- HEAD publicado: `f438abe` (`feat(shamar): envia email ao registrar aporte`).
 - `origin/main` esta sincronizado com `main`.
 - Working tree sem diff rastreado apos o push; existe apenas `backup.dump` nao rastreado e fora dos commits.
 - O Browser in-app (`iab`) nao estava disponivel nesta sessao; validacao visual autenticada ficou pendente.
@@ -1399,6 +1399,8 @@ Implementado:
 - `7fd0c87` — `fix(shamar): usar sessao admin quando service key nao for service role`
 - `874aa11` — `feat(shamar): habilita jornadas autonomas e gestao admin`
 - `96adb61` — `fix(shamar): exibe tabuleiro individual na tribo`
+- `28186c6` — `docs: atualiza handoff shamar`
+- `f438abe` — `feat(shamar): envia email ao registrar aporte`
 
 ### Decisoes de produto consolidadas
 - SHAMAR deixou de depender do 3o encontro; o mentor/admin nao precisa liberar por nivel para uso geral.
@@ -1473,6 +1475,32 @@ Implementado:
   - no admin SHAMAR.
 - Copia de link de convite disponivel em telas operacionais para facilitar envio manual quando o e-mail nao chegar.
 
+### E-mail a cada aporte SHAMAR
+- Ao registrar um aporte em `POST /api/shamar/contributions`, o sistema agora envia um e-mail transacional imediatamente.
+- O e-mail parabeniza o usuario, reforca a constancia da jornada e incentiva a continuar no SHAMAR.
+- Template criado em:
+  - `src/lib/email/templates/shamar-contribution.js`
+- O template usa `baseTemplate` e inclui:
+  - valor do aporte.
+  - modalidade (`individual`, `dupla` ou `tribo`).
+  - quantidade de quadrinhos marcados no aporte.
+  - total de quadrinhos marcados no tabuleiro.
+  - progresso percentual.
+  - identidade SHAMAR atual.
+  - botao para abrir a jornada SHAMAR.
+- O envio usa `sendEmail` com `emailType='shamar_contribution_registered'`.
+- O envio e nao bloqueante:
+  - se o e-mail falhar, o aporte permanece registrado.
+  - a falha entra em `warnings` na resposta da API.
+- Foi criada a migracao:
+  - `scripts/migrate-email-logs-shamar-types.sql`
+- Essa migracao atualiza a constraint `email_logs_email_type_check` para aceitar:
+  - `shamar_invite`
+  - `shamar_invite_resend`
+  - `shamar_invite_admin_resend`
+  - `shamar_contribution_registered`
+- Importante: executar essa migracao no Supabase para que os logs de e-mail SHAMAR sejam gravados sem erro de constraint.
+
 ### Admin SHAMAR
 - `/admin/shamar` agora tem gestao de jornadas dos alunos.
 - A nova secao `Jornadas dos alunos` permite:
@@ -1517,12 +1545,14 @@ Implementado:
 - `components/shamar/ShamarUI.jsx`
 - `hooks/useShamar.js`
 - `src/lib/email/templates/shamar-invite.js`
+- `src/lib/email/templates/shamar-contribution.js`
 - `src/lib/shamar/board-generator.js`
 - `src/lib/shamar/api.js`
 - `middleware.js`
 - `src/modules/auth/presentation/login-page.jsx`
 - `src/modules/finance/presentation/finance-app-page.jsx`
 - `scripts/migrate-shamar-invites.sql`
+- `scripts/migrate-email-logs-shamar-types.sql`
 
 ### Validacao realizada em 2026-06-17
 - `git diff --check` passou antes dos commits.
@@ -1530,6 +1560,7 @@ Implementado:
 - `npm run build` passou antes do commit `874aa11`.
 - `npm run build` passou apos a correcao do tabuleiro individual na Tribo.
 - `npm run build` passou novamente apos push do `96adb61`.
+- `npm run build` passou apos implementar e publicar o e-mail de aporte no commit `f438abe`.
 - Build atual gerou 94/94 paginas com Next.js 15.5.15.
 
 ### Pendencias e pontos de atencao
@@ -1541,9 +1572,12 @@ Implementado:
   - copia manual do link de convite.
   - aporte na Tribo usando `/shamar/aporte/novo?mode=tribo`.
   - soma coletiva da Tribo apos aporte individual.
+  - recebimento de e-mail apos aporte SHAMAR.
 - Conferir no ambiente Vercel:
   - `NEXT_PUBLIC_SITE_URL` para links de convite corretos.
   - chave Resend/e-mail transacional.
   - `SUPABASE_SERVICE_ROLE_KEY` real, se as rotas admin/cron forem depender de bypass de RLS.
   - `CRON_SECRET`.
+- Executar no Supabase:
+  - `scripts/migrate-email-logs-shamar-types.sql`
 - `backup.dump` continua nao rastreado e nao deve ser incluido em commit sem uma decisao explicita.
