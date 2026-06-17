@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
+import { sendEmail } from '@/src/lib/email/email-service';
+import { shamarContributionTemplate } from '@/src/lib/email/templates/shamar-contribution';
 import { awardShamarPointsSafely, awardZeroCoinsSafely } from '@/src/lib/shamar/awards';
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
 import {
@@ -15,6 +17,33 @@ import {
 } from '@/src/lib/shamar/api';
 
 const AMOUNT_TOLERANCE = 1;
+
+function inferMode(config) {
+  const turma = String(config?.turma || '').toLowerCase();
+  if (turma.includes('dupla')) return 'dupla';
+  if (turma.includes('tribo')) return 'tribo';
+  return 'individual';
+}
+
+function profileName(profile, user) {
+  const name = String(profile?.full_name || '').trim();
+  if (name) return name.split(/\s+/).slice(0, 2).join(' ');
+  const email = String(profile?.email || user?.email || '').trim();
+  return email.includes('@') ? email.split('@')[0] : 'Guardiao';
+}
+
+function getSiteOrigin(requestUrl) {
+  const fallbackOrigin = new URL(requestUrl).origin;
+  const configured = String(process.env.NEXT_PUBLIC_SITE_URL || '').trim();
+  if (!configured) return fallbackOrigin;
+
+  try {
+    const normalized = configured.startsWith('http://') || configured.startsWith('https://') ? configured : `https://${configured}`;
+    return new URL(normalized).origin;
+  } catch (_) {
+    return fallbackOrigin;
+  }
+}
 
 function normalizeSquareIds(value) {
   if (!Array.isArray(value)) return [];
@@ -50,6 +79,17 @@ async function loadSelectedSquares(supabase, triboConfigId, squareIds) {
   };
 }
 
+async function loadContributionConfig(supabase, triboConfigId) {
+  const { data, error } = await supabase
+    .from('shamar_tribo_configs')
+    .select('id,turma,meta_total,duration_days,started_at,ends_at,is_active')
+    .eq('id', triboConfigId)
+    .maybeSingle();
+
+  if (error) return { config: null, error };
+  return { config: data || null, error: null };
+}
+
 async function cleanupContribution(supabase, contributionId) {
   try {
     await supabase
@@ -59,6 +99,65 @@ async function cleanupContribution(supabase, contributionId) {
   } catch (_) {
     // Best effort: evita esconder o erro original de marcacao.
   }
+}
+
+async function sendContributionEmailSafely({
+  requestUrl,
+  context,
+  season,
+  config,
+  contribution,
+  selectedSum,
+  markedRows,
+  indexResult
+}) {
+  const recipient = String(context.profile?.email || context.user?.email || '').trim();
+  if (!recipient) return { sent: false, warning: 'email_usuario_indisponivel' };
+
+  const details = indexResult?.details || {};
+  const totalMarkedSquares = Number(details.marked_squares || markedRows.length || 0);
+  const totalSquares = Number(details.total_squares || 0);
+  const metaTotal = toNumber(details.meta_total || config?.meta_total);
+  const patrimonioTotal = toNumber(details.patrimonio_total);
+  const progressPct = metaTotal > 0 ? Math.round(Math.min(1, patrimonioTotal / metaTotal) * 10000) / 100 : 0;
+  const mode = inferMode(config);
+  const shamarUrl = new URL(`/shamar/${mode === 'individual' ? 'individual' : mode}`, getSiteOrigin(requestUrl)).toString();
+  const template = shamarContributionTemplate({
+    userName: profileName(context.profile, context.user),
+    mode,
+    amount: selectedSum || contribution.amount,
+    squaresMarked: markedRows.length,
+    totalMarkedSquares,
+    totalSquares,
+    progressPct,
+    identity: indexResult?.identity_level || indexResult?.index?.identity_level || season.identity_level,
+    shamarUrl
+  });
+
+  const result = await sendEmail({
+    userId: context.user.id,
+    to: recipient,
+    subject: template.subject,
+    html: template.html,
+    emailType: 'shamar_contribution_registered',
+    emailSnapshot: {
+      source: 'shamar',
+      mode,
+      season_id: season.id,
+      tribo_config_id: season.tribo_config_id,
+      contribution_id: contribution.id,
+      amount: selectedSum || toNumber(contribution.amount),
+      squares_marked: markedRows.length,
+      total_marked_squares: totalMarkedSquares,
+      total_squares: totalSquares,
+      progress_pct: progressPct,
+      identity_level: indexResult?.identity_level || null,
+      shamar_url: shamarUrl
+    }
+  });
+
+  if (!result.success) return { sent: false, warning: result.error || 'email_send_failed' };
+  return { sent: true, id: result.id || null };
 }
 
 async function listContributionRows(supabase, userId, seasonId) {
@@ -159,6 +258,9 @@ export async function POST(request) {
     return NextResponse.json({ error: resolveShamarDbError(squaresError, 'shamar_squares_lookup_failed') }, { status: 500 });
   }
 
+  const configResult = await loadContributionConfig(readSupabase, season.tribo_config_id);
+  const contributionConfig = configResult.config;
+
   if (squares.length !== squareIds.length) {
     return NextResponse.json({ error: 'quadrinhos_invalidos_para_temporada' }, { status: 422 });
   }
@@ -240,9 +342,11 @@ export async function POST(request) {
   }
 
   const warnings = [];
+  if (configResult.error) warnings.push(resolveShamarDbError(configResult.error, 'shamar_config_lookup_failed'));
   const isFirstAporte = Number(previousContributionsCount || 0) === 0;
   let shamarPoints = null;
   let zeroCoins = null;
+  let contributionEmail = null;
 
   if (isFirstAporte) {
     shamarPoints = await awardShamarPointsSafely({
@@ -282,6 +386,23 @@ export async function POST(request) {
     warnings.push(error?.message || 'shamar_index_recalculate_failed');
   }
 
+  try {
+    contributionEmail = await sendContributionEmailSafely({
+      requestUrl: request.url,
+      context,
+      season,
+      config: contributionConfig,
+      contribution,
+      selectedSum,
+      markedRows,
+      indexResult
+    });
+    if (contributionEmail.warning) warnings.push(`Email: ${contributionEmail.warning}`);
+  } catch (error) {
+    contributionEmail = { sent: false };
+    warnings.push(`Email: ${error?.message || 'shamar_contribution_email_failed'}`);
+  }
+
   return NextResponse.json(
     {
       contribution_id: contribution.id,
@@ -294,6 +415,7 @@ export async function POST(request) {
       first_aporte: isFirstAporte,
       shamar_points: shamarPoints,
       zero_coins: zeroCoins,
+      email: contributionEmail,
       index: indexResult?.index || null,
       new_total: indexResult?.details?.patrimonio_total ?? null,
       identity_level: indexResult?.identity_level || null,
