@@ -25,6 +25,14 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function safeNextPath() {
+  if (typeof window === 'undefined') return '';
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next') || '';
+  if (!next.startsWith('/') || next.startsWith('//')) return '';
+  return next;
+}
+
 // Checkpoint 2026-05-24: resiliencia no login para evitar falso erro de perfil.
 async function fetchProfileWithRetry({ attempts = 4, baseDelayMs = 220 } = {}) {
   let lastError = { status: 0, error: 'profile_fetch_failed' };
@@ -119,7 +127,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace(profile.role === 'admin' ? '/admin' : '/app');
+      const next = safeNextPath();
+      router.replace(next || (profile.role === 'admin' ? '/admin' : '/app'));
     };
 
     checkSession();
@@ -223,7 +232,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace(profile.role === 'admin' ? '/admin' : '/app');
+    const next = safeNextPath();
+    router.replace(next || (profile.role === 'admin' ? '/admin' : '/app'));
   };
 
   const handleSignup = async (event) => {

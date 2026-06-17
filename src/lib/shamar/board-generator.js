@@ -1,35 +1,4 @@
-const BASE_META_TOTAL = 125000;
-const VALUE_STEP = 50;
-
 const CATEGORY_ORDER = ['pequeno', 'medio', 'grande', 'epico'];
-
-export function getCategoryRanges(metaTotal) {
-  const safeMetaTotal = normalizeMetaTotal(metaTotal);
-  const scale = safeMetaTotal / BASE_META_TOTAL;
-
-  return {
-    pequeno: {
-      min: roundToStep(Math.max(VALUE_STEP, 50 * scale)),
-      max: roundToStep(Math.max(VALUE_STEP, 500 * scale)),
-      pct: 0.4
-    },
-    medio: {
-      min: roundToStep(Math.max(VALUE_STEP, 500 * scale)),
-      max: roundToStep(Math.max(VALUE_STEP, 2000 * scale)),
-      pct: 0.4
-    },
-    grande: {
-      min: roundToStep(Math.max(VALUE_STEP, 2000 * scale)),
-      max: roundToStep(Math.max(VALUE_STEP, 5000 * scale)),
-      pct: 0.15
-    },
-    epico: {
-      min: roundToStep(Math.max(VALUE_STEP, 5000 * scale)),
-      max: roundToStep(Math.max(VALUE_STEP, 15000 * scale)),
-      pct: 0.05
-    }
-  };
-}
 
 function normalizeMetaTotal(metaTotal) {
   const parsed = Number(metaTotal);
@@ -43,127 +12,87 @@ function roundMoney(value) {
   return Math.round(Number(value) * 100) / 100;
 }
 
-function roundToStep(value, step = VALUE_STEP) {
-  return Math.max(step, Math.round(Number(value) / step) * step);
+function triangularTotal(count) {
+  return roundMoney((Number(count || 0) * (Number(count || 0) + 1)) / 2);
 }
 
-function randomValue(min, max) {
-  const low = Math.min(min, max);
-  const high = Math.max(min, max);
-  const raw = low + Math.random() * (high - low);
-  return roundToStep(raw);
+export function getSequentialSquareCount(metaTotal) {
+  const target = normalizeMetaTotal(metaTotal);
+  return Math.max(1, Math.ceil((Math.sqrt(8 * target + 1) - 1) / 2));
 }
 
-function shuffle(arr) {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
+export function getSequentialMetaTotal(metaTotal) {
+  return triangularTotal(getSequentialSquareCount(metaTotal));
+}
+
+export function getCategoryRanges(metaTotal) {
+  const count = getSequentialSquareCount(metaTotal);
+
+  return {
+    pequeno: { min: 1, max: Math.max(1, Math.floor(count * 0.4)), pct: 0.4 },
+    medio: { min: Math.floor(count * 0.4) + 1, max: Math.max(1, Math.floor(count * 0.8)), pct: 0.4 },
+    grande: { min: Math.floor(count * 0.8) + 1, max: Math.max(1, Math.floor(count * 0.95)), pct: 0.15 },
+    epico: { min: Math.floor(count * 0.95) + 1, max: count, pct: 0.05 }
+  };
+}
+
+function categoryForPosition(position, total) {
+  const ratio = total > 0 ? position / total : 1;
+  if (ratio <= 0.4) return 'pequeno';
+  if (ratio <= 0.8) return 'medio';
+  if (ratio <= 0.95) return 'grande';
+  return 'epico';
 }
 
 function sumSquares(squares) {
-  return roundMoney(squares.reduce((sum, square) => sum + Number(square.value || 0), 0));
-}
-
-function trimExcess(squares, excess) {
-  let remaining = roundMoney(excess);
-
-  for (let i = squares.length - 1; i >= 0 && remaining > 0; i -= 1) {
-    const square = squares[i];
-    const reducible = roundMoney(Number(square.value) - VALUE_STEP);
-    if (reducible <= 0) continue;
-
-    const reduction = Math.min(reducible, remaining);
-    square.value = roundMoney(Number(square.value) - reduction);
-    remaining = roundMoney(remaining - reduction);
-  }
-
-  if (remaining > 0) {
-    throw new Error('Nao foi possivel ajustar o tabuleiro para a meta informada');
-  }
-}
-
-function addRemainingSquares(squares, remaining, ranges) {
-  let valueLeft = roundMoney(remaining);
-
-  while (valueLeft > 0) {
-    const category = valueLeft >= ranges.medio.min ? 'medio' : 'pequeno';
-    const range = ranges[category];
-    const max = Math.min(range.max, valueLeft);
-    const value = valueLeft <= VALUE_STEP ? valueLeft : Math.min(valueLeft, randomValue(range.min, max));
-
-    squares.push({
-      value: roundMoney(value),
-      category
-    });
-    valueLeft = roundMoney(valueLeft - value);
-  }
+  return roundMoney(squares.reduce((sum, square) => sum + Number(square.position || square.value || 0), 0));
 }
 
 export function generateBoard(metaTotal) {
-  const normalizedMetaTotal = normalizeMetaTotal(metaTotal);
-  const ranges = getCategoryRanges(normalizedMetaTotal);
-  const squares = [];
+  const count = getSequentialSquareCount(metaTotal);
+  const adjustedMetaTotal = triangularTotal(count);
+  const squares = Array.from({ length: count }, (_, index) => {
+    const position = index + 1;
+    return {
+      position,
+      value: position,
+      category: categoryForPosition(position, count)
+    };
+  });
 
-  for (const category of CATEGORY_ORDER) {
-    const { min, max, pct } = ranges[category];
-    const targetSum = normalizedMetaTotal * pct;
-    const avgValue = (min + max) / 2;
-    const estimatedCount = Math.max(1, Math.round(targetSum / avgValue));
-
-    for (let i = 0; i < estimatedCount; i += 1) {
-      squares.push({
-        value: randomValue(min, max),
-        category
-      });
-    }
-  }
-
-  const firstDiff = roundMoney(normalizedMetaTotal - sumSquares(squares));
-  if (firstDiff > 0) {
-    addRemainingSquares(squares, firstDiff, ranges);
-  } else if (firstDiff < 0) {
-    trimExcess(squares, Math.abs(firstDiff));
-  }
-
-  const finalDiff = roundMoney(normalizedMetaTotal - sumSquares(squares));
-  if (finalDiff !== 0) {
-    squares[squares.length - 1].value = roundMoney(squares[squares.length - 1].value + finalDiff);
-  }
-
-  const validation = validateBoard(squares, normalizedMetaTotal);
+  const validation = validateBoard(squares, adjustedMetaTotal);
   if (!validation.valid) {
     throw new Error(`board_generation_failed:${validation.diff}`);
   }
 
-  return shuffle(squares).map((square, index) => ({
-    position: index + 1,
-    value: square.value,
-    category: square.category
-  }));
+  return squares;
 }
 
 export function validateBoard(squares, metaTotal) {
   const normalizedMetaTotal = normalizeMetaTotal(metaTotal);
-  const sum = sumSquares(Array.isArray(squares) ? squares : []);
+  const rows = Array.isArray(squares) ? squares : [];
+  const sum = sumSquares(rows);
   const diff = roundMoney(normalizedMetaTotal - sum);
+  const sequential = rows.every((square, index) => {
+    const expected = index + 1;
+    return Number(square.position) === expected && Number(square.value) === expected;
+  });
 
   return {
-    valid: Math.abs(diff) < 0.01,
+    valid: Math.abs(diff) < 0.01 && sequential,
     sum,
     metaTotal: normalizedMetaTotal,
-    squaresCount: Array.isArray(squares) ? squares.length : 0,
-    diff
+    squaresCount: rows.length,
+    diff,
+    sequential
   };
 }
 
 export function getBoardStats(squares) {
   const rows = Array.isArray(squares) ? squares : [];
   const byCategory = rows.reduce((acc, square) => {
-    const category = square.category || 'sem_categoria';
-    const value = Number(square.value || 0);
+    const category = CATEGORY_ORDER.includes(square.category) ? square.category : 'sem_categoria';
+    const value = Number(square.position || square.value || 0);
     const current = acc[category] || { count: 0, sum: 0 };
 
     acc[category] = {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import {
   createAuthenticatedContext,
+  getShamarWriterSupabase,
   normalizeId,
   resolveShamarDbError,
   roundMoney,
@@ -77,7 +78,8 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const requestedConfigId = normalizeId(searchParams.get('tribo_config_id'));
-  const { season, config, error } = await resolveSeasonAndConfig(context.supabase, context.user.id, requestedConfigId);
+  const dataSupabase = getShamarWriterSupabase(context.supabase);
+  const { season, config, error } = await resolveSeasonAndConfig(dataSupabase, context.user.id, requestedConfigId);
 
   if (error) {
     return NextResponse.json({ error: resolveShamarDbError(error, 'shamar_tribo_context_failed') }, { status: 500 });
@@ -99,7 +101,7 @@ export async function GET(request) {
     const seasonIds = (seasons || []).map((item) => item.id);
     const userIds = [...new Set((seasons || []).map((item) => item.user_id))];
 
-    const [profilesResult, contributionsResult, markedResult, indexesResult] = await Promise.all([
+    const [profilesResult, contributionsResult, markedResult, indexesResult, boardResult] = await Promise.all([
       userIds.length > 0
         ? serviceSupabase.from('profiles').select('id,email,full_name').in('id', userIds)
         : { data: [], error: null },
@@ -119,10 +121,14 @@ export async function GET(request) {
             .select('*')
             .in('season_id', seasonIds)
             .order('calculated_at', { ascending: false })
-        : { data: [], error: null }
+        : { data: [], error: null },
+      serviceSupabase
+        .from('shamar_board_squares')
+        .select('position,value')
+        .eq('tribo_config_id', config.id)
     ]);
 
-    const firstError = [profilesResult.error, contributionsResult.error, markedResult.error, indexesResult.error].find(Boolean);
+    const firstError = [profilesResult.error, contributionsResult.error, markedResult.error, indexesResult.error, boardResult.error].find(Boolean);
     if (firstError) throw firstError;
 
     const profilesById = new Map((profilesResult.data || []).map((profile) => [profile.id, profile]));
@@ -167,7 +173,8 @@ export async function GET(request) {
       .map((item, index) => ({ ...item, position: index + 1 }));
 
     const totalPatrimonio = roundMoney(contributions.reduce((sum, row) => sum + toNumber(row.amount), 0));
-    const metaTotal = toNumber(config.meta_total);
+    const individualMetaTotal = roundMoney((boardResult.data || []).reduce((sum, row) => sum + toNumber(row.position || row.value), 0)) || toNumber(config.meta_total);
+    const metaTotal = roundMoney(individualMetaTotal * Math.max(1, (seasons || []).length));
     const progressPct = metaTotal > 0 ? Math.round(Math.min(1, totalPatrimonio / metaTotal) * 10000) / 100 : 0;
     const averageConstancia = ranking.length > 0
       ? Math.round(ranking.reduce((sum, row) => sum + row.score_constancia, 0) / ranking.length)

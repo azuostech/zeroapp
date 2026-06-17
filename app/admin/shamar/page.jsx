@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { getSequentialMetaTotal, getSequentialSquareCount } from '@/src/lib/shamar/board-generator';
 
 const DEFAULT_FORM = {
   turma: '',
@@ -10,12 +11,23 @@ const DEFAULT_FORM = {
   started_at: new Date().toISOString().slice(0, 10)
 };
 
-const CATEGORIES = [
-  { id: 'pequeno', label: 'Pequenos', pct: 40, color: '#1B5E20' },
-  { id: 'medio', label: 'Médios', pct: 40, color: '#4488ff' },
-  { id: 'grande', label: 'Grandes', pct: 15, color: '#FFD700' },
-  { id: 'epico', label: 'Épicos', pct: 5, color: '#9C27B0' }
-];
+const DEFAULT_JOURNEY_FILTERS = {
+  search: '',
+  mode: '',
+  status: ''
+};
+
+const STATUS_LABELS = {
+  active: 'Ativa',
+  completed: 'Concluída',
+  abandoned: 'Abandonada'
+};
+
+const MODE_LABELS = {
+  individual: 'Individual',
+  dupla: 'Dupla',
+  tribo: 'Tribo'
+};
 
 function money(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -28,6 +40,20 @@ function money(value) {
 function dateLabel(value) {
   if (!value) return '—';
   return new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR');
+}
+
+function datetimeLabel(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('pt-BR');
+}
+
+function journeyTitle(journey) {
+  const user = journey?.user;
+  return user?.full_name || user?.email || 'Usuário sem nome';
+}
+
+function shortMode(mode) {
+  return MODE_LABELS[mode] || 'SHAMAR';
 }
 
 async function apiRequest(path, options = {}) {
@@ -47,18 +73,28 @@ async function apiRequest(path, options = {}) {
 
 export default function AdminShamarPage() {
   const [configs, setConfigs] = useState([]);
+  const [journeys, setJourneys] = useState([]);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [journeyFilters, setJourneyFilters] = useState(DEFAULT_JOURNEY_FILTERS);
+  const [editingJourneyId, setEditingJourneyId] = useState('');
+  const [journeyForm, setJourneyForm] = useState({});
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [journeysLoading, setJourneysLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingJourney, setSavingJourney] = useState(false);
+  const [resendingInviteId, setResendingInviteId] = useState('');
+  const [copyingInviteId, setCopyingInviteId] = useState('');
   const [message, setMessage] = useState('');
 
   const preview = useMemo(() => {
     const meta = Number(String(form.meta_total || '').replace(',', '.')) || 0;
-    return CATEGORIES.map((category) => ({
-      ...category,
-      value: Math.round(meta * (category.pct / 100))
-    }));
+    if (meta <= 0) return null;
+    return {
+      requested: meta,
+      adjusted: getSequentialMetaTotal(meta),
+      squares: getSequentialSquareCount(meta)
+    };
   }, [form.meta_total]);
 
   const loadConfigs = async () => {
@@ -74,8 +110,27 @@ export default function AdminShamarPage() {
     }
   };
 
+  const loadJourneys = async (filters = journeyFilters) => {
+    setJourneysLoading(true);
+    setMessage('');
+    try {
+      const params = new URLSearchParams();
+      if (filters.search) params.set('search', filters.search);
+      if (filters.mode) params.set('mode', filters.mode);
+      if (filters.status) params.set('status', filters.status);
+      const suffix = params.toString() ? `?${params.toString()}` : '';
+      const payload = await apiRequest(`/api/admin/shamar/journeys${suffix}`);
+      setJourneys(payload?.journeys || []);
+    } catch (error) {
+      setMessage(error.message || 'Erro ao carregar jornadas SHAMAR');
+    } finally {
+      setJourneysLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadConfigs();
+    loadJourneys(DEFAULT_JOURNEY_FILTERS);
   }, []);
 
   const updateForm = (field, value) => {
@@ -138,6 +193,112 @@ export default function AdminShamarPage() {
     }
   };
 
+  const applyJourneyFilters = async (event) => {
+    event.preventDefault();
+    await loadJourneys(journeyFilters);
+  };
+
+  const startEditJourney = (journey) => {
+    setEditingJourneyId(journey.id);
+    setJourneyForm({
+      turma: journey.config?.turma || '',
+      status: journey.status || 'active',
+      started_at: String(journey.config?.started_at || '').slice(0, 10),
+      duration_days: String(journey.config?.duration_days || 180),
+      is_active: Boolean(journey.config?.is_active),
+      patrimonio_inicial: String(journey.season?.patrimonio_inicial ?? 0),
+      patrimonio_final: journey.season?.patrimonio_final === null || journey.season?.patrimonio_final === undefined
+        ? ''
+        : String(journey.season.patrimonio_final)
+    });
+  };
+
+  const cancelEditJourney = () => {
+    setEditingJourneyId('');
+    setJourneyForm({});
+  };
+
+  const updateJourneyForm = (field, value) => {
+    setJourneyForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveJourney = async (journey) => {
+    setSavingJourney(true);
+    setMessage('');
+    try {
+      await apiRequest('/api/admin/shamar/journeys', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          season_id: journey.id,
+          turma: journeyForm.turma,
+          status: journeyForm.status,
+          started_at: journeyForm.started_at,
+          duration_days: Number(journeyForm.duration_days),
+          is_active: Boolean(journeyForm.is_active),
+          patrimonio_inicial: Number(String(journeyForm.patrimonio_inicial || '0').replace(',', '.')),
+          patrimonio_final: String(journeyForm.patrimonio_final || '').trim()
+            ? Number(String(journeyForm.patrimonio_final).replace(',', '.'))
+            : undefined
+        })
+      });
+      setMessage('Jornada SHAMAR atualizada.');
+      cancelEditJourney();
+      await Promise.all([loadJourneys(), loadConfigs()]);
+    } catch (error) {
+      setMessage(error.message || 'Erro ao editar jornada');
+    } finally {
+      setSavingJourney(false);
+    }
+  };
+
+  const deleteJourney = async (journey) => {
+    const ok = window.confirm(`Excluir a jornada SHAMAR de ${journeyTitle(journey)}? Essa ação remove a temporada selecionada e cancela convites pendentes ligados a ela.`);
+    if (!ok) return;
+
+    setMessage('');
+    try {
+      await apiRequest('/api/admin/shamar/journeys', {
+        method: 'DELETE',
+        body: JSON.stringify({ season_id: journey.id })
+      });
+      setMessage('Jornada SHAMAR excluída.');
+      await Promise.all([loadJourneys(), loadConfigs()]);
+    } catch (error) {
+      setMessage(error.message || 'Erro ao excluir jornada');
+    }
+  };
+
+  const resendInvite = async (invite) => {
+    setResendingInviteId(invite.id);
+    setMessage('');
+    try {
+      await apiRequest('/api/admin/shamar/journeys', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'resend_invite', invite_id: invite.id })
+      });
+      setMessage(`Email reenviado para ${invite.invited_email}.`);
+      await loadJourneys();
+    } catch (error) {
+      setMessage(error.message || 'Erro ao reenviar email');
+    } finally {
+      setResendingInviteId('');
+    }
+  };
+
+  const copyInviteLink = async (invite) => {
+    setCopyingInviteId(invite.id);
+    setMessage('');
+    try {
+      if (!invite.accept_url) throw new Error('Link indisponível para este convite.');
+      await navigator.clipboard.writeText(invite.accept_url);
+      setMessage('Link do convite copiado.');
+    } catch (error) {
+      setMessage(error.message || 'Erro ao copiar link');
+    } finally {
+      setCopyingInviteId('');
+    }
+  };
+
   return (
     <div className="admin-shamar">
       <header className="admin-top">
@@ -185,18 +346,25 @@ export default function AdminShamarPage() {
 
           <div className="preview">
             <div className="preview-head">
-              <strong>Prévia da distribuição</strong>
-              <span>{money(form.meta_total)}</span>
+              <strong>Meta sequencial ajustada</strong>
+              <span>{preview ? money(preview.adjusted) : money(form.meta_total)}</span>
             </div>
-            {preview.map((category) => (
-              <div className="preview-row" key={category.id}>
-                <span style={{ '--dot': category.color }}>{category.label}</span>
-                <div className="preview-track">
-                  <i style={{ width: `${category.pct}%`, background: category.color }} />
+            {preview ? (
+              <div className="preview-sequence">
+                <div>
+                  <span>Meta digitada</span>
+                  <strong>{money(preview.requested)}</strong>
                 </div>
-                <strong>{money(category.value)}</strong>
+                <div>
+                  <span>Quadrinhos</span>
+                  <strong>{preview.squares}</strong>
+                </div>
+                <div>
+                  <span>Regra</span>
+                  <strong>posição = valor</strong>
+                </div>
               </div>
-            ))}
+            ) : null}
           </div>
 
           <button className="primary-btn" type="submit" disabled={saving}>
@@ -238,6 +406,166 @@ export default function AdminShamarPage() {
             ))}
           </div>
         </section>
+      </section>
+
+      <section className="panel journey-panel">
+        <div className="panel-head">
+          <div>
+            <h2>Jornadas dos alunos</h2>
+            <p>Edite, exclua e reenvie convites de um SHAMAR específico.</p>
+          </div>
+          <button type="button" onClick={() => loadJourneys()}>Atualizar</button>
+        </div>
+
+        <form className="journey-filters" onSubmit={applyJourneyFilters}>
+          <label>
+            Buscar
+            <input
+              value={journeyFilters.search}
+              onChange={(event) => setJourneyFilters((current) => ({ ...current, search: event.target.value }))}
+              placeholder="Aluno, email, turma..."
+            />
+          </label>
+          <label>
+            Modalidade
+            <select
+              value={journeyFilters.mode}
+              onChange={(event) => setJourneyFilters((current) => ({ ...current, mode: event.target.value }))}
+            >
+              <option value="">Todas</option>
+              <option value="individual">Individual</option>
+              <option value="dupla">Dupla</option>
+              <option value="tribo">Tribo</option>
+            </select>
+          </label>
+          <label>
+            Status
+            <select
+              value={journeyFilters.status}
+              onChange={(event) => setJourneyFilters((current) => ({ ...current, status: event.target.value }))}
+            >
+              <option value="">Todos</option>
+              <option value="active">Ativa</option>
+              <option value="completed">Concluída</option>
+              <option value="abandoned">Abandonada</option>
+            </select>
+          </label>
+          <button type="submit">Filtrar</button>
+        </form>
+
+        {journeysLoading ? <div className="empty">Carregando jornadas...</div> : null}
+        {!journeysLoading && journeys.length === 0 ? <div className="empty">Nenhuma jornada encontrada.</div> : null}
+
+        <div className="journey-list">
+          {journeys.map((journey) => {
+            const editing = editingJourneyId === journey.id;
+            const pendingInvites = (journey.invites || []).filter((invite) => invite.status === 'pending');
+
+            return (
+              <article className="journey-card" key={journey.id}>
+                <div className="journey-main">
+                  <div>
+                    <span className={`status ${journey.status === 'active' ? 'on' : 'off'}`}>
+                      {STATUS_LABELS[journey.status] || journey.status}
+                    </span>
+                    <h3>{journeyTitle(journey)}</h3>
+                    <p>{journey.user?.email || 'Email não encontrado'}</p>
+                  </div>
+                  <div className="journey-mode">
+                    <strong>{shortMode(journey.mode)}</strong>
+                    <span>{journey.config?.turma || 'Sem turma'}</span>
+                  </div>
+                </div>
+
+                <div className="metrics">
+                  <span>{money(journey.config?.meta_total || 0)} meta</span>
+                  <span>{money(journey.stats?.contributions_total || 0)} aportado</span>
+                  <span>{journey.stats?.squares_marked || 0} quadrinhos</span>
+                  <span>Início {datetimeLabel(journey.season?.started_at)}</span>
+                  <span>{journey.config?.is_active ? 'Config ativa' : 'Config encerrada'}</span>
+                </div>
+
+                {pendingInvites.length > 0 ? (
+                  <div className="invite-admin-list">
+                    {pendingInvites.map((invite) => (
+                      <div className="invite-admin-row" key={invite.id}>
+                        <div>
+                          <strong>{invite.invited_email}</strong>
+                          <span>{invite.email_sent ? 'Email enviado · aguardando aceite' : invite.email_error || 'Email pendente'}</span>
+                        </div>
+                        <div className="invite-admin-actions">
+                          <button type="button" onClick={() => resendInvite(invite)} disabled={resendingInviteId === invite.id}>
+                            {resendingInviteId === invite.id ? 'Enviando...' : 'Reenviar email'}
+                          </button>
+                          <button type="button" onClick={() => copyInviteLink(invite)} disabled={copyingInviteId === invite.id || !invite.accept_url}>
+                            {copyingInviteId === invite.id ? 'Copiando...' : 'Copiar link'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {editing ? (
+                  <div className="journey-edit">
+                    <label>
+                      Nome/turma
+                      <input value={journeyForm.turma || ''} onChange={(event) => updateJourneyForm('turma', event.target.value)} />
+                    </label>
+                    <label>
+                      Status
+                      <select value={journeyForm.status || 'active'} onChange={(event) => updateJourneyForm('status', event.target.value)}>
+                        <option value="active">Ativa</option>
+                        <option value="completed">Concluída</option>
+                        <option value="abandoned">Abandonada</option>
+                      </select>
+                    </label>
+                    <label>
+                      Início
+                      <input type="date" value={journeyForm.started_at || ''} onChange={(event) => updateJourneyForm('started_at', event.target.value)} />
+                    </label>
+                    <label>
+                      Duração
+                      <select value={journeyForm.duration_days || '180'} onChange={(event) => updateJourneyForm('duration_days', event.target.value)}>
+                        <option value="30">30 dias</option>
+                        <option value="90">90 dias</option>
+                        <option value="180">180 dias</option>
+                        <option value="365">365 dias</option>
+                      </select>
+                    </label>
+                    <label>
+                      Patrimônio inicial
+                      <input value={journeyForm.patrimonio_inicial || ''} onChange={(event) => updateJourneyForm('patrimonio_inicial', event.target.value)} inputMode="decimal" />
+                    </label>
+                    <label>
+                      Patrimônio final
+                      <input value={journeyForm.patrimonio_final || ''} onChange={(event) => updateJourneyForm('patrimonio_final', event.target.value)} inputMode="decimal" />
+                    </label>
+                    <label className="switch-row">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(journeyForm.is_active)}
+                        onChange={(event) => updateJourneyForm('is_active', event.target.checked)}
+                      />
+                      Configuração ativa para esta jornada
+                    </label>
+                    <div className="journey-edit-actions">
+                      <button type="button" className="success" onClick={() => saveJourney(journey)} disabled={savingJourney}>
+                        {savingJourney ? 'Salvando...' : 'Salvar'}
+                      </button>
+                      <button type="button" onClick={cancelEditJourney}>Cancelar</button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="actions">
+                  <button type="button" onClick={() => startEditJourney(journey)}>Editar</button>
+                  <button type="button" className="danger" onClick={() => deleteJourney(journey)}>Excluir</button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       {selectedBoard ? (
@@ -328,7 +656,9 @@ export default function AdminShamarPage() {
         }
 
         .form-panel,
-        .config-list {
+        .config-list,
+        .journey-list,
+        .invite-admin-list {
           display: grid;
           gap: 12px;
         }
@@ -358,6 +688,18 @@ export default function AdminShamarPage() {
           gap: 10px;
         }
 
+        .journey-panel {
+          margin-top: 16px;
+        }
+
+        .journey-filters {
+          display: grid;
+          grid-template-columns: minmax(220px, 1fr) 160px 150px auto;
+          gap: 10px;
+          align-items: end;
+          margin: 14px 0;
+        }
+
         .preview {
           border: 1px solid var(--border-2);
           border-radius: 12px;
@@ -368,7 +710,6 @@ export default function AdminShamarPage() {
         }
 
         .preview-head,
-        .preview-row,
         .panel-head,
         .actions,
         .metrics {
@@ -379,36 +720,32 @@ export default function AdminShamarPage() {
           flex-wrap: wrap;
         }
 
-        .preview-row span {
-          min-width: 78px;
-          color: var(--text-2);
-          font-size: 12px;
-          font-weight: 800;
+        .preview-sequence {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
         }
 
-        .preview-row span::before {
-          content: '';
-          display: inline-block;
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--dot);
-          margin-right: 6px;
-        }
-
-        .preview-track {
-          flex: 1;
-          min-width: 90px;
-          height: 7px;
-          border-radius: 999px;
+        .preview-sequence div {
+          border-radius: 10px;
           background: var(--bg3);
-          overflow: hidden;
+          padding: 10px;
         }
 
-        .preview-track i {
+        .preview-sequence span {
           display: block;
-          height: 100%;
-          border-radius: inherit;
+          color: var(--text-2);
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+
+        .preview-sequence strong {
+          display: block;
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
         }
 
         button,
@@ -436,13 +773,50 @@ export default function AdminShamarPage() {
           cursor: not-allowed;
         }
 
-        .config-card {
+        .config-card,
+        .journey-card {
           border: 1px solid var(--border-2);
           border-radius: 12px;
           padding: 13px;
           background: var(--bg-surface);
           display: grid;
           gap: 12px;
+        }
+
+        .journey-main {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 12px;
+          align-items: start;
+        }
+
+        .journey-main h3 {
+          margin-top: 6px;
+        }
+
+        .journey-mode {
+          min-width: 160px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg-card);
+          padding: 10px;
+          text-align: right;
+        }
+
+        .journey-mode strong,
+        .journey-mode span {
+          display: block;
+        }
+
+        .journey-mode strong {
+          color: var(--green-dark);
+          font-weight: 900;
+        }
+
+        .journey-mode span {
+          color: var(--text-2);
+          font-size: 11px;
+          margin-top: 3px;
         }
 
         .status {
@@ -480,6 +854,73 @@ export default function AdminShamarPage() {
 
         .actions {
           justify-content: flex-start;
+        }
+
+        .invite-admin-list {
+          border-top: 1px solid var(--border);
+          padding-top: 10px;
+        }
+
+        .invite-admin-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 10px;
+          align-items: center;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--bg-card);
+          padding: 10px;
+        }
+
+        .invite-admin-row strong,
+        .invite-admin-row span {
+          display: block;
+        }
+
+        .invite-admin-row strong {
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .invite-admin-row span {
+          color: var(--text-2);
+          font-size: 11px;
+          margin-top: 3px;
+        }
+
+        .invite-admin-actions,
+        .journey-edit-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .journey-edit {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          border: 1px solid var(--border-green);
+          border-radius: 12px;
+          background: var(--green-dim);
+          padding: 12px;
+        }
+
+        .switch-row {
+          grid-column: span 2;
+          grid-template-columns: auto 1fr;
+          align-items: center;
+          color: var(--text);
+        }
+
+        .switch-row input {
+          width: auto;
+        }
+
+        .journey-edit-actions {
+          justify-content: flex-start;
+          align-self: end;
         }
 
         .actions .danger {
@@ -537,6 +978,17 @@ export default function AdminShamarPage() {
 
           .admin-grid {
             grid-template-columns: 1fr;
+          }
+
+          .journey-filters,
+          .journey-main,
+          .invite-admin-row,
+          .journey-edit {
+            grid-template-columns: 1fr;
+          }
+
+          .journey-mode {
+            text-align: left;
           }
 
           .admin-top {

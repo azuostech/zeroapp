@@ -3,7 +3,6 @@ import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 
-export const SHAMAR_ALLOWED_TIERS = new Set(['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
 export const PROOF_ALLOWED_CONTENT_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -73,8 +72,6 @@ export function profileHasTurma(userTurmas, requiredTurma) {
 export function canAccessShamarConfig(profile, config) {
   if (!profile || !config) return false;
   if (profile.status !== 'active') return false;
-  if (!profile.shamar_unlocked) return false;
-  if (!SHAMAR_ALLOWED_TIERS.has(String(profile.tier || '').toUpperCase())) return false;
   return profileHasTurma(profile.turma, config.turma);
 }
 
@@ -156,7 +153,7 @@ export function getShamarWriterSupabase(fallbackSupabase) {
 export async function loadShamarProfile(supabase, userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,email,status,role,tier,turma,shamar_unlocked')
+    .select('id,email,full_name,status,role,tier,turma,shamar_unlocked')
     .eq('id', userId)
     .maybeSingle();
 

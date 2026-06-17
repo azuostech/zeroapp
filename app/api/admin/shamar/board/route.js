@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminContext, normalizeId, parseJsonBody, resolveShamarDbError, toNumber } from '@/src/lib/shamar/api';
-import { generateBoard, getBoardStats, validateBoard } from '@/src/lib/shamar/board-generator';
+import { generateBoard, getBoardStats, getSequentialMetaTotal, validateBoard } from '@/src/lib/shamar/board-generator';
 
 export async function POST(request) {
   const context = await createAdminContext();
@@ -47,9 +47,10 @@ export async function POST(request) {
     );
   }
 
+  const adjustedMetaTotal = getSequentialMetaTotal(toNumber(config.meta_total));
   let squares;
   try {
-    squares = generateBoard(toNumber(config.meta_total));
+    squares = generateBoard(adjustedMetaTotal);
   } catch (error) {
     return NextResponse.json(
       {
@@ -60,7 +61,7 @@ export async function POST(request) {
     );
   }
 
-  const validation = validateBoard(squares, toNumber(config.meta_total));
+  const validation = validateBoard(squares, adjustedMetaTotal);
   if (!validation.valid) {
     return NextResponse.json({ error: 'validacao_do_tabuleiro_falhou', validation }, { status: 500 });
   }
@@ -80,11 +81,18 @@ export async function POST(request) {
     return NextResponse.json({ error: resolveShamarDbError(insertError, 'shamar_board_insert_failed') }, { status: 500 });
   }
 
+  if (adjustedMetaTotal !== toNumber(config.meta_total)) {
+    await context.supabase
+      .from('shamar_tribo_configs')
+      .update({ meta_total: adjustedMetaTotal })
+      .eq('id', triboConfigId);
+  }
+
   return NextResponse.json(
     {
       success: true,
       turma: config.turma,
-      meta_total: toNumber(config.meta_total),
+      meta_total: adjustedMetaTotal,
       squares_count: squares.length,
       validation,
       stats: getBoardStats(squares)
@@ -115,7 +123,7 @@ export async function GET(request) {
 
   const squares = (data || []).map((square) => ({
     ...square,
-    value: toNumber(square.value)
+    value: toNumber(square.position || square.value)
   }));
 
   return NextResponse.json({

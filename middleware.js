@@ -11,6 +11,15 @@ function redirect(request, path) {
   return NextResponse.redirect(new URL(path, request.url));
 }
 
+function redirectToLogin(request) {
+  const url = new URL(ROOT_PATH, request.url);
+  const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  if (nextPath && nextPath !== ROOT_PATH) {
+    url.searchParams.set('next', nextPath);
+  }
+  return NextResponse.redirect(url);
+}
+
 function jsonError(message, status) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -26,8 +35,10 @@ export async function middleware(request) {
   const isAppArea = pathname.startsWith('/app');
   const isAdminArea = pathname.startsWith('/admin');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
-  const protectedPage = isAppArea || isAdminArea || isJacksonArea;
-  const protectedApi = isFinanceApi || isAdminApi;
+  const isShamarArea = pathname.startsWith('/shamar');
+  const isShamarApi = pathname.startsWith('/api/shamar');
+  const protectedPage = isAppArea || isAdminArea || isJacksonArea || isShamarArea;
+  const protectedApi = isFinanceApi || isAdminApi || isShamarApi;
 
   if (!hasSupabaseEnv()) {
     return NextResponse.next({ request });
@@ -62,7 +73,7 @@ export async function middleware(request) {
   }
 
   if (!user) {
-    if (protectedPage) return redirect(request, ROOT_PATH);
+    if (protectedPage) return redirectToLogin(request);
     if (isProfileApi) return jsonError('unauthorized', 401);
     if (protectedApi && !isAuthApi) return jsonError('unauthorized', 401);
     return response;
@@ -77,7 +88,7 @@ export async function middleware(request) {
   }
 
   if (!profile) {
-    if (protectedPage) return redirect(request, ROOT_PATH);
+    if (protectedPage) return redirectToLogin(request);
     if (isProfileApi) return jsonError('forbidden', 403);
     if (protectedApi) return jsonError('forbidden', 403);
     return response;
@@ -89,7 +100,7 @@ export async function middleware(request) {
 
   if ((protectedPage || protectedApi) && profile.status !== 'active') {
     if (isApi) return jsonError('inactive_account', 403);
-    return redirect(request, ROOT_PATH);
+    return redirectToLogin(request);
   }
 
   if (isAdminArea && profile.role !== 'admin') {

@@ -4,6 +4,7 @@ import { awardShamarPointsSafely, awardZeroCoinsSafely } from '@/src/lib/shamar/
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
 import {
   createAuthenticatedContext,
+  getShamarWriterSupabase,
   normalizeId,
   normalizeIsoDate,
   normalizePositiveMoney,
@@ -40,7 +41,13 @@ async function loadSelectedSquares(supabase, triboConfigId, squareIds) {
     .in('id', squareIds);
 
   if (error) return { squares: [], error };
-  return { squares: data || [], error: null };
+  return {
+    squares: (data || []).map((square) => ({
+      ...square,
+      value: toNumber(square.position || square.value)
+    })),
+    error: null
+  };
 }
 
 async function cleanupContribution(supabase, contributionId) {
@@ -92,12 +99,12 @@ async function attachMarkedSquares(supabase, contributions) {
   if (squaresError) throw squaresError;
 
   const squaresById = new Map((squares || []).map((square) => [
-    square.id,
-    {
-      ...square,
-      value: toNumber(square.value)
-    }
-  ]));
+      square.id,
+      {
+        ...square,
+        value: toNumber(square.position || square.value)
+      }
+    ]));
 
   const markedByContribution = new Map();
   for (const row of markedRows || []) {
@@ -146,7 +153,8 @@ export async function POST(request) {
   if (!season) return NextResponse.json({ error: 'temporada_nao_encontrada' }, { status: 404 });
   if (season.status !== 'active') return NextResponse.json({ error: 'temporada_inativa' }, { status: 409 });
 
-  const { squares, error: squaresError } = await loadSelectedSquares(context.supabase, season.tribo_config_id, squareIds);
+  const readSupabase = getShamarWriterSupabase(context.supabase);
+  const { squares, error: squaresError } = await loadSelectedSquares(readSupabase, season.tribo_config_id, squareIds);
   if (squaresError) {
     return NextResponse.json({ error: resolveShamarDbError(squaresError, 'shamar_squares_lookup_failed') }, { status: 500 });
   }
@@ -316,7 +324,8 @@ export async function GET(request) {
   }
 
   try {
-    const enriched = await attachMarkedSquares(context.supabase, contributions);
+    const readSupabase = getShamarWriterSupabase(context.supabase);
+    const enriched = await attachMarkedSquares(readSupabase, contributions);
     return NextResponse.json({
       contributions: enriched,
       total: enriched.length

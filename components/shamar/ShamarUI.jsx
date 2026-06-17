@@ -80,6 +80,7 @@ export function ShamarBottomNav({ activeTab = 'shamar' }) {
   const pathname = usePathname() || '';
   const current = activeTab || (pathname.includes('/missoes') ? 'missoes' : pathname.includes('/tribo') ? 'tribo' : 'shamar');
   const tabs = [
+    { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
     { id: 'shamar', href: '/shamar', icon: '🛡️', label: 'SHAMAR' },
     { id: 'missoes', href: '/shamar/missoes', icon: '🎯', label: 'Missões' },
     { id: 'tribo', href: '/shamar/tribo', icon: '👥', label: 'TRIBO' }
@@ -124,11 +125,7 @@ export function ShamarSetupError({ error }) {
   );
 }
 
-export function ShamarLockedState({ unlockProgress }) {
-  const completed = Number(unlockProgress?.completed || 0);
-  const total = Number(unlockProgress?.total || 3);
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
+export function ShamarLockedState() {
   return (
     <ShamarShell>
       <ShamarHeader
@@ -136,23 +133,16 @@ export function ShamarLockedState({ unlockProgress }) {
         title="🛡️ SHAMAR"
         subtitle="Guardar, proteger, cultivar e multiplicar."
         stats={[
-          { label: 'Encontros', value: `${completed}/${total}` },
-          { label: 'Liberação', value: `${pct}%` },
-          { label: 'Status', value: 'Bloqueado' }
+          { label: 'Níveis', value: 'Todos' },
+          { label: 'Liberação', value: 'Mentor' },
+          { label: 'Status', value: 'Aguardando' }
         ]}
       />
       <section className="shamar-card shamar-locked-card">
         <div className="shamar-card-body">
           <div className="shamar-state-icon">🛡️</div>
           <h2>SHAMAR ainda não disponível</h2>
-          <p>O acesso é liberado manualmente após os 3 encontros iniciais da mentoria.</p>
-          <div className="shamar-progress-track">
-            <div className="shamar-progress-fill" style={{ width: `${clampPercent(pct)}%` }} />
-          </div>
-          <div className="shamar-muted-row">
-            <span>{completed} encontros concluídos</span>
-            <span>{total} necessários</span>
-          </div>
+          <p>O mentor pode liberar o SHAMAR para sua jornada assim que fizer sentido para a turma.</p>
         </div>
       </section>
     </ShamarShell>
@@ -256,10 +246,10 @@ export function BoardGrid({ squares, preview = false, selectable = false, select
 
 export function CategoryLegend({ compact = false }) {
   const items = [
-    { id: 'pequeno', label: 'Pequeno', detail: '40% · R$50-R$500 · alta frequência' },
-    { id: 'medio', label: 'Médio', detail: '40% · R$500-R$2.000 · progressão' },
-    { id: 'grande', label: 'Grande', detail: '15% · R$2.000-R$5.000 · marcos' },
-    { id: 'epico', label: 'Épico', detail: '5% · R$5.000+ · raros' }
+    { id: 'pequeno', label: 'Inicial', detail: 'Primeiros 40% · posição = valor' },
+    { id: 'medio', label: 'Meio', detail: 'Próximos 40% · posição = valor' },
+    { id: 'grande', label: 'Marco', detail: 'Próximos 15% · posição = valor' },
+    { id: 'epico', label: 'Final', detail: 'Últimos 5% · posição = valor' }
   ];
 
   return (

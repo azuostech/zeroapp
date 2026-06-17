@@ -11,7 +11,7 @@ import {
   roundMoney,
   toNumber
 } from '@/src/lib/shamar/api';
-import { generateBoard, getBoardStats, validateBoard } from '@/src/lib/shamar/board-generator';
+import { generateBoard, getBoardStats, getSequentialMetaTotal, validateBoard } from '@/src/lib/shamar/board-generator';
 
 const ALLOWED_DURATIONS = new Set([30, 90, 180, 365]);
 
@@ -30,7 +30,7 @@ function countByStatus(seasons) {
 function boardStatsForConfig(squares) {
   const rows = (squares || []).map((square) => ({
     ...square,
-    value: toNumber(square.value)
+    value: toNumber(square.position || square.value)
   }));
 
   return getBoardStats(rows);
@@ -52,7 +52,7 @@ async function loadConfigs(supabase) {
   const [squaresResult, seasonsResult] = await Promise.all([
     supabase
       .from('shamar_board_squares')
-      .select('tribo_config_id,value,category')
+      .select('tribo_config_id,position,value,category')
       .in('tribo_config_id', ids),
     supabase
       .from('shamar_seasons')
@@ -113,15 +113,16 @@ export async function POST(request) {
   if (parsed.error) return parsed.error;
 
   const turma = String(parsed.body?.turma || '').trim();
-  const metaTotal = normalizeMoney(parsed.body?.meta_total);
+  const requestedMetaTotal = normalizeMoney(parsed.body?.meta_total);
   const durationDays = Number(parsed.body?.duration_days || 0);
   const startedAt = normalizeIsoDate(parsed.body?.started_at);
 
   if (!turma) return NextResponse.json({ error: 'turma_obrigatoria' }, { status: 422 });
-  if (metaTotal === null || metaTotal <= 0) return NextResponse.json({ error: 'meta_total_invalida' }, { status: 422 });
+  if (requestedMetaTotal === null || requestedMetaTotal <= 0) return NextResponse.json({ error: 'meta_total_invalida' }, { status: 422 });
   if (!ALLOWED_DURATIONS.has(durationDays)) return NextResponse.json({ error: 'duration_days_invalido' }, { status: 422 });
   if (!startedAt) return NextResponse.json({ error: 'started_at_invalido' }, { status: 422 });
 
+  const metaTotal = getSequentialMetaTotal(requestedMetaTotal);
   let squares;
   try {
     squares = generateBoard(metaTotal);
@@ -174,6 +175,7 @@ export async function POST(request) {
     resourceId: config.id,
     metadata: {
       turma,
+      requested_meta_total: requestedMetaTotal,
       meta_total: metaTotal,
       duration_days: durationDays,
       started_at: startedAt,

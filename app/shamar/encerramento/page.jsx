@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { IndexCard, ProgressSummary, ShamarCard, ShamarHeader, ShamarLoading, ShamarSetupError, ShamarShell } from '@/components/shamar/ShamarUI';
+import { modePath } from '@/components/shamar/ShamarModeCreator';
 import { formatMoney, identityIcon, identityLabel } from '@/src/lib/shamar/formatters';
 
 async function apiRequest(path, options = {}) {
@@ -27,15 +28,21 @@ export default function ShamarClosingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [mode, setMode] = useState('');
 
   useEffect(() => {
     let mounted = true;
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = params.get('mode') || '';
+    const nextMode = ['individual', 'dupla', 'tribo'].includes(requestedMode) ? requestedMode : '';
+    setMode(nextMode);
 
     const load = async () => {
       setLoading(true);
       setError('');
       try {
-        const payload = await apiRequest('/api/shamar/seasons');
+        const path = nextMode ? `/api/shamar/seasons?mode=${encodeURIComponent(nextMode)}` : '/api/shamar/seasons';
+        const payload = await apiRequest(path);
         if (!mounted) return;
         setSummary(payload);
         const suggested = Number(payload?.progress?.contributions_total || payload?.progress?.sum_marked || 0);
@@ -93,7 +100,7 @@ export default function ShamarClosingPage() {
         title="Fechamento SHAMAR"
         subtitle={result ? 'Sua temporada foi registrada.' : 'Declare seu patrimônio final para concluir a temporada.'}
         identity={identity}
-        hrefBack="/shamar"
+        hrefBack={mode ? modePath(mode) : '/shamar'}
         stats={[
           { label: 'Turma', value: config?.turma || 'SHAMAR' },
           { label: 'Meta', value: formatMoney(config?.meta_total || progress?.meta_total || 0, { compact: true }) },
@@ -157,7 +164,7 @@ export default function ShamarClosingPage() {
           <IndexCard indexData={result.index} />
 
           <div className="next-actions">
-            <Link href="/shamar">Voltar ao SHAMAR</Link>
+            <Link href={mode ? modePath(mode) : '/shamar'}>Voltar ao SHAMAR</Link>
             <Link href="/jornada">Ver conquistas</Link>
             <Link href="/app">Continuar no app</Link>
           </div>

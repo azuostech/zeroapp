@@ -1,13 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  BoardGrid,
-  CategoryLegend,
-  IndexCard,
-  ProgressSummary,
   ShamarCard,
   ShamarHeader,
   ShamarLoading,
@@ -15,246 +10,391 @@ import {
   ShamarSetupError,
   ShamarShell
 } from '@/components/shamar/ShamarUI';
+import { MODE_OPTIONS, modePath } from '@/components/shamar/ShamarModeCreator';
 import { useShamar } from '@/hooks/useShamar';
-import { useShamarBoard } from '@/hooks/useShamarBoard';
-import { formatMoney, identityLabel, seasonDay } from '@/src/lib/shamar/formatters';
+import { formatMoney } from '@/src/lib/shamar/formatters';
 
-function currentStreakFromIndex(indexData) {
-  const score = Number(indexData?.score_constancia || 0);
-  return Math.max(0, Math.round(score / 60));
+function statusLabel({ hasSeason, pendingCount }) {
+  if (hasSeason) return 'Ativo';
+  if (pendingCount > 0) return 'Aguardando aceite';
+  return 'Livre para criar';
 }
 
-function emotionalTrigger(progress, indexData) {
-  const total = Number(progress?.contributions_total || 0);
-  const identity = identityLabel(indexData?.identity_level);
-
-  if (total <= 0) return 'O primeiro quadrinho é uma decisão pequena que começa a mudar sua identidade.';
-  if (Number(indexData?.index_total || 0) >= 700) return `${identity}: você já está construindo patrimônio como prioridade, não como sobra.`;
-  return 'Cada quadrinho marcado é uma prova de que você escolheu guardar antes de gastar.';
+function inviteModeLabel(mode) {
+  if (mode === 'dupla') return 'Dupla';
+  if (mode === 'tribo') return 'Tribo';
+  return 'SHAMAR';
 }
 
-export default function ShamarPage() {
-  const router = useRouter();
-  const { season, config, progress, indexData, locked, unlockProgress, error, isLoading } = useShamar();
-  const { squares, stats: boardStats, isLoading: isBoardLoading } = useShamarBoard(season?.id);
-  const [recentContributions, setRecentContributions] = useState([]);
+export default function ShamarHubPage() {
+  const { seasons, locked, unlockProgress, error, isLoading, refresh } = useShamar();
+  const [invites, setInvites] = useState({ incoming: [], outgoing: [] });
+  const [invitesError, setInvitesError] = useState('');
+  const [resendingInviteId, setResendingInviteId] = useState('');
+  const [inviteNotice, setInviteNotice] = useState('');
+
+  const loadInvites = useCallback(async () => {
+    try {
+      const res = await fetch('/api/shamar/invites', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'shamar_invites_fetch_failed');
+      setInvites({
+        incoming: Array.isArray(data?.incoming) ? data.incoming : [],
+        outgoing: Array.isArray(data?.outgoing) ? data.outgoing : []
+      });
+      setInvitesError('');
+    } catch (fetchError) {
+      setInvites({ incoming: [], outgoing: [] });
+      setInvitesError(fetchError?.message || 'shamar_invites_fetch_failed');
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
+    loadInvites();
+  }, [loadInvites]);
 
-    const loadRecent = async () => {
-      if (!season?.id) {
-        setRecentContributions([]);
-        return;
-      }
+  const resendInvite = async (inviteId) => {
+    setResendingInviteId(inviteId);
+    setInviteNotice('');
 
-      try {
-        const res = await fetch(`/api/shamar/contributions?season_id=${encodeURIComponent(season.id)}`, { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || 'contributions_fetch_failed');
-        if (active) setRecentContributions((data?.contributions || []).slice(0, 3));
-      } catch (_) {
-        if (active) setRecentContributions([]);
-      }
-    };
+    try {
+      const res = await fetch('/api/shamar/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resend', invite_id: inviteId })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'shamar_invite_resend_failed');
+      setInviteNotice('Convite reenviado.');
+      await loadInvites();
+    } catch (resendError) {
+      setInviteNotice(resendError?.message || 'Não foi possível reenviar o convite.');
+      await loadInvites();
+    } finally {
+      setResendingInviteId('');
+    }
+  };
 
-    loadRecent();
-    return () => {
-      active = false;
-    };
-  }, [season?.id]);
+  const seasonsByMode = useMemo(() => {
+    return new Map((seasons || []).map((season) => [season.mode || season.config?.mode || 'individual', season]));
+  }, [seasons]);
 
-  const day = useMemo(() => seasonDay(config), [config]);
+  const pendingOutgoingByMode = useMemo(() => {
+    const map = new Map();
+    for (const invite of invites.outgoing || []) {
+      if (invite.status !== 'pending') continue;
+      const mode = invite.mode || invite.config?.mode;
+      map.set(mode, Number(map.get(mode) || 0) + 1);
+    }
+    return map;
+  }, [invites.outgoing]);
 
   if (isLoading) return <ShamarLoading />;
   if (locked) return <ShamarLockedState unlockProgress={unlockProgress} />;
   if (error) return <ShamarSetupError error={error} />;
 
-  if (!season || !config) {
-    return (
-      <ShamarShell>
-        <ShamarHeader
-          label="Jornada SHAMAR"
-          title="🛡️ SHAMAR"
-          subtitle="Sua temporada ainda não foi iniciada."
-          stats={[
-            { label: 'Status', value: 'Liberado' },
-            { label: 'Temporada', value: 'Pendente' },
-            { label: 'Ação', value: 'Admin' }
-          ]}
-        />
-        <ShamarCard>
-          <div className="shamar-state" style={{ minHeight: '38vh' }}>
-            <div className="shamar-state-icon">🛡️</div>
-            <h1>Temporada ainda não iniciada</h1>
-            <p>Quando a temporada da sua turma for aberta, seu painel SHAMAR aparece aqui.</p>
-          </div>
-        </ShamarCard>
-      </ShamarShell>
-    );
-  }
-
-  const markedSquares = Number(progress?.squares_marked || boardStats?.marked || 0);
-  const totalSquares = Number(progress?.squares_total || boardStats?.total || 0);
-  const accumulated = Number(progress?.contributions_total || boardStats?.sum_marked || 0);
-  const streak = currentStreakFromIndex(indexData);
+  const activeCount = seasonsByMode.size;
+  const pendingIncoming = invites.incoming?.length || 0;
 
   return (
     <ShamarShell activeTab="shamar">
       <ShamarHeader
-        label={`Jornada SHAMAR · Turma ${config.turma}`}
-        title="🛡️ SHAMAR"
-        subtitle={`Temporada ${config.duration_days} dias · Dia ${day.current} de ${day.total} · Meta ${formatMoney(config.meta_total)}`}
-        identity={indexData?.identity_level || season.identity_level}
+        label="Jornada do aluno"
+        title="SHAMAR"
+        subtitle="Escolha uma modalidade para acompanhar ou crie uma nova jornada."
         stats={[
-          { label: 'Patrimônio', value: formatMoney(accumulated, { compact: true }) },
-          { label: 'Quadrinhos', value: `${markedSquares}/${totalSquares || '—'}` },
-          { label: 'Sequência', value: `${streak}🔥` }
+          { label: 'Modalidades ativas', value: `${activeCount}/3` },
+          { label: 'Convites', value: pendingIncoming },
+          { label: 'Controle', value: 'Individual' }
         ]}
       />
 
-      <IndexCard indexData={indexData} />
-      <ProgressSummary progress={progress} config={config} />
-
       <ShamarCard
-        title="Progresso do Tabuleiro"
-        action={<Link className="shamar-card-link" href="/shamar/tabuleiro">Ver completo</Link>}
+        title="Minhas modalidades"
+        action={<Link className="hub-card-action" href="/shamar/criar">Criar</Link>}
       >
-        {isBoardLoading ? (
-          <p className="shamar-inline-muted">Carregando tabuleiro...</p>
-        ) : squares.length > 0 ? (
-          <>
-            <CategoryLegend compact />
-            <BoardGrid squares={squares} preview onSquareClick={() => router.push('/shamar/tabuleiro')} />
-          </>
-        ) : (
-          <p className="shamar-inline-muted">O tabuleiro da turma ainda não foi gerado pelo admin.</p>
-        )}
+        <div className="hub-mode-list">
+          {MODE_OPTIONS.map((mode) => {
+            const season = seasonsByMode.get(mode.id);
+            const pendingCount = Number(pendingOutgoingByMode.get(mode.id) || 0);
+            const href = season ? modePath(mode.id) : `/shamar/criar?mode=${encodeURIComponent(mode.id)}`;
+            const meta = season?.config?.meta_total;
+
+            return (
+              <Link href={href} className={`hub-mode-row${season ? ' active' : ''}`} key={mode.id}>
+                <span className="hub-mode-icon">{mode.icon}</span>
+                <div>
+                  <strong>SHAMAR {mode.title}</strong>
+                  <em>{statusLabel({ hasSeason: Boolean(season), pendingCount })}</em>
+                  {season?.config ? <small>Meta {formatMoney(meta || 0, { compact: true })}</small> : null}
+                </div>
+                <b>{season ? 'Ver' : 'Criar'}</b>
+              </Link>
+            );
+          })}
+        </div>
       </ShamarCard>
 
-      <section className="shamar-emotional-card">
-        <strong>{identityLabel(indexData?.identity_level || season.identity_level)}</strong>
-        <p>{emotionalTrigger(progress, indexData)}</p>
-      </section>
-
-      <Link href="/shamar/encerramento" className="shamar-closing-link">
-        Encerrar temporada
-      </Link>
-
-      <Link href="/shamar/aporte/novo" className="shamar-cta">
-        + Registrar Aporte
-      </Link>
-
-      <ShamarCard title="Aportes recentes">
-        {recentContributions.length > 0 ? (
-          <div className="shamar-recent-list">
-            {recentContributions.map((item) => (
-              <div className="shamar-recent-item" key={item.id}>
+      {invites.incoming?.length > 0 ? (
+        <ShamarCard title="Convites recebidos">
+          <div className="hub-invite-list">
+            {invites.incoming.map((invite) => (
+              <Link href={`/shamar/convites?token=${encodeURIComponent(invite.token)}`} className="hub-invite-row" key={invite.id}>
                 <div>
-                  <strong>{formatMoney(item.amount)}</strong>
-                  <span>{item.observation || 'Aporte registrado'}</span>
+                  <strong>{inviteModeLabel(invite.mode)}</strong>
+                  <span>{invite.inviter?.name || 'Alguém'} convidou você para construir patrimônio junto.</span>
                 </div>
-                <time>{item.contributed_at}</time>
+                <b>Aceitar</b>
+              </Link>
+            ))}
+          </div>
+        </ShamarCard>
+      ) : null}
+
+      <ShamarCard title="Convites enviados">
+        {invitesError ? <p className="hub-muted">{invitesError}</p> : null}
+        {inviteNotice ? <p className="hub-notice">{inviteNotice}</p> : null}
+        {!invitesError && invites.outgoing?.length === 0 ? (
+          <p className="hub-muted">Nenhum convite enviado ainda.</p>
+        ) : null}
+        {!invitesError && invites.outgoing?.length > 0 ? (
+          <div className="hub-outgoing-list">
+            {invites.outgoing.slice(0, 6).map((invite) => (
+              <div className="hub-outgoing-row" key={invite.id}>
+                <div>
+                  <strong>{invite.invited_email}</strong>
+                  <span>{inviteModeLabel(invite.mode)} · {invite.status === 'accepted' ? 'Aceito' : 'Pendente'}</span>
+                </div>
+                <div className="hub-outgoing-actions">
+                  <b className={invite.email_sent ? 'sent' : 'failed'}>
+                    {invite.email_sent ? 'Enviado' : invite.email_error || 'Falhou'}
+                  </b>
+                  {invite.status === 'pending' ? (
+                    <button type="button" onClick={() => resendInvite(invite.id)} disabled={resendingInviteId === invite.id}>
+                      {resendingInviteId === invite.id ? 'Enviando...' : 'Reenviar'}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="shamar-inline-muted">Nenhum aporte registrado ainda.</p>
-        )}
+        ) : null}
       </ShamarCard>
 
-      <style jsx>{`
-        :global(.shamar-card-link) {
-          color: var(--shamar-dark);
-          font-size: 12px;
-          font-weight: 800;
-        }
+      <button type="button" className="hub-refresh" onClick={() => {
+        refresh();
+        loadInvites();
+      }}>
+        Atualizar SHAMAR
+      </button>
 
-        .shamar-emotional-card {
-          border: 1px solid rgba(27, 94, 32, 0.15);
-          background: var(--shamar-dim);
-          border-radius: var(--radius-xl);
-          padding: 16px;
-          margin-bottom: 14px;
-        }
-
-        .shamar-emotional-card strong {
-          display: block;
-          color: var(--shamar-dark);
-          font-size: 12px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
-          margin-bottom: 4px;
-        }
-
-        .shamar-emotional-card p,
-        .shamar-inline-muted {
-          margin: 0;
-          color: var(--text2);
-          font-size: 13px;
-          line-height: 1.6;
-        }
-
-        .shamar-cta {
-          display: flex;
+      <style jsx global>{`
+        .hub-card-action {
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 100%;
-          border-radius: var(--radius-md);
+          min-width: 84px;
+          border-radius: 999px;
           background: var(--shamar-dark);
+          font-size: 13px;
+          font-weight: 900;
+          padding: 9px 14px;
+          text-align: center;
           color: white;
-          font-weight: 900;
-          padding: 14px 18px;
-          margin-bottom: 14px;
-          box-shadow: 0 4px 16px rgba(27, 94, 32, 0.24);
         }
 
-        .shamar-closing-link {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          border: 1px solid color-mix(in srgb, var(--shamar-gold) 55%, transparent);
-          border-radius: var(--radius-md);
-          background: color-mix(in srgb, var(--shamar-gold) 12%, transparent);
-          color: #7a5a00;
-          font-weight: 900;
-          padding: 12px 16px;
-          margin-bottom: 10px;
-        }
-
-        .shamar-recent-list {
+        .hub-mode-list,
+        .hub-invite-list,
+        .hub-outgoing-list {
           display: grid;
           gap: 10px;
         }
 
-        .shamar-recent-item {
-          display: flex;
-          justify-content: space-between;
+        .hub-mode-list {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: stretch;
+        }
+
+        .hub-mode-row,
+        .hub-invite-row,
+        .hub-outgoing-row {
+          display: grid;
           align-items: center;
           gap: 12px;
-          border-bottom: 1px solid var(--border);
-          padding-bottom: 10px;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg2);
+          padding: 12px;
         }
 
-        .shamar-recent-item:last-child {
-          border-bottom: 0;
-          padding-bottom: 0;
+        .hub-mode-row {
+          min-height: 172px;
+          grid-template-columns: 1fr;
+          justify-items: center;
+          align-content: center;
+          text-align: center;
         }
 
-        .shamar-recent-item strong {
+        .hub-invite-row,
+        .hub-outgoing-row {
+          grid-template-columns: 1fr auto;
+        }
+
+        .hub-mode-row.active {
+          border-color: rgba(27, 94, 32, 0.22);
+          background: var(--shamar-dim);
+        }
+
+        .hub-mode-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--border);
+          background: white;
+          font-size: 20px;
+        }
+
+        .hub-mode-row > div {
+          display: grid;
+          justify-items: center;
+          gap: 5px;
+        }
+
+        .hub-mode-row strong,
+        .hub-invite-row strong,
+        .hub-outgoing-row strong {
           display: block;
-          color: var(--shamar-dark);
-          font-family: var(--font-mono);
-          font-size: 14px;
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+          line-height: 1.2;
         }
 
-        .shamar-recent-item span,
-        .shamar-recent-item time {
+        .hub-mode-row em,
+        .hub-invite-row span,
+        .hub-outgoing-row span,
+        .hub-muted,
+        .hub-notice {
           display: block;
           color: var(--text3);
           font-size: 11px;
+          font-style: normal;
+          line-height: 1.45;
+          margin: 0;
+        }
+
+        .hub-mode-row em,
+        .hub-mode-row small {
+          border-radius: 999px;
+          padding: 4px 8px;
+          font-style: normal;
+          font-size: 10px;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+
+        .hub-mode-row em {
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
+        }
+
+        .hub-mode-row small {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          color: var(--text2);
+        }
+
+        .hub-mode-row b,
+        .hub-invite-row b {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 76px;
+          border-radius: 999px;
+          background: var(--shamar-dark);
+          font-size: 12px;
+          font-weight: 900;
+          padding: 8px 12px;
+          color: white;
+        }
+
+        .hub-outgoing-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .hub-outgoing-row b,
+        .hub-outgoing-actions button {
+          border-radius: 999px;
+          padding: 5px 8px;
+          font-size: 10px;
+          font-weight: 900;
+        }
+
+        .hub-outgoing-actions button {
+          border: 1px solid var(--shamar-dark);
+          background: var(--shamar-dark);
+          color: white;
+          cursor: pointer;
+        }
+
+        .hub-outgoing-actions button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .hub-outgoing-row b.sent {
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
+        }
+
+        .hub-outgoing-row b.failed {
+          background: rgba(229, 57, 53, 0.1);
+          color: var(--red);
+        }
+
+        .hub-notice {
+          border-radius: 10px;
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
+          font-weight: 900;
+          padding: 9px 10px;
+          margin-bottom: 10px;
+        }
+
+        .hub-refresh {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--bg-card);
+          color: var(--text2);
+          font-weight: 900;
+          padding: 12px 14px;
+          margin-bottom: 14px;
+        }
+
+        @media (max-width: 760px) {
+          .hub-mode-list {
+            grid-template-columns: 1fr;
+          }
+
+          .hub-mode-row {
+            min-height: 0;
+          }
+
+          .hub-outgoing-row,
+          .hub-invite-row {
+            grid-template-columns: 1fr;
+          }
+
+          .hub-outgoing-actions {
+            justify-content: center;
+          }
         }
       `}</style>
     </ShamarShell>

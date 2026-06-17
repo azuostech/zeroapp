@@ -1907,7 +1907,7 @@ export default function FinanceAppPage({
           <section className="home-quick-access">
             <QuickAccessCard emoji="👥" title="Minha Turma" subtitle="Ver conquistas e desafios" href="/turma" />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
-            <QuickAccessCard emoji="🏆" title="Conquistas" subtitle="ZeroCoins e recompensas" href="/jornada" />
+            <QuickAccessCard emoji="🛡️" title="SHAMAR" subtitle="Ferramenta da jornada" href="/shamar" />
           </section>
         ) : null}
 

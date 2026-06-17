@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { CoinAnimation } from '@/components/gamification/CoinAnimation';
@@ -15,6 +15,7 @@ import {
 } from '@/components/shamar/ShamarUI';
 import { useShamar } from '@/hooks/useShamar';
 import { useShamarBoard } from '@/hooks/useShamarBoard';
+import { modePath } from '@/components/shamar/ShamarModeCreator';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 import { formatMoney, todayInputValue } from '@/src/lib/shamar/formatters';
 
@@ -27,7 +28,8 @@ function parseAmount(value) {
 
 export default function NewShamarContributionPage() {
   const router = useRouter();
-  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar();
+  const [mode, setMode] = useState('');
+  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar(mode);
   const { squares, isLoading: isBoardLoading, refresh: refreshBoard } = useShamarBoard(season?.id);
   const [amountInput, setAmountInput] = useState('');
   const [contributedAt, setContributedAt] = useState(todayInputValue());
@@ -37,6 +39,12 @@ export default function NewShamarContributionPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coinAmount, setCoinAmount] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = params.get('mode') || '';
+    if (['individual', 'dupla', 'tribo'].includes(requestedMode)) setMode(requestedMode);
+  }, []);
 
   const amount = parseAmount(amountInput);
   const availableSquares = useMemo(() => (squares || []).filter((square) => !square.marked), [squares]);
@@ -124,7 +132,7 @@ export default function NewShamarContributionPage() {
         window.dispatchEvent(new Event('zero:coins-updated'));
       }
       await Promise.allSettled([refresh(), refreshBoard()]);
-      setTimeout(() => router.push('/shamar'), 900);
+      setTimeout(() => router.push(mode ? modePath(mode) : '/shamar'), 900);
     } catch (submitError) {
       toast.error(submitError?.message || 'Não foi possível registrar o aporte');
     } finally {
@@ -140,7 +148,7 @@ export default function NewShamarContributionPage() {
     <ShamarShell activeTab="shamar">
       {coinAmount ? <CoinAnimation amount={coinAmount} onComplete={() => setCoinAmount(0)} /> : null}
       <ShamarHeader
-        hrefBack="/shamar"
+        hrefBack={mode ? modePath(mode) : '/shamar'}
         label="Aporte SHAMAR"
         title="+ Registrar Aporte"
         subtitle="Sem comprovante, não conta."

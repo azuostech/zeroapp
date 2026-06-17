@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-export function useShamar() {
+export function useShamar(mode = '') {
   const [season, setSeason] = useState(null);
+  const [seasons, setSeasons] = useState([]);
   const [config, setConfig] = useState(null);
   const [progress, setProgress] = useState(null);
   const [indexData, setIndexData] = useState(null);
@@ -18,7 +19,10 @@ export function useShamar() {
       setIsLoading(true);
       setError(null);
 
-      const res = await fetch('/api/shamar/seasons', { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (mode) params.set('mode', mode);
+      const path = params.toString() ? `/api/shamar/seasons?${params.toString()}` : '/api/shamar/seasons';
+      const res = await fetch(path, { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -27,6 +31,7 @@ export function useShamar() {
 
       const nextSeason = data?.season || null;
       setSeason(nextSeason);
+      setSeasons(Array.isArray(data?.seasons) ? data.seasons : nextSeason ? [nextSeason] : []);
       setConfig(data?.config || nextSeason?.config || null);
       setProgress(data?.progress || null);
       setIndexData(data?.index || data?.progress?.current_index || null);
@@ -35,6 +40,7 @@ export function useShamar() {
       setUnlockProgress(data?.unlock_progress || null);
     } catch (fetchError) {
       setSeason(null);
+      setSeasons([]);
       setConfig(null);
       setProgress(null);
       setIndexData(null);
@@ -45,7 +51,7 @@ export function useShamar() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     fetchSeason();
@@ -53,6 +59,7 @@ export function useShamar() {
 
   return {
     season,
+    seasons,
     config,
     progress,
     indexData,

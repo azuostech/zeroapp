@@ -3,7 +3,6 @@ import {
   PROOF_ALLOWED_CONTENT_TYPES,
   createAuthenticatedContext,
   jsonError,
-  loadShamarProfile,
   parseJsonBody,
   sanitizeFilename
 } from '@/src/lib/shamar/api';
@@ -14,15 +13,6 @@ export async function POST(request) {
 
   const parsed = await parseJsonBody(request);
   if (parsed.error) return parsed.error;
-
-  const { profile, error: profileError } = await loadShamarProfile(context.supabase, context.user.id);
-  if (profileError) {
-    return NextResponse.json({ error: profileError }, { status: 500 });
-  }
-
-  if (!profile?.shamar_unlocked) {
-    return jsonError('shamar_bloqueado_para_usuario', 403);
-  }
 
   const filename = sanitizeFilename(parsed.body?.filename);
   const contentType = String(parsed.body?.content_type || '').trim().toLowerCase();

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
   ShamarCard,
@@ -13,7 +14,7 @@ import { useShamar } from '@/hooks/useShamar';
 import { formatMoney, formatPercent, identityLabel } from '@/src/lib/shamar/formatters';
 
 export default function ShamarTriboPage() {
-  const { season, config, locked, unlockProgress, error, isLoading } = useShamar();
+  const { season, config, locked, unlockProgress, error, isLoading } = useShamar('tribo');
   const [tribo, setTribo] = useState(null);
   const [triboError, setTriboError] = useState(null);
   const [isTriboLoading, setIsTriboLoading] = useState(false);
@@ -50,6 +51,52 @@ export default function ShamarTriboPage() {
   if (isLoading) return <ShamarLoading />;
   if (locked) return <ShamarLockedState unlockProgress={unlockProgress} />;
   if (error) return <ShamarSetupError error={error} />;
+
+  if (!season) {
+    return (
+      <ShamarShell activeTab="tribo">
+        <ShamarHeader
+          hrefBack="/shamar"
+          label="SHAMAR Tribo"
+          title="Tribo"
+          subtitle="Você ainda não tem uma Tribo ativa."
+          stats={[
+            { label: 'Pessoas', value: '3+' },
+            { label: 'Status', value: 'Livre' },
+            { label: 'Controle', value: 'Individual' }
+          ]}
+        />
+        <ShamarCard title="Criar Tribo">
+          <div className="tribo-empty">
+            <p>Crie uma Tribo convidando pelo menos duas pessoas. Cada participante terá o próprio tabuleiro após aceitar.</p>
+            <Link href="/shamar/criar?mode=tribo">Criar SHAMAR Tribo</Link>
+          </div>
+        </ShamarCard>
+        <style jsx>{`
+          .tribo-empty {
+            display: grid;
+            gap: 12px;
+          }
+
+          .tribo-empty p {
+            margin: 0;
+            color: var(--text2);
+            font-size: 13px;
+            line-height: 1.6;
+          }
+
+          .tribo-empty a {
+            border-radius: var(--radius-md);
+            background: var(--shamar-dark);
+            color: white;
+            font-weight: 900;
+            padding: 13px 16px;
+            text-align: center;
+          }
+        `}</style>
+      </ShamarShell>
+    );
+  }
 
   const stats = tribo?.stats || {};
   const ranking = tribo?.ranking || [];

@@ -13,13 +13,21 @@ import {
 } from '@/components/shamar/ShamarUI';
 import { useShamar } from '@/hooks/useShamar';
 import { useShamarBoard } from '@/hooks/useShamarBoard';
+import { modePath } from '@/components/shamar/ShamarModeCreator';
 import { formatMoney, formatPercent } from '@/src/lib/shamar/formatters';
 
 export default function ShamarBoardPage() {
-  const { season, config, locked, unlockProgress, error, isLoading } = useShamar();
+  const [mode, setMode] = useState('');
+  const { season, config, locked, unlockProgress, error, isLoading } = useShamar(mode);
   const { squares, stats, isLoading: isBoardLoading } = useShamarBoard(season?.id);
   const [contributionsById, setContributionsById] = useState(new Map());
   const [selectedSquare, setSelectedSquare] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = params.get('mode') || '';
+    if (['individual', 'dupla', 'tribo'].includes(requestedMode)) setMode(requestedMode);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -59,7 +67,7 @@ export default function ShamarBoardPage() {
   return (
     <ShamarShell activeTab="shamar">
       <ShamarHeader
-        hrefBack="/shamar"
+        hrefBack={mode ? modePath(mode) : '/shamar'}
         label="Tabuleiro SHAMAR"
         title="🟩 Tabuleiro"
         subtitle={`Turma ${config?.turma || 'SHAMAR'} · ${Number(stats?.marked || 0)} marcados · ${formatMoney(config?.meta_total || stats?.sum_total || 0)} total`}

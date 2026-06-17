@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   createAuthenticatedContext,
+  getShamarWriterSupabase,
   normalizeId,
   resolveShamarDbError,
   roundMoney,
@@ -40,13 +41,14 @@ export async function GET(request) {
     return NextResponse.json({ error: 'temporada_nao_encontrada' }, { status: 404 });
   }
 
+  const supabase = getShamarWriterSupabase(context.supabase);
   const [squaresResult, markedResult] = await Promise.all([
-    context.supabase
+    supabase
       .from('shamar_board_squares')
       .select('id,position,value,category')
       .eq('tribo_config_id', season.tribo_config_id)
       .order('position', { ascending: true }),
-    context.supabase
+    supabase
       .from('shamar_marked_squares')
       .select('square_id,contribution_id,marked_at')
       .eq('season_id', season.id)
@@ -65,7 +67,7 @@ export async function GET(request) {
     const marked = markedBySquare.get(square.id);
     return {
       ...square,
-      value: toNumber(square.value),
+      value: toNumber(square.position || square.value),
       marked: Boolean(marked),
       contribution_id: marked?.contribution_id || null,
       marked_at: marked?.marked_at || null
