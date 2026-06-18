@@ -114,6 +114,8 @@ async function loadJourneys(supabase, requestUrl) {
   const contributionTotals = new Map();
   const markedCounts = new Map();
   const invitesByConfigAndInviter = new Map();
+  const invitesByConfig = new Map();
+  const participantsByConfig = new Map();
 
   for (const contribution of contributionsResult.data || []) {
     contributionTotals.set(
@@ -128,13 +130,35 @@ async function loadJourneys(supabase, requestUrl) {
 
   for (const invite of invitesResult.data || []) {
     const key = `${invite.tribo_config_id}:${invite.inviter_user_id}`;
-    const list = invitesByConfigAndInviter.get(key) || [];
-    list.push({
+    const enrichedInvite = {
       ...invite,
       accept_url: acceptUrl(requestUrl, invite.token),
       email_sent: Boolean(invite.email_sent_at)
-    });
+    };
+    const list = invitesByConfigAndInviter.get(key) || [];
+    list.push(enrichedInvite);
     invitesByConfigAndInviter.set(key, list);
+
+    const configList = invitesByConfig.get(invite.tribo_config_id) || [];
+    configList.push(enrichedInvite);
+    invitesByConfig.set(invite.tribo_config_id, configList);
+  }
+
+  for (const season of seasonRows) {
+    if (season.status !== 'active') continue;
+    const profile = profilesById.get(season.user_id) || null;
+    const config = configsById.get(season.tribo_config_id) || null;
+    const list = participantsByConfig.get(season.tribo_config_id) || [];
+    list.push({
+      season_id: season.id,
+      user_id: season.user_id,
+      name: profileName(profile),
+      email: profile?.email || null,
+      status: season.status,
+      is_creator: Boolean(config?.created_by && config.created_by === season.user_id),
+      current_row_user: false
+    });
+    participantsByConfig.set(season.tribo_config_id, list);
   }
 
   return seasonRows.map((season) => {
@@ -164,7 +188,16 @@ async function loadJourneys(supabase, requestUrl) {
         contributions_total: toNumber(contributionTotals.get(season.id)),
         squares_marked: Number(markedCounts.get(season.id) || 0)
       },
-      invites: invitesByConfigAndInviter.get(invitesKey) || []
+      invites: invitesByConfigAndInviter.get(invitesKey) || [],
+      tribo: mode === 'tribo'
+        ? {
+            participants: (participantsByConfig.get(season.tribo_config_id) || []).map((participant) => ({
+              ...participant,
+              current_row_user: participant.user_id === season.user_id
+            })),
+            pending_invites: (invitesByConfig.get(season.tribo_config_id) || []).filter((invite) => invite.status === 'pending')
+          }
+        : null
     };
   });
 }

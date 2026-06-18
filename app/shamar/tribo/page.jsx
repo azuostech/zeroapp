@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BoardGrid,
   CategoryLegend,
@@ -24,35 +24,154 @@ export default function ShamarTriboPage() {
   const [tribo, setTribo] = useState(null);
   const [triboError, setTriboError] = useState(null);
   const [isTriboLoading, setIsTriboLoading] = useState(false);
+  const [triboName, setTriboName] = useState('');
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [manageMessage, setManageMessage] = useState('');
+  const [savingManageAction, setSavingManageAction] = useState('');
+  const [resendingInviteId, setResendingInviteId] = useState('');
+  const [copyingInviteId, setCopyingInviteId] = useState('');
+
+  const loadTribo = useCallback(async () => {
+    if (!season?.tribo_config_id) {
+      setTribo(null);
+      return;
+    }
+
+    setIsTriboLoading(true);
+    setTriboError(null);
+
+    try {
+      const res = await fetch(`/api/shamar/tribo?tribo_config_id=${encodeURIComponent(season.tribo_config_id)}`, { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'shamar_tribo_fetch_failed');
+      setTribo(data);
+      setTriboName(data?.config?.turma || '');
+    } catch (fetchError) {
+      setTribo(null);
+      setTriboError(fetchError?.message || 'shamar_tribo_fetch_failed');
+    } finally {
+      setIsTriboLoading(false);
+    }
+  }, [season?.tribo_config_id]);
 
   useEffect(() => {
-    let active = true;
-
-    const loadTribo = async () => {
-      if (!season?.tribo_config_id) return;
-      setIsTriboLoading(true);
-      setTriboError(null);
-
-      try {
-        const res = await fetch(`/api/shamar/tribo?tribo_config_id=${encodeURIComponent(season.tribo_config_id)}`, { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || 'shamar_tribo_fetch_failed');
-        if (active) setTribo(data);
-      } catch (fetchError) {
-        if (active) {
-          setTribo(null);
-          setTriboError(fetchError?.message || 'shamar_tribo_fetch_failed');
-        }
-      } finally {
-        if (active) setIsTriboLoading(false);
-      }
-    };
-
     loadTribo();
-    return () => {
-      active = false;
-    };
-  }, [season?.tribo_config_id]);
+  }, [loadTribo]);
+
+  const manageTribo = async ({ method, body, successMessage, resetInvites = false, afterSuccess = null }) => {
+    if (!season?.tribo_config_id) return;
+    setSavingManageAction(body?.action || method);
+    setManageMessage('');
+
+    try {
+      const res = await fetch('/api/shamar/tribo', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tribo_config_id: season.tribo_config_id,
+          ...body
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'shamar_tribo_manage_failed');
+      setManageMessage(successMessage);
+      if (resetInvites) setInviteEmails('');
+      if (afterSuccess) {
+        await afterSuccess(data);
+      } else {
+        await loadTribo();
+      }
+    } catch (manageError) {
+      setManageMessage(manageError?.message || 'Não foi possível atualizar a TRIBO.');
+    } finally {
+      setSavingManageAction('');
+    }
+  };
+
+  const saveTriboName = () => {
+    manageTribo({
+      method: 'PATCH',
+      body: { turma: triboName },
+      successMessage: 'Nome da TRIBO atualizado.'
+    });
+  };
+
+  const inviteParticipants = () => {
+    manageTribo({
+      method: 'POST',
+      body: { action: 'invite', invite_emails: inviteEmails },
+      successMessage: 'Convites enviados para a TRIBO.',
+      resetInvites: true
+    });
+  };
+
+  const removeParticipant = (participant) => {
+    const ok = window.confirm(`Remover ${participant.name || participant.email || 'participante'} desta TRIBO? O histórico de aportes será preservado.`);
+    if (!ok) return;
+    manageTribo({
+      method: 'DELETE',
+      body: { action: 'remove_participant', season_id: participant.season_id },
+      successMessage: 'Participante removido da TRIBO.'
+    });
+  };
+
+  const cancelInvite = (invite) => {
+    manageTribo({
+      method: 'DELETE',
+      body: { action: 'cancel_invite', invite_id: invite.id },
+      successMessage: 'Convite cancelado.'
+    });
+  };
+
+  const resendInvite = async (invite) => {
+    setResendingInviteId(invite.id);
+    setManageMessage('');
+
+    try {
+      const res = await fetch('/api/shamar/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'resend',
+          invite_id: invite.id
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'shamar_invite_resend_failed');
+      setManageMessage(`Email reenviado para ${invite.invited_email}.`);
+      await loadTribo();
+    } catch (resendError) {
+      setManageMessage(resendError?.message || 'Não foi possível reenviar o convite.');
+    } finally {
+      setResendingInviteId('');
+    }
+  };
+
+  const copyInviteLink = async (invite) => {
+    setCopyingInviteId(invite.id);
+    setManageMessage('');
+
+    try {
+      if (!invite.accept_url) throw new Error('Link indisponível para este convite.');
+      await navigator.clipboard.writeText(invite.accept_url);
+      setManageMessage('Link do convite copiado.');
+    } catch (copyError) {
+      setManageMessage(copyError?.message || 'Não foi possível copiar o link.');
+    } finally {
+      setCopyingInviteId('');
+    }
+  };
+
+  const closeTribe = () => {
+    const ok = window.confirm('Encerrar esta TRIBO para todos os participantes? Essa ação preserva o histórico e cancela convites pendentes.');
+    if (!ok) return;
+    manageTribo({
+      method: 'DELETE',
+      body: { action: 'close_tribe' },
+      successMessage: 'TRIBO encerrada.',
+      afterSuccess: () => router.push('/shamar')
+    });
+  };
 
   if (isLoading) return <ShamarLoading />;
   if (locked) return <ShamarLockedState unlockProgress={unlockProgress} />;
@@ -107,6 +226,9 @@ export default function ShamarTriboPage() {
   const stats = tribo?.stats || {};
   const ranking = tribo?.ranking || [];
   const feed = tribo?.feed || [];
+  const participants = tribo?.participants || [];
+  const pendingInvites = tribo?.pending_invites || [];
+  const canManageTribo = Boolean(tribo?.permissions?.can_manage);
   const modeQuery = 'mode=tribo';
   const markedSquares = Number(progress?.squares_marked || boardStats?.marked || 0);
   const totalSquares = Number(progress?.squares_total || boardStats?.total || 0);
@@ -228,6 +350,84 @@ export default function ShamarTriboPage() {
         </div>
       </ShamarCard>
 
+      {canManageTribo ? (
+        <ShamarCard title="Gerenciar TRIBO">
+          <div className="tribo-manage">
+            {manageMessage ? <p className="tribo-manage-message">{manageMessage}</p> : null}
+
+            <div className="tribo-manage-grid">
+              <label>
+                <span>Nome da TRIBO</span>
+                <input value={triboName} onChange={(event) => setTriboName(event.target.value)} />
+              </label>
+              <button type="button" onClick={saveTriboName} disabled={Boolean(savingManageAction)}>
+                {savingManageAction === 'PATCH' ? 'Salvando...' : 'Salvar nome'}
+              </button>
+            </div>
+
+            <div className="tribo-manage-grid">
+              <label>
+                <span>Adicionar participantes</span>
+                <input
+                  value={inviteEmails}
+                  onChange={(event) => setInviteEmails(event.target.value)}
+                  placeholder="email1@exemplo.com, email2@exemplo.com"
+                />
+              </label>
+              <button type="button" onClick={inviteParticipants} disabled={Boolean(savingManageAction)}>
+                {savingManageAction === 'invite' ? 'Enviando...' : 'Enviar convites'}
+              </button>
+            </div>
+
+            <div className="tribo-manage-list">
+              <strong>Participantes</strong>
+              {participants.length === 0 ? <p className="tribo-muted">Nenhum participante ativo.</p> : null}
+              {participants.map((participant) => (
+                <div className="tribo-manage-row" key={participant.season_id}>
+                  <div>
+                    <span>{participant.name}</span>
+                    <em>{participant.email || 'Email não encontrado'}{participant.is_creator ? ' · criador' : ''}</em>
+                  </div>
+                  {!participant.is_creator ? (
+                    <button type="button" onClick={() => removeParticipant(participant)} disabled={Boolean(savingManageAction)}>
+                      Remover
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            <div className="tribo-manage-list">
+              <strong>Convites pendentes</strong>
+              {pendingInvites.length === 0 ? <p className="tribo-muted">Nenhum convite pendente.</p> : null}
+              {pendingInvites.map((invite) => (
+                <div className="tribo-manage-row" key={invite.id}>
+                  <div>
+                    <span>{invite.invited_email}</span>
+                    <em>{invite.email_sent ? 'Email enviado' : invite.email_error || 'Email pendente'}</em>
+                  </div>
+                  <div className="tribo-manage-row-actions">
+                    <button type="button" onClick={() => resendInvite(invite)} disabled={resendingInviteId === invite.id || Boolean(savingManageAction)}>
+                      {resendingInviteId === invite.id ? 'Reenviando...' : 'Reenviar'}
+                    </button>
+                    <button type="button" onClick={() => copyInviteLink(invite)} disabled={copyingInviteId === invite.id || !invite.accept_url}>
+                      {copyingInviteId === invite.id ? 'Copiando...' : 'Copiar link'}
+                    </button>
+                    <button type="button" onClick={() => cancelInvite(invite)} disabled={Boolean(savingManageAction)}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" className="tribo-close-action" onClick={closeTribe} disabled={Boolean(savingManageAction)}>
+              Encerrar TRIBO
+            </button>
+          </div>
+        </ShamarCard>
+      ) : null}
+
       <style jsx>{`
         .tribo-muted {
           margin: 0;
@@ -239,6 +439,128 @@ export default function ShamarTriboPage() {
           color: var(--shamar-dark);
           font-size: 12px;
           font-weight: 800;
+        }
+
+        .tribo-manage {
+          display: grid;
+          gap: 12px;
+        }
+
+        .tribo-manage-message {
+          margin: 0;
+          border-radius: 10px;
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
+          padding: 10px 12px;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .tribo-manage-grid {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 10px;
+          align-items: end;
+        }
+
+        .tribo-manage-grid label {
+          display: grid;
+          gap: 6px;
+        }
+
+        .tribo-manage-grid span {
+          color: var(--text2);
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .tribo-manage-grid input {
+          width: 100%;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--bg2);
+          color: var(--text);
+          padding: 12px;
+          font: inherit;
+          font-size: 13px;
+        }
+
+        .tribo-manage-grid button,
+        .tribo-manage-row button,
+        .tribo-close-action {
+          border: 1px solid rgba(27, 94, 32, 0.22);
+          border-radius: 10px;
+          background: var(--shamar-dim);
+          color: var(--shamar-dark);
+          padding: 11px 13px;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+
+        .tribo-manage-list {
+          display: grid;
+          gap: 8px;
+          border-top: 1px solid var(--border);
+          padding-top: 12px;
+        }
+
+        .tribo-manage-list > strong {
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .tribo-manage-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 10px;
+          align-items: center;
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          background: var(--bg2);
+          padding: 10px;
+        }
+
+        .tribo-manage-row span,
+        .tribo-manage-row em {
+          display: block;
+        }
+
+        .tribo-manage-row span {
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .tribo-manage-row em {
+          color: var(--text3);
+          font-size: 11px;
+          font-style: normal;
+          margin-top: 2px;
+        }
+
+        .tribo-manage-row-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .tribo-close-action {
+          border-color: color-mix(in srgb, var(--red) 35%, transparent);
+          background: color-mix(in srgb, var(--red) 8%, transparent);
+          color: var(--red);
+        }
+
+        .tribo-manage-grid button:disabled,
+        .tribo-manage-row button:disabled,
+        .tribo-close-action:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
         }
 
         .tribo-board-summary {
@@ -473,8 +795,18 @@ export default function ShamarTriboPage() {
 
         @media (max-width: 560px) {
           .tribo-board-summary,
-          .tribo-board-actions {
+          .tribo-board-actions,
+          .tribo-manage-grid,
+          .tribo-manage-row {
             grid-template-columns: 1fr;
+          }
+
+          .tribo-manage-row-actions {
+            justify-content: stretch;
+          }
+
+          .tribo-manage-row-actions button {
+            flex: 1;
           }
         }
       `}</style>

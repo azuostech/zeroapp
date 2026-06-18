@@ -5,10 +5,72 @@ Branch atual: main
 Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
 
 ## Resumo atual
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial e tabuleiro individual tambem na Tribo.
-- Ultimo commit publicado em `origin/main`: `f438abe` (`feat(shamar): envia email ao registrar aporte`).
-- `npm run build` passou apos o ultimo push.
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo e gestao de participantes da TRIBO pelo criador/admin.
+- Commit anterior a esta rodada publicado em `origin/main`: `f438abe` (`feat(shamar): envia email ao registrar aporte`).
+- `npm run build` passou nesta rodada antes do commit/push.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-17 — Gestao de participantes da TRIBO
+
+### Objetivo
+Permitir que o criador responsavel pela TRIBO gerencie a propria jornada coletiva e que o administrador tenha a mesma gestao na tela de edicao da jornada SHAMAR.
+
+### O que foi implementado
+1. API de gestao da TRIBO
+- `app/api/shamar/tribo/route.js` agora aceita:
+  - `POST` com `action=invite` para adicionar novos convites por email.
+  - `PATCH` para editar o nome/turma da TRIBO.
+  - `DELETE` com `action=remove_participant` para remover participante ativo preservando historico (`status='abandoned'`).
+  - `DELETE` com `action=cancel_invite` para cancelar convite pendente.
+  - `DELETE` com `action=close_tribe` para encerrar a TRIBO, abandonar temporadas ativas e cancelar convites pendentes.
+- O criador (`shamar_tribo_configs.created_by`) e admins podem gerenciar.
+- Remocao do criador como participante individual fica bloqueada; para isso existe encerramento da TRIBO.
+- Convites novos continuam usando o template elegante de convite SHAMAR e registram `accept_url`/status de envio.
+
+2. Tela do criador em `/shamar/tribo`
+- Card `Gerenciar TRIBO` aparece apenas para quem pode gerenciar.
+- Acoes disponiveis:
+  - editar nome da TRIBO;
+  - adicionar participantes por email;
+  - remover participantes nao criadores;
+  - reenviar email de convite;
+  - copiar link direto de aceite;
+  - cancelar convite pendente;
+  - encerrar TRIBO.
+- Ao encerrar, a tela redireciona para `/shamar` para evitar manter a pessoa em uma jornada finalizada.
+
+3. Admin em `/admin/shamar`
+- A listagem de jornadas agora enriquece jornadas `tribo` com:
+  - participantes ativos da config;
+  - convites pendentes da config.
+- Dentro da edicao de uma jornada TRIBO, o admin pode:
+  - adicionar participantes por email;
+  - remover participantes nao criadores;
+  - reenviar convite;
+  - copiar link direto;
+  - cancelar convite pendente.
+
+4. Migração RLS
+- Novo script: `scripts/migrate-shamar-tribo-management-rls.sql`.
+- Policies adicionadas para o criador conseguir:
+  - ler/editar a propria `shamar_tribo_configs`;
+  - ler/inserir/atualizar `shamar_invites` da propria TRIBO;
+  - ler/atualizar `shamar_seasons` vinculadas a propria TRIBO.
+- Executar este script no Supabase SQL Editor se a API estiver usando client autenticado sem service role valida.
+
+### Arquivos alterados
+- `app/api/shamar/tribo/route.js`
+- `app/shamar/tribo/page.jsx`
+- `app/api/admin/shamar/journeys/route.js`
+- `app/admin/shamar/page.jsx`
+- `scripts/migrate-shamar-tribo-management-rls.sql`
+- `CLAUDE_HANDOFF.md`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
+- Tentativa de browser interno nao foi possivel porque `iab` estava indisponivel.
+- Dev server subiu em `3001` com permissao, mas o ambiente nao conseguiu conectar via loopback; a validacao objetiva ficou pela build de producao.
 
 ## Historico anterior — Home Hub + Navegacao v2 + Perfil Dedicado
 

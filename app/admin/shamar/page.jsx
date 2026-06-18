@@ -85,6 +85,8 @@ export default function AdminShamarPage() {
   const [savingJourney, setSavingJourney] = useState(false);
   const [resendingInviteId, setResendingInviteId] = useState('');
   const [copyingInviteId, setCopyingInviteId] = useState('');
+  const [triboInviteInputs, setTriboInviteInputs] = useState({});
+  const [savingTriboAdminAction, setSavingTriboAdminAction] = useState('');
   const [message, setMessage] = useState('');
 
   const preview = useMemo(() => {
@@ -297,6 +299,69 @@ export default function AdminShamarPage() {
     } finally {
       setCopyingInviteId('');
     }
+  };
+
+  const updateTriboInviteInput = (configId, value) => {
+    setTriboInviteInputs((current) => ({ ...current, [configId]: value }));
+  };
+
+  const runTriboAdminAction = async ({ journey, method, body, successMessage, resetInviteInput = false }) => {
+    const configId = journey.config?.id || journey.season?.tribo_config_id;
+    if (!configId) {
+      setMessage('Configuração da TRIBO não encontrada.');
+      return;
+    }
+
+    setSavingTriboAdminAction(`${body?.action || method}:${configId}`);
+    setMessage('');
+    try {
+      await apiRequest('/api/shamar/tribo', {
+        method,
+        body: JSON.stringify({
+          tribo_config_id: configId,
+          ...body
+        })
+      });
+      if (resetInviteInput) updateTriboInviteInput(configId, '');
+      setMessage(successMessage);
+      await Promise.all([loadJourneys(), loadConfigs()]);
+    } catch (error) {
+      setMessage(error.message || 'Erro ao gerenciar TRIBO');
+    } finally {
+      setSavingTriboAdminAction('');
+    }
+  };
+
+  const inviteTriboParticipants = (journey) => {
+    const configId = journey.config?.id || journey.season?.tribo_config_id;
+    const emails = triboInviteInputs[configId] || '';
+    runTriboAdminAction({
+      journey,
+      method: 'POST',
+      body: { action: 'invite', invite_emails: emails },
+      successMessage: 'Convites enviados para a TRIBO.',
+      resetInviteInput: true
+    });
+  };
+
+  const removeTriboParticipant = (journey, participant) => {
+    const ok = window.confirm(`Remover ${participant.name || participant.email || 'participante'} desta TRIBO? O histórico será preservado.`);
+    if (!ok) return;
+    runTriboAdminAction({
+      journey,
+      method: 'DELETE',
+      body: { action: 'remove_participant', season_id: participant.season_id },
+      successMessage: 'Participante removido da TRIBO.'
+    });
+  };
+
+  const cancelTriboInvite = (journey, invite) => {
+    runTriboAdminAction({
+      journey,
+      method: 'DELETE',
+      body: { action: 'cancel_invite', invite_id: invite.id },
+      successMessage: 'Convite da TRIBO cancelado.'
+    });
   };
 
   return (
@@ -555,6 +620,67 @@ export default function AdminShamarPage() {
                       </button>
                       <button type="button" onClick={cancelEditJourney}>Cancelar</button>
                     </div>
+
+                    {journey.mode === 'tribo' ? (
+                      <div className="admin-tribo-manager">
+                        <h4>Participantes da TRIBO</h4>
+                        <div className="admin-tribo-invite">
+                          <input
+                            value={triboInviteInputs[journey.config?.id] || ''}
+                            onChange={(event) => updateTriboInviteInput(journey.config?.id, event.target.value)}
+                            placeholder="email1@exemplo.com, email2@exemplo.com"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => inviteTriboParticipants(journey)}
+                            disabled={Boolean(savingTriboAdminAction)}
+                          >
+                            Adicionar
+                          </button>
+                        </div>
+
+                        <div className="admin-tribo-list">
+                          {(journey.tribo?.participants || []).map((participant) => (
+                            <div className="admin-tribo-row" key={participant.season_id}>
+                              <div>
+                                <strong>{participant.name}</strong>
+                                <span>{participant.email || 'Email não encontrado'}{participant.is_creator ? ' · criador' : ''}</span>
+                              </div>
+                              {!participant.is_creator ? (
+                                <button type="button" onClick={() => removeTriboParticipant(journey, participant)} disabled={Boolean(savingTriboAdminAction)}>
+                                  Remover
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+
+                        {(journey.tribo?.pending_invites || []).length > 0 ? (
+                          <div className="admin-tribo-list">
+                            <h4>Convites pendentes</h4>
+                            {(journey.tribo?.pending_invites || []).map((invite) => (
+                              <div className="admin-tribo-row" key={invite.id}>
+                                <div>
+                                  <strong>{invite.invited_email}</strong>
+                                  <span>{invite.email_sent ? 'Email enviado' : invite.email_error || 'Email pendente'}</span>
+                                </div>
+                                <div className="admin-tribo-row-actions">
+                                  <button type="button" onClick={() => resendInvite(invite)} disabled={resendingInviteId === invite.id}>
+                                    Reenviar
+                                  </button>
+                                  <button type="button" onClick={() => copyInviteLink(invite)} disabled={copyingInviteId === invite.id || !invite.accept_url}>
+                                    {copyingInviteId === invite.id ? 'Copiando...' : 'Copiar link'}
+                                  </button>
+                                  <button type="button" onClick={() => cancelTriboInvite(journey, invite)} disabled={Boolean(savingTriboAdminAction)}>
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -923,6 +1049,69 @@ export default function AdminShamarPage() {
           align-self: end;
         }
 
+        .admin-tribo-manager {
+          grid-column: 1 / -1;
+          border-top: 1px solid var(--border-green);
+          padding-top: 12px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .admin-tribo-manager h4 {
+          margin: 0;
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .admin-tribo-invite {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .admin-tribo-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .admin-tribo-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          align-items: center;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          background: var(--bg-card);
+          padding: 10px;
+        }
+
+        .admin-tribo-row strong,
+        .admin-tribo-row span {
+          display: block;
+        }
+
+        .admin-tribo-row strong {
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .admin-tribo-row span {
+          color: var(--text-2);
+          font-size: 11px;
+          margin-top: 3px;
+        }
+
+        .admin-tribo-row-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
         .actions .danger {
           border-color: color-mix(in srgb, var(--red) 35%, transparent);
           color: var(--red);
@@ -983,7 +1172,9 @@ export default function AdminShamarPage() {
           .journey-filters,
           .journey-main,
           .invite-admin-row,
-          .journey-edit {
+          .journey-edit,
+          .admin-tribo-invite,
+          .admin-tribo-row {
             grid-template-columns: 1fr;
           }
 
