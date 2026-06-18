@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const INITIAL_FORM = {
@@ -43,23 +43,53 @@ function resolveError(response, payload, fallback) {
   return `${fallback} (${response.status})`;
 }
 
-export default function ProgramAdminForm() {
+function buildInitialForm(program) {
+  if (!program) return INITIAL_FORM;
+  return {
+    title: String(program.title || ''),
+    description: String(program.description || ''),
+    thumbnail_url: String(program.thumbnail_url || ''),
+    tier_required: String(program.tier_required || 'LIVRE'),
+    turma_exclusiva: String(program.turma_exclusiva || ''),
+    visibility: String(program.visibility || 'visible'),
+    is_published: Boolean(program.is_published),
+    order_index: Number(program.order_index || 0)
+  };
+}
+
+export default function ProgramAdminForm({ mode = 'create', initialProgram = null, variant = 'screen', onCancel, onSaved }) {
   const router = useRouter();
-  const [form, setForm] = useState(INITIAL_FORM);
+  const isEdit = mode === 'edit';
+  const isEmbedded = variant === 'embedded';
+  const [form, setForm] = useState(() => buildInitialForm(initialProgram));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setForm(buildInitialForm(initialProgram));
+    setError('');
+  }, [initialProgram]);
 
   const setField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = async (publishValue) => {
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+    router.push('/admin/conteudo/programas');
+  };
+
+  const handleSubmit = async (publishValue = form.is_published) => {
     setError('');
     setIsSaving(true);
 
     try {
-      const response = await fetch('/api/admin/programs', {
-        method: 'POST',
+      const url = isEdit && initialProgram?.id ? `/api/admin/programs/${initialProgram.id}` : '/api/admin/programs';
+      const response = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -69,7 +99,13 @@ export default function ProgramAdminForm() {
         })
       });
       const payload = await parsePayload(response);
-      if (!response.ok) throw new Error(resolveError(response, payload, 'Erro ao salvar programa'));
+      if (!response.ok) throw new Error(resolveError(response, payload, isEdit ? 'Erro ao atualizar programa' : 'Erro ao salvar programa'));
+
+      if (onSaved) {
+        await onSaved(payload?.program);
+        return;
+      }
+
       router.push('/admin/conteudo/programas');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar programa');
@@ -79,14 +115,14 @@ export default function ProgramAdminForm() {
   };
 
   return (
-    <div className="program-form-screen">
+    <div className={isEmbedded ? 'program-form-panel' : 'program-form-screen'}>
       <div className="shell">
         <header className="header">
-          <button type="button" className="back-btn" onClick={() => router.push('/admin/conteudo/programas')}>
+          <button type="button" className="back-btn" onClick={handleCancel}>
             ← voltar
           </button>
-          <h1>Novo Programa</h1>
-          <p>Estrutura de conteúdo da área de membros.</p>
+          <h1>{isEdit ? 'Editar Programa' : 'Novo Programa'}</h1>
+          <p>{isEdit ? 'Atualize acesso, publicação, imagem e organização do programa.' : 'Estrutura de conteúdo da área de membros.'}</p>
         </header>
 
         <section className="form-card">
@@ -152,15 +188,23 @@ export default function ProgramAdminForm() {
           {error ? <div className="error-box">{error}</div> : null}
 
           <div className="actions">
-            <button type="button" className="btn ghost" disabled={isSaving} onClick={() => router.push('/admin/conteudo/programas')}>
+            <button type="button" className="btn ghost" disabled={isSaving} onClick={handleCancel}>
               Cancelar
             </button>
-            <button type="button" className="btn draft" disabled={isSaving} onClick={() => handleSubmit(false)}>
-              Salvar rascunho
-            </button>
-            <button type="button" className="btn publish" disabled={isSaving} onClick={() => handleSubmit(true)}>
-              {isSaving ? 'Salvando...' : 'Publicar'}
-            </button>
+            {isEdit ? (
+              <button type="button" className="btn publish" disabled={isSaving} onClick={() => handleSubmit(form.is_published)}>
+                {isSaving ? 'Salvando...' : 'Salvar alterações'}
+              </button>
+            ) : (
+              <>
+                <button type="button" className="btn draft" disabled={isSaving} onClick={() => handleSubmit(false)}>
+                  Salvar rascunho
+                </button>
+                <button type="button" className="btn publish" disabled={isSaving} onClick={() => handleSubmit(true)}>
+                  {isSaving ? 'Salvando...' : 'Publicar'}
+                </button>
+              </>
+            )}
           </div>
         </section>
       </div>
@@ -173,9 +217,17 @@ export default function ProgramAdminForm() {
           padding: 18px 14px 34px;
         }
 
+        .program-form-panel {
+          color: var(--text);
+        }
+
         .shell {
           max-width: 880px;
           margin: 0 auto;
+        }
+
+        .program-form-panel .shell {
+          max-width: none;
         }
 
         .header {
@@ -198,6 +250,10 @@ export default function ProgramAdminForm() {
           margin: 12px 0 4px;
           font-size: 30px;
           font-family: var(--font-display);
+        }
+
+        .program-form-panel h1 {
+          font-size: 24px;
         }
 
         p {

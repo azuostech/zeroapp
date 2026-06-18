@@ -10,6 +10,33 @@ Status funcional: main sincronizada com origin/main; SHAMAR publicado e build va
 - `npm run build` passou apos a melhoria de encerramento.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
 
+## Atualizacao 2026-06-17 — Edicao completa no gerenciador de programas
+
+### Problema observado
+- Em `/admin/conteudo/programas`, o botao `Editar` apenas abria um prompt para trocar o titulo.
+- Isso impedia editar campos importantes do programa pela tela de gestao:
+  - status/publicacao;
+  - imagem/capa;
+  - tier de acesso;
+  - turma exclusiva;
+  - visibilidade;
+  - ordem;
+  - descricao.
+
+### Correcao
+- `ProgramAdminForm` agora tambem funciona em modo edicao, carregando dados do programa existente e enviando `PATCH /api/admin/programs/[id]`.
+- A tela `/admin/conteudo/programas` abre um painel de edicao completo ao clicar em `Editar`.
+- Apos salvar, a lista recarrega e exibe feedback `Programa atualizado.`.
+- O fluxo de criacao em `/admin/conteudo/programas/novo` foi preservado usando o mesmo formulario em modo criacao.
+
+### Arquivos alterados
+- `components/admin/ProgramAdminForm.jsx`
+- `app/admin/conteudo/programas/page.jsx`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
+
 ## Atualizacao 2026-06-17 — Encerramento SHAMAR idempotente e liberacao de nova jornada
 
 ### Problema observado

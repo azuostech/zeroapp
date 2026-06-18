@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import ProgramAdminForm from '@/components/admin/ProgramAdminForm';
 import { useAdminPrograms } from '@/hooks/useAdminPrograms';
 
 const TIER_LABELS = {
@@ -43,6 +44,7 @@ export default function AdminProgramasPage() {
   const [expanded, setExpanded] = useState({});
   const [busyId, setBusyId] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [editingProgram, setEditingProgram] = useState(null);
 
   const sortedPrograms = useMemo(
     () => [...(programs || [])].sort((a, b) => Number(a?.order_index || 0) - Number(b?.order_index || 0)),
@@ -82,10 +84,15 @@ export default function AdminProgramasPage() {
     setExpanded((current) => ({ ...current, [program.id]: true }));
   };
 
-  const handleEditProgram = async (program) => {
-    const title = window.prompt('Novo nome do programa', program?.title || '');
-    if (!title || !title.trim() || title.trim() === program?.title) return;
-    await runAction(program.id, () => updateProgram(program.id, { title: title.trim() }), 'Programa atualizado.');
+  const handleEditProgram = (program) => {
+    setFeedback('');
+    setEditingProgram(program);
+  };
+
+  const handleProgramSaved = async () => {
+    await refresh();
+    setEditingProgram(null);
+    setFeedback('Programa atualizado.');
   };
 
   const handleEditSession = async (session) => {
@@ -164,6 +171,20 @@ export default function AdminProgramasPage() {
 
         {feedback ? <div className="feedback">{feedback}</div> : null}
         {!isLoading && error && !isForbiddenError(error) ? <div className="feedback error">{error}</div> : null}
+
+        {editingProgram ? (
+          <div className="edit-backdrop" role="dialog" aria-modal="true" aria-label={`Editar ${editingProgram?.title || 'programa'}`}>
+            <div className="edit-dialog">
+              <ProgramAdminForm
+                mode="edit"
+                variant="embedded"
+                initialProgram={editingProgram}
+                onCancel={() => setEditingProgram(null)}
+                onSaved={handleProgramSaved}
+              />
+            </div>
+          </div>
+        ) : null}
 
         <section className="program-list">
           {isLoading ? <div className="state-inline">Carregando programas...</div> : null}
@@ -382,6 +403,26 @@ export default function AdminProgramasPage() {
         .program-list {
           display: grid;
           gap: 12px;
+        }
+
+        .edit-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          background: rgba(3, 12, 7, 0.55);
+          display: grid;
+          place-items: start center;
+          padding: 18px;
+          overflow: auto;
+        }
+
+        .edit-dialog {
+          width: min(920px, 100%);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-xl);
+          background: var(--bg-card);
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+          padding: 16px;
         }
 
         .program-card {
