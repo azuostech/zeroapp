@@ -5,10 +5,44 @@ Branch atual: main
 Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
 
 ## Resumo atual
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e correcoes RLS self-service.
-- Ultimo commit publicado antes da correcao de recursao RLS: `2cbed1b` (`fix(shamar): libera criacao self-service via rls`).
-- `npm run build` passou na rodada da gestao de participantes; as correcoes atuais alteraram apenas SQL/RLS.
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e correcoes RLS/leitura da TRIBO.
+- Ultimo commit publicado antes da correcao de leitura da TRIBO: `861f61e` (`fix(shamar): corrige recursao nas policies rls`).
+- `npm run build` passou apos a correcao da leitura agregada da TRIBO.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-17 — Convites pendentes/participantes da TRIBO nao apareciam
+
+### Problema observado
+- Criador enviava convites por email na tela `Gerenciar TRIBO`, mas a interface mostrava:
+  - `Nenhum participante ativo.`
+  - `Nenhum convite pendente.`
+
+### Causa
+- Os convites existiam no banco. A TRIBO `SHAMAR Tribo · Turma Maio 2026` tinha:
+  - 1 temporada ativa;
+  - 3 convites pendentes.
+- A rota `GET /api/shamar/tribo` usava `getServiceSupabase()` diretamente para montar participantes, ranking e convites.
+- No ambiente atual, `SUPABASE_SERVICE_ROLE_KEY` esta com chave publishable, entao esse client nao tem service role real e lia como anonimo, retornando listas vazias sob RLS.
+- Alem disso, `profiles` so permitia leitura do proprio perfil ou admin; isso poderia impedir nome/email basico de participantes.
+
+### Correcao
+- `app/api/shamar/tribo/route.js` passou a usar `getShamarWriterSupabase(context.supabase)` na leitura agregada:
+  - usa service role apenas se a chave for realmente valida;
+  - caso contrario usa a sessao autenticada e as policies RLS corrigidas.
+- Novo SQL aplicado:
+  - `scripts/migrate-shamar-shared-profile-rls.sql`
+- Criada funcao/policy:
+  - `shamar_can_read_profile(uuid)`
+  - `profiles_shamar_shared_select`
+- A policy permite ler perfil basico apenas de participantes da mesma jornada SHAMAR, quando o usuario e criador ou participante daquela config.
+
+### Validacao
+- `pg_policies` confirmou `profiles_shamar_shared_select`.
+- Smoke test como criador `sza.treinamentos@gmail.com` confirmou visibilidade de:
+  - 1 participante ativo;
+  - 3 convites pendentes;
+  - 1 profile de participante.
+- `npm run build` passou.
 
 ## Atualizacao 2026-06-17 — Correcao de recursao em policies SHAMAR
 

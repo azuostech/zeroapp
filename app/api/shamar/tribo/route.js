@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { sendEmail } from '@/src/lib/email/email-service';
 import { shamarInviteTemplate } from '@/src/lib/email/templates/shamar-invite';
 import {
@@ -294,7 +293,7 @@ export async function GET(request) {
   }
 
   try {
-    const serviceSupabase = getServiceSupabase();
+    const serviceSupabase = getShamarWriterSupabase(context.supabase);
     const { data: seasons, error: seasonsError } = await serviceSupabase
       .from('shamar_seasons')
       .select('id,user_id,status,identity_level,started_at')
