@@ -5,10 +5,42 @@ Branch atual: main
 Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
 
 ## Resumo atual
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo e gestao de participantes da TRIBO pelo criador/admin.
-- Commit anterior a esta rodada publicado em `origin/main`: `f438abe` (`feat(shamar): envia email ao registrar aporte`).
-- `npm run build` passou nesta rodada antes do commit/push.
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e RLS self-service para criar SHAMAR sem service role valida.
+- Ultimo commit funcional publicado antes da correcao RLS self-service: `9ec133d` (`feat(shamar): permite gestao de participantes da tribo`).
+- `npm run build` passou na rodada da gestao de participantes; a correcao atual alterou apenas SQL/RLS.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-17 — Correcao RLS na criacao self-service SHAMAR
+
+### Problema observado
+- Usuarios tentando criar SHAMAR Individual em `/shamar/criar` viam:
+  - `Sem permissao para acessar dados SHAMAR. Verifique autenticacao e policies RLS.`
+
+### Causa
+- A criacao self-service insere:
+  - `shamar_tribo_configs`
+  - `shamar_board_squares`
+  - `shamar_seasons`
+  - registro inicial em `shamar_index_history`
+- Quando `SUPABASE_SERVICE_ROLE_KEY` nao e uma service role valida, a API usa o client autenticado.
+- As policies antigas nao permitiam que usuario comum criasse a propria config/tabuleiro, nem que participante por convite lesse config self-service fora da regra de turma.
+
+### Correcao aplicada no Supabase
+- Novo script aplicado com sucesso:
+  - `scripts/migrate-shamar-self-service-rls.sql`
+- Policies criadas:
+  - `shamar_config_self_service_insert`
+  - `shamar_config_self_service_select`
+  - `shamar_board_self_service_insert`
+  - `shamar_board_self_service_select`
+  - `shamar_seasons_self_service_insert`
+  - `shamar_idx_self_insert`
+  - `shamar_idx_self_update`
+- Validacao feita via `pg_policies`: as 7 policies apareceram nas tabelas esperadas.
+
+### Observacao
+- A correcao no banco tem efeito imediato; nao depende de redeploy.
+- Ainda e recomendavel configurar uma service role real no ambiente do Vercel para rotas administrativas e rotinas internas.
 
 ## Atualizacao 2026-06-17 — Gestao de participantes da TRIBO
 
