@@ -1,8 +1,8 @@
 -- ============================================================================
--- SHAMAR - RLS para criacao self-service
+-- SHAMAR - Correcao de recursao em RLS
 -- Projeto: ZeroApp
--- Objetivo: permitir criacao de SHAMAR Individual, Dupla e Tribo quando a API
--- usa o usuario autenticado em vez de uma service role valida.
+-- Objetivo: remover ciclos entre policies de shamar_seasons, shamar_tribo_configs,
+-- shamar_invites e shamar_board_squares.
 -- Observacao: script idempotente para executar no Supabase SQL Editor.
 -- ============================================================================
 
@@ -81,16 +81,6 @@ GRANT EXECUTE ON FUNCTION public.shamar_is_config_participant(uuid) TO authentic
 GRANT EXECUTE ON FUNCTION public.shamar_has_pending_invite(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.shamar_can_join_self_service_config(uuid) TO authenticated;
 
-DROP POLICY IF EXISTS shamar_config_self_service_insert ON public.shamar_tribo_configs;
-CREATE POLICY shamar_config_self_service_insert
-  ON public.shamar_tribo_configs
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    created_by = (SELECT auth.uid())
-    AND is_active = true
-  );
-
 DROP POLICY IF EXISTS shamar_config_self_service_select ON public.shamar_tribo_configs;
 CREATE POLICY shamar_config_self_service_select
   ON public.shamar_tribo_configs
@@ -129,43 +119,53 @@ CREATE POLICY shamar_seasons_self_service_insert
     AND public.shamar_can_join_self_service_config(tribo_config_id)
   );
 
-DROP POLICY IF EXISTS shamar_idx_self_insert ON public.shamar_index_history;
-CREATE POLICY shamar_idx_self_insert
-  ON public.shamar_index_history
+DROP POLICY IF EXISTS shamar_seasons_tribo_creator_select ON public.shamar_seasons;
+CREATE POLICY shamar_seasons_tribo_creator_select
+  ON public.shamar_seasons
+  FOR SELECT
+  TO authenticated
+  USING (public.shamar_is_config_creator(tribo_config_id));
+
+DROP POLICY IF EXISTS shamar_seasons_tribo_creator_update ON public.shamar_seasons;
+CREATE POLICY shamar_seasons_tribo_creator_update
+  ON public.shamar_seasons
+  FOR UPDATE
+  TO authenticated
+  USING (public.shamar_is_config_creator(tribo_config_id))
+  WITH CHECK (public.shamar_is_config_creator(tribo_config_id));
+
+DROP POLICY IF EXISTS shamar_invites_creator_insert ON public.shamar_invites;
+CREATE POLICY shamar_invites_creator_insert
+  ON public.shamar_invites
   FOR INSERT
   TO authenticated
   WITH CHECK (
-    user_id = (SELECT auth.uid())
-    AND EXISTS (
-      SELECT 1
-      FROM public.shamar_seasons s
-      WHERE s.id = shamar_index_history.season_id
-        AND s.user_id = (SELECT auth.uid())
-    )
+    inviter_user_id = (SELECT auth.uid())
+    AND public.shamar_is_config_creator(tribo_config_id)
   );
 
-DROP POLICY IF EXISTS shamar_idx_self_update ON public.shamar_index_history;
-CREATE POLICY shamar_idx_self_update
-  ON public.shamar_index_history
+DROP POLICY IF EXISTS shamar_invites_creator_select ON public.shamar_invites;
+CREATE POLICY shamar_invites_creator_select
+  ON public.shamar_invites
+  FOR SELECT
+  TO authenticated
+  USING (
+    inviter_user_id = (SELECT auth.uid())
+    OR public.shamar_is_config_creator(tribo_config_id)
+  );
+
+DROP POLICY IF EXISTS shamar_invites_creator_update ON public.shamar_invites;
+CREATE POLICY shamar_invites_creator_update
+  ON public.shamar_invites
   FOR UPDATE
   TO authenticated
   USING (
-    user_id = (SELECT auth.uid())
-    AND EXISTS (
-      SELECT 1
-      FROM public.shamar_seasons s
-      WHERE s.id = shamar_index_history.season_id
-        AND s.user_id = (SELECT auth.uid())
-    )
+    inviter_user_id = (SELECT auth.uid())
+    OR public.shamar_is_config_creator(tribo_config_id)
   )
   WITH CHECK (
-    user_id = (SELECT auth.uid())
-    AND EXISTS (
-      SELECT 1
-      FROM public.shamar_seasons s
-      WHERE s.id = shamar_index_history.season_id
-        AND s.user_id = (SELECT auth.uid())
-    )
+    inviter_user_id = (SELECT auth.uid())
+    OR public.shamar_is_config_creator(tribo_config_id)
   );
 
 COMMIT;

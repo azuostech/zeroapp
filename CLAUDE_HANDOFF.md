@@ -5,10 +5,39 @@ Branch atual: main
 Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
 
 ## Resumo atual
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e RLS self-service para criar SHAMAR sem service role valida.
-- Ultimo commit funcional publicado antes da correcao RLS self-service: `9ec133d` (`feat(shamar): permite gestao de participantes da tribo`).
-- `npm run build` passou na rodada da gestao de participantes; a correcao atual alterou apenas SQL/RLS.
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e correcoes RLS self-service.
+- Ultimo commit publicado antes da correcao de recursao RLS: `2cbed1b` (`fix(shamar): libera criacao self-service via rls`).
+- `npm run build` passou na rodada da gestao de participantes; as correcoes atuais alteraram apenas SQL/RLS.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-17 — Correcao de recursao em policies SHAMAR
+
+### Problema observado
+- Ao abrir SHAMAR, a tela mostrava:
+  - `infinite recursion detected in policy for relation "shamar_seasons"`
+
+### Causa
+- A migracao self-service criou policies que formavam ciclo:
+  - `shamar_seasons` consultava `shamar_tribo_configs`
+  - `shamar_tribo_configs` consultava `shamar_seasons`
+- Isso fazia o Postgres entrar em recursao durante SELECT em `shamar_seasons`.
+
+### Correcao aplicada no Supabase
+- Novo script aplicado:
+  - `scripts/migrate-shamar-rls-recursion-fix.sql`
+- Foram criadas funcoes `SECURITY DEFINER` para quebrar a recursao:
+  - `shamar_is_config_creator(uuid)`
+  - `shamar_is_config_participant(uuid)`
+  - `shamar_has_pending_invite(uuid)`
+  - `shamar_can_join_self_service_config(uuid)`
+- Policies recriadas para usar essas funcoes em vez de subqueries circulares.
+
+### Validacao
+- `pg_policies` conferido: as policies novas apontam para funcoes e nao para subqueries circulares diretas.
+- Smoke test como role `authenticated`:
+  - SELECT em `shamar_seasons` nao dispara mais recursao.
+  - Criacao self-service transacional com INSERT separado em config, board, season e index passou com `ROLLBACK`.
+- `scripts/migrate-shamar-self-service-rls.sql` tambem foi ajustado para nao reintroduzir a recursao se rodado novamente.
 
 ## Atualizacao 2026-06-17 — Correcao RLS na criacao self-service SHAMAR
 
