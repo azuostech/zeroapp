@@ -40,8 +40,16 @@ export default function ShamarNosPage() {
   const [isNosLoading, setIsNosLoading] = useState(false);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [inviteNotice, setInviteNotice] = useState('');
+  const [closedNotice, setClosedNotice] = useState('');
   const [resendingInviteId, setResendingInviteId] = useState('');
   const [copyingInviteId, setCopyingInviteId] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('shamar_closed')) return;
+    setClosedNotice('Temporada encerrada. Você já pode criar uma nova Dupla.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -146,6 +154,7 @@ export default function ShamarNosPage() {
             { label: 'Controle', value: 'Individual' }
           ]}
         />
+        {closedNotice ? <p className="nos-closed-notice">{closedNotice}</p> : null}
         <ShamarCard title="Criar Dupla">
           <div className="nos-benefits">
             <p>A Dupla nasce pela tela de criação. Depois disso, o convite fica pendente até a outra pessoa aceitar.</p>
@@ -156,6 +165,18 @@ export default function ShamarNosPage() {
           .nos-benefits {
             display: grid;
             gap: 10px;
+          }
+
+          .nos-closed-notice {
+            border: 1px solid rgba(31, 111, 207, 0.18);
+            border-radius: var(--radius-md);
+            background: rgba(31, 111, 207, 0.08);
+            color: var(--blue);
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.4;
           }
 
           .nos-benefits p {

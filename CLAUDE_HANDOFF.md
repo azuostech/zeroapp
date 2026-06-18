@@ -5,10 +5,44 @@ Branch atual: main
 Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
 
 ## Resumo atual
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin e correcoes RLS/leitura da TRIBO.
-- Ultimo commit publicado antes da correcao de leitura da TRIBO: `861f61e` (`fix(shamar): corrige recursao nas policies rls`).
-- `npm run build` passou apos a correcao da leitura agregada da TRIBO.
+- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
+- Ultimo commit publicado antes da melhoria de encerramento: `34893bd` (`fix(shamar): mostra convites pendentes da tribo`).
+- `npm run build` passou apos a melhoria de encerramento.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-17 — Encerramento SHAMAR idempotente e liberacao de nova jornada
+
+### Problema observado
+- Ao encerrar uma temporada, a tela podia ficar presa no formulario exibindo:
+  - `temporada_nao_ativa`
+- Isso acontecia quando a temporada ja tinha sido encerrada/alterada e a tela tentava finalizar novamente.
+
+### Correcao
+- `POST /api/shamar/seasons/[id]/complete` ficou idempotente:
+  - se a temporada ja nao esta ativa, responde `already_closed: true` em vez de erro tecnico.
+  - usa `getShamarWriterSupabase(context.supabase)` para funcionar com ou sem service role real.
+  - cancela convites pendentes criados pelo usuario naquela config ao encerrar.
+- `/shamar/encerramento`:
+  - ao concluir ou detectar temporada ja encerrada, sai da tela de encerramento.
+  - redireciona para a modalidade correta:
+    - Individual: `/shamar/individual`
+    - Dupla: `/shamar/dupla`
+    - Tribo: `/shamar/tribo`
+  - a modalidade recarrega sem temporada ativa e libera o botao de criar novo SHAMAR.
+- Telas de Individual, Dupla e Tribo mostram aviso amigavel quando voltam do encerramento:
+  - temporada encerrada;
+  - nova criacao liberada.
+
+### Arquivos alterados
+- `app/api/shamar/seasons/[id]/complete/route.js`
+- `app/shamar/encerramento/page.jsx`
+- `components/shamar/ShamarDashboard.jsx`
+- `app/shamar/nos/page.jsx`
+- `app/shamar/tribo/page.jsx`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
 
 ## Atualizacao 2026-06-17 — Convites pendentes/participantes da TRIBO nao apareciam
 

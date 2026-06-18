@@ -30,6 +30,14 @@ export default function ShamarTriboPage() {
   const [savingManageAction, setSavingManageAction] = useState('');
   const [resendingInviteId, setResendingInviteId] = useState('');
   const [copyingInviteId, setCopyingInviteId] = useState('');
+  const [closedNotice, setClosedNotice] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('shamar_closed')) return;
+    setClosedNotice('Temporada encerrada. Você já pode criar uma nova Tribo.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   const loadTribo = useCallback(async () => {
     if (!season?.tribo_config_id) {
@@ -191,6 +199,7 @@ export default function ShamarTriboPage() {
             { label: 'Controle', value: 'Individual' }
           ]}
         />
+        {closedNotice ? <p className="tribo-closed-notice">{closedNotice}</p> : null}
         <ShamarCard title="Criar Tribo">
           <div className="tribo-empty">
             <p>Crie uma Tribo convidando pelo menos duas pessoas. Cada participante terá o próprio tabuleiro após aceitar.</p>
@@ -201,6 +210,18 @@ export default function ShamarTriboPage() {
           .tribo-empty {
             display: grid;
             gap: 12px;
+          }
+
+          .tribo-closed-notice {
+            border: 1px solid rgba(27, 94, 32, 0.18);
+            border-radius: var(--radius-md);
+            background: var(--shamar-dim);
+            color: var(--shamar-dark);
+            margin: 0 0 14px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.4;
           }
 
           .tribo-empty p {

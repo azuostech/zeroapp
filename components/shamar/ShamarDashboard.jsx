@@ -39,8 +39,16 @@ export function ShamarDashboard({ mode = 'individual' }) {
   const { season, config, progress, indexData, locked, unlockProgress, error, isLoading } = useShamar(mode);
   const { squares, stats: boardStats, isLoading: isBoardLoading } = useShamarBoard(season?.id);
   const [recentContributions, setRecentContributions] = useState([]);
+  const [closedNotice, setClosedNotice] = useState('');
   const title = modeTitle(mode);
   const modeQuery = `mode=${encodeURIComponent(mode)}`;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('shamar_closed')) return;
+    setClosedNotice('Temporada encerrada. Você já pode criar um novo SHAMAR nesta modalidade.');
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -87,6 +95,7 @@ export function ShamarDashboard({ mode = 'individual' }) {
             { label: 'Próximo passo', value: 'Criar' }
           ]}
         />
+        {closedNotice ? <p className="dashboard-notice">{closedNotice}</p> : null}
         <ShamarCard title="Começar modalidade">
           <div className="dashboard-empty">
             <p>Crie essa modalidade para abrir seu tabuleiro e registrar aportes. Se for Dupla ou Tribo, os convidados entram apenas depois de aceitar.</p>
@@ -180,6 +189,18 @@ export function ShamarDashboardStyles() {
       .dashboard-empty {
         display: grid;
         gap: 12px;
+      }
+
+      .dashboard-notice {
+        border: 1px solid rgba(27, 94, 32, 0.18);
+        border-radius: var(--radius-md);
+        background: var(--shamar-dim);
+        color: var(--shamar-dark);
+        margin: 0 0 14px;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.4;
       }
 
       .dashboard-empty p {

@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { IndexCard, ProgressSummary, ShamarCard, ShamarHeader, ShamarLoading, ShamarSetupError, ShamarShell } from '@/components/shamar/ShamarUI';
 import { modePath } from '@/components/shamar/ShamarModeCreator';
 import { formatMoney, identityIcon, identityLabel } from '@/src/lib/shamar/formatters';
@@ -22,11 +23,13 @@ async function apiRequest(path, options = {}) {
 }
 
 export default function ShamarClosingPage() {
+  const router = useRouter();
   const [summary, setSummary] = useState(null);
   const [patrimonioFinal, setPatrimonioFinal] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState('');
 
@@ -63,12 +66,26 @@ export default function ShamarClosingPage() {
   const season = summary?.season || null;
   const config = summary?.config || season?.config || null;
   const progress = summary?.progress || null;
+  const closePath = mode ? modePath(mode) : '/shamar';
   const identity = result?.identity_level || summary?.index?.identity_level || season?.identity_level || 'guardiao';
   const delta = useMemo(() => {
     const initial = Number(season?.patrimonio_inicial || 0);
     const finalValue = Number(result?.season?.patrimonio_final || patrimonioFinal || 0);
     return finalValue - initial;
   }, [patrimonioFinal, result, season?.patrimonio_inicial]);
+
+  const leaveClosingScreen = useCallback((reason = 'completed') => {
+    setRedirecting(true);
+    router.replace(`${closePath}?shamar_closed=${encodeURIComponent(reason)}`);
+  }, [closePath, router]);
+
+  useEffect(() => {
+    if (loading || season) return undefined;
+    const timer = setTimeout(() => {
+      leaveClosingScreen('already_closed');
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [leaveClosingScreen, loading, season]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -82,16 +99,22 @@ export default function ShamarClosingPage() {
         body: JSON.stringify({ patrimonio_final: Number(String(patrimonioFinal).replace(',', '.')) })
       });
       setResult(payload);
+      leaveClosingScreen(payload?.already_closed ? 'already_closed' : 'completed');
     } catch (submitError) {
+      if (submitError?.message === 'temporada_nao_ativa') {
+        leaveClosingScreen('already_closed');
+        return;
+      }
       setError(submitError.message || 'Erro ao encerrar temporada');
     } finally {
       setSaving(false);
     }
   };
 
+  if (redirecting) return <ShamarLoading label="Atualizando SHAMAR..." />;
   if (loading) return <ShamarLoading label="Preparando encerramento..." />;
   if (error && !summary) return <ShamarSetupError error={error} />;
-  if (!season) return <ShamarSetupError error="Nenhuma temporada SHAMAR ativa encontrada para encerramento." />;
+  if (!season) return <ShamarLoading label="Atualizando SHAMAR..." />;
 
   return (
     <ShamarShell activeTab="shamar">
@@ -100,7 +123,7 @@ export default function ShamarClosingPage() {
         title="Fechamento SHAMAR"
         subtitle={result ? 'Sua temporada foi registrada.' : 'Declare seu patrimônio final para concluir a temporada.'}
         identity={identity}
-        hrefBack={mode ? modePath(mode) : '/shamar'}
+        hrefBack={closePath}
         stats={[
           { label: 'Turma', value: config?.turma || 'SHAMAR' },
           { label: 'Meta', value: formatMoney(config?.meta_total || progress?.meta_total || 0, { compact: true }) },

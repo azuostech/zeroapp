@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { publishFeedEvent } from '@/src/modules/community/application/feed-publisher';
 import { awardShamarPointsSafely, awardZeroCoinsSafely } from '@/src/lib/shamar/awards';
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
 import {
   createAuthenticatedContext,
+  getShamarWriterSupabase,
   normalizeId,
   normalizeMoney,
   parseJsonBody,
   resolveShamarDbError,
   toNumber
 } from '@/src/lib/shamar/api';
+
+function normalizeCompletedSeason(season) {
+  if (!season) return null;
+  return {
+    ...season,
+    patrimonio_inicial: toNumber(season.patrimonio_inicial),
+    patrimonio_final: season.patrimonio_final === null || season.patrimonio_final === undefined
+      ? null
+      : toNumber(season.patrimonio_final)
+  };
+}
 
 async function completeClosingMission(supabase, season) {
   const { data: turmaMissions, error } = await supabase
@@ -69,16 +80,14 @@ export async function POST(request, { params }) {
 
   if (!season) return NextResponse.json({ error: 'temporada_nao_encontrada' }, { status: 404 });
   if (season.status !== 'active') {
-    return NextResponse.json({ error: 'temporada_nao_ativa', season }, { status: 409 });
+    return NextResponse.json({
+      already_closed: true,
+      season: normalizeCompletedSeason(season),
+      status: season.status
+    });
   }
 
-  let serviceSupabase;
-  try {
-    serviceSupabase = getServiceSupabase();
-  } catch (error) {
-    return NextResponse.json({ error: error?.message || 'service_supabase_unavailable' }, { status: 500 });
-  }
-
+  const serviceSupabase = getShamarWriterSupabase(context.supabase);
   const endedAt = new Date().toISOString();
   const { data: completedSeason, error: updateError } = await serviceSupabase
     .from('shamar_seasons')
@@ -98,7 +107,11 @@ export async function POST(request, { params }) {
   }
 
   if (!completedSeason) {
-    return NextResponse.json({ error: 'temporada_nao_ativa' }, { status: 409 });
+    return NextResponse.json({
+      already_closed: true,
+      season: normalizeCompletedSeason(season),
+      status: season.status
+    });
   }
 
   const warnings = [];
@@ -144,6 +157,17 @@ export async function POST(request, { params }) {
     warnings.push(error?.message || 'shamar_closing_mission_failed');
   }
 
+  try {
+    await serviceSupabase
+      .from('shamar_invites')
+      .update({ status: 'cancelled', updated_at: endedAt })
+      .eq('tribo_config_id', completedSeason.tribo_config_id)
+      .eq('inviter_user_id', context.user.id)
+      .eq('status', 'pending');
+  } catch (error) {
+    warnings.push(error?.message || 'shamar_pending_invites_cancel_failed');
+  }
+
   await publishFeedEvent(context.supabase, {
     userId: context.user.id,
     eventType: 'shamar_season_completed',
@@ -158,11 +182,7 @@ export async function POST(request, { params }) {
   });
 
   return NextResponse.json({
-    season: {
-      ...completedSeason,
-      patrimonio_inicial: toNumber(completedSeason.patrimonio_inicial),
-      patrimonio_final: toNumber(completedSeason.patrimonio_final)
-    },
+    season: normalizeCompletedSeason(completedSeason),
     index: indexResult?.index || null,
     identity_level: indexResult?.identity_level || completedSeason.identity_level,
     closing_mission: closingMission,
