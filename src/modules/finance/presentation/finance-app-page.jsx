@@ -494,18 +494,20 @@ export default function FinanceAppPage({
 
       const overlay = document.getElementById('value-sheet-overlay');
       const title = document.getElementById('sheet-item-title');
+      const nameInput = document.getElementById('sheet-name-input');
       const previstoInput = document.getElementById('sheet-previsto-input');
       const realizadoInput = document.getElementById('sheet-realizado-input');
       const status = document.getElementById('sheet-item-status');
 
-      if (!overlay || !title || !previstoInput || !realizadoInput || !status) return;
+      if (!overlay || !title || !nameInput || !previstoInput || !realizadoInput || !status) return;
 
       title.textContent = item.nome || 'Item';
       status.textContent = item.realized ? 'Status atual: realizado' : 'Status atual: pendente';
+      nameInput.value = item.nome || '';
       previstoInput.value = item.valor_previsto ?? item.valor ?? '';
       realizadoInput.value = item.valor_realizado ?? '';
       overlay.classList.add('show');
-      setTimeout(() => previstoInput.focus(), 0);
+      setTimeout(() => nameInput.focus(), 0);
     };
 
     const closeEditor = () => {
@@ -520,11 +522,20 @@ export default function FinanceAppPage({
         return;
       }
 
+      const nameInput = document.getElementById('sheet-name-input');
       const previstoInput = document.getElementById('sheet-previsto-input');
       const realizadoInput = document.getElementById('sheet-realizado-input');
-      if (!previstoInput || !realizadoInput) return;
+      if (!nameInput || !previstoInput || !realizadoInput) return;
 
       ensureItemShape(item);
+      const nextName = nameInput.value.trim();
+      if (!nextName) {
+        toast('Informe um nome para a linha');
+        nameInput.focus();
+        return;
+      }
+
+      item.nome = nextName;
       item.valor_previsto = previstoInput.value;
       item.valor = previstoInput.value;
       item.valor_realizado = realizadoInput.value;
@@ -841,7 +852,10 @@ export default function FinanceAppPage({
             <span class="row-check-ui">${sub.realized ? '✓' : ''}</span>
           </label>
           <div class="subcat-main">
-            <div class="subcat-nome${sub.realized ? ' done' : ''}">${esc(sub.nome)}</div>
+            <div class="subcat-name-line">
+              <button type="button" class="subcat-nome${sub.realized ? ' done' : ''}" ondblclick="openSubcatEditor(${gi},${si})" onclick="openSubcatEditor(${gi},${si})" title="Editar nome da linha">${esc(sub.nome)}</button>
+              <button type="button" class="name-edit-btn" onclick="openSubcatEditor(${gi},${si})" aria-label="Editar ${esc(sub.nome || 'linha')}">✎</button>
+            </div>
             <div class="subcat-meta">${sub.realized ? 'Pago' : 'Pendente'}</div>
           </div>
           <button class="subcat-amount-btn${sub.realized ? ' realized' : ''}" onclick="openSubcatEditor(${gi},${si})">${esc(rowAmountLabel(sub))}</button>`;
@@ -913,7 +927,10 @@ export default function FinanceAppPage({
             <span class="row-check-ui">${cat.realized ? '✓' : ''}</span>
           </label>
           <div class="cat-main">
-            <div class="cat-nome${cat.realized ? ' done' : ''}">${esc(cat.nome)}</div>
+            <div class="cat-name-line">
+              <button type="button" class="cat-nome${cat.realized ? ' done' : ''}" ondblclick="openSimplesEditor('${bloco}',${i})" onclick="openSimplesEditor('${bloco}',${i})" title="Editar nome da linha">${esc(cat.nome)}</button>
+              <button type="button" class="name-edit-btn" onclick="openSimplesEditor('${bloco}',${i})" aria-label="Editar ${esc(cat.nome || 'linha')}">✎</button>
+            </div>
             <div class="cat-meta">${cat.realized ? 'Pago' : 'Pendente'}</div>
           </div>
           <button class="cat-amount-btn${cat.realized ? ' realized' : ''}" onclick="openSimplesEditor('${bloco}',${i})">${esc(rowAmountLabel(cat))}</button>`;
@@ -1963,6 +1980,10 @@ export default function FinanceAppPage({
             Status atual
           </div>
           <div className="value-sheet-grid">
+            <label className="value-field value-field-name">
+              <span>Nome da linha</span>
+              <input type="text" id="sheet-name-input" placeholder="Ex: Salário, Aluguel, Consultoria" />
+            </label>
             <label className="value-field">
               <span>Previsto</span>
               <input type="text" id="sheet-previsto-input" inputMode="decimal" placeholder="R$ 0,00" />
@@ -2974,19 +2995,75 @@ export default function FinanceAppPage({
           color: var(--text-on-green);
         }
 
-        .cat-nome {
-          font-size: 13px;
-          color: var(--dim);
+        .cat-main {
+          flex: 1;
+          min-width: 0;
         }
 
-        .cat-nome.done {
+        .cat-name-line,
+        .subcat-name-line {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          min-width: 0;
+        }
+
+        .cat-nome,
+        .subcat-nome {
+          flex: 0 1 auto;
+          min-width: 0;
+          min-height: 0;
+          border: 0;
+          background: transparent;
+          color: var(--dim);
+          cursor: pointer;
+          font-family: 'Sora', sans-serif;
+          font-size: 13px;
+          line-height: 1.25;
+          padding: 0;
+          text-align: left;
+          overflow-wrap: anywhere;
+        }
+
+        .cat-nome.done,
+        .subcat-nome.done {
           text-decoration: line-through;
           color: var(--muted);
         }
 
-        .cat-main {
-          flex: 1;
-          min-width: 0;
+        .name-edit-btn {
+          width: 26px;
+          height: 26px;
+          min-height: 26px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: var(--bg4);
+          color: var(--muted);
+          cursor: pointer;
+          flex: 0 0 auto;
+          font-size: 12px;
+          line-height: 1;
+          padding: 0;
+        }
+
+        .cat-name-line:hover .name-edit-btn,
+        .subcat-name-line:hover .name-edit-btn,
+        .name-edit-btn:focus-visible {
+          border-color: var(--green);
+          color: var(--green);
+          background: var(--green-dim);
+        }
+
+        @media (max-width: 560px) {
+          .cat-nome {
+            font-size: 17px;
+            line-height: 1.1;
+          }
+
+          .subcat-nome {
+            font-size: 14px;
+            line-height: 1.1;
+          }
         }
 
         .cat-meta {
@@ -3233,15 +3310,6 @@ export default function FinanceAppPage({
 
         .subcat-row:last-of-type {
           border-bottom: none;
-        }
-
-        .subcat-nome {
-          font-size: 12px;
-          color: var(--muted);
-        }
-
-        .subcat-nome.done {
-          text-decoration: line-through;
         }
 
         .subcat-main {
@@ -3693,6 +3761,10 @@ export default function FinanceAppPage({
           margin-top: 12px;
         }
 
+        .value-field-name {
+          grid-column: 1 / -1;
+        }
+
         .value-field {
           display: flex;
           flex-direction: column;
@@ -3716,6 +3788,11 @@ export default function FinanceAppPage({
           padding: 8px 10px;
           outline: none;
           text-align: right;
+        }
+
+        .value-field-name input {
+          font-family: 'Sora', sans-serif;
+          text-align: left;
         }
 
         .value-sheet-actions {

@@ -2,15 +2,41 @@
 
 Data: 2026-06-19
 Branch atual: main
-Status funcional: main com navegacao SHAMAR/TRIBO mobile corrigida e build validado
+Status funcional: main com edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
 
 ## Resumo atual
+- Tela `/financas` agora permite editar o nome/texto de linhas ja inseridas pelo proprio editor da linha, sem excluir e cadastrar novamente.
+- Resumo financeiro da home (`/app`) ganhou botao de olhinho para ocultar/mostrar valores, com preferencia salva localmente.
 - Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
-- Ultimo commit publicado antes da melhoria de encerramento: `34893bd` (`fix(shamar): mostra convites pendentes da tribo`).
-- `npm run build` passou apos a melhoria de encerramento.
+- Ultimo commit publicado antes desta rodada: `1fef2e9` (`fix(shamar): improve tribo mobile navigation`).
+- `npm run build` passou apos as mudancas de financas.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-19 — Financas com edicao de linhas e privacidade de valores
+
+### Problema observado
+- Na tela `/financas`, o usuario nao conseguia alterar o texto/nome de uma linha ja cadastrada.
+- Para corrigir um nome, precisava excluir a linha e lancar novamente.
+- Na tela principal de resumo financeiro, os valores ficavam sempre expostos; faltava o comportamento de ocultar valores como em app de banco.
+
+### Correcao
+- O editor de linha da tela `/financas` ganhou campo `Nome da linha`.
+- Linhas simples e subcategorias agora abrem o editor ao tocar/clicar no nome ou no botao de lapis.
+- Ao salvar, o nome e validado como obrigatorio e gravado junto com os valores previsto/realizado.
+- O card de resumo financeiro da home ganhou botao de olhinho (`Eye`/`EyeOff`) para alternar entre valores visiveis e mascarados.
+- A preferencia de ocultar valores fica salva em `localStorage` com a chave `zeroapp:finance-summary-hidden`.
+
+### Arquivos alterados
+- `src/modules/finance/presentation/finance-app-page.jsx`
+- `components/finance/FinanceSummaryCard.jsx`
+- `CLAUDE_HANDOFF.md`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
+- Tentativa de validacao visual pelo Browser integrado nao foi possivel porque o `iab` nao estava disponivel nesta sessao.
 
 ## Atualizacao 2026-06-19 — Navegacao e confirmacao fixa no SHAMAR/TRIBO mobile
 

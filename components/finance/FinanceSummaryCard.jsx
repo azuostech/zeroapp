@@ -1,5 +1,8 @@
 'use client';
 
+import { Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
 const BLOCOS_CONFIG = [
   { key: 'receitas', icon: '💵', label: 'Receitas' },
   { key: 'pagar-primeiro', icon: '🏦', label: 'Se Pagar 1º' },
@@ -8,6 +11,8 @@ const BLOCOS_CONFIG = [
   { key: 'investimentos', icon: '📈', label: 'Invest' },
   { key: 'desfrute', icon: '✨', label: 'Desfrute' }
 ];
+
+const PRIVACY_STORAGE_KEY = 'zeroapp:finance-summary-hidden';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
@@ -90,7 +95,33 @@ function fmtBRL(value) {
   }).format(Number(value || 0));
 }
 
+function HiddenAmount({ size = 'md', prefix = '' }) {
+  return <span className={`hidden-amount hidden-amount-${size}`}>{prefix}R$ ••••</span>;
+}
+
 export default function FinanceSummaryCard({ data = {}, mes, ano, isLoading = false }) {
+  const [hideValues, setHideValues] = useState(false);
+
+  useEffect(() => {
+    try {
+      setHideValues(localStorage.getItem(PRIVACY_STORAGE_KEY) === '1');
+    } catch (_) {
+      // no-op
+    }
+  }, []);
+
+  const togglePrivacy = () => {
+    setHideValues((current) => {
+      const next = !current;
+      try {
+        localStorage.setItem(PRIVACY_STORAGE_KEY, next ? '1' : '0');
+      } catch (_) {
+        // no-op
+      }
+      return next;
+    });
+  };
+
   if (isLoading) {
     return (
       <section style={styles.card} aria-label="Resumo financeiro do mês">
@@ -124,13 +155,26 @@ export default function FinanceSummaryCard({ data = {}, mes, ano, isLoading = fa
 
   return (
     <section style={styles.card} aria-label="Resumo financeiro do mês">
+      <div className="finance-summary-tools">
+        <button
+          type="button"
+          className="finance-privacy-toggle"
+          onClick={togglePrivacy}
+          aria-label={hideValues ? 'Mostrar valores financeiros' : 'Ocultar valores financeiros'}
+          aria-pressed={hideValues}
+          title={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+        >
+          {hideValues ? <EyeOff size={18} strokeWidth={2.4} /> : <Eye size={18} strokeWidth={2.4} />}
+        </button>
+      </div>
+
       <div style={styles.grid}>
         {totals.map((block) => (
           <div key={block.key} style={styles.block}>
             <span style={styles.blockIcon} aria-hidden="true">{block.icon}</span>
             <span style={styles.blockLabel}>{block.label}</span>
-            <span style={styles.blockValue}>{fmtK(block.realizado)}</span>
-            <span style={styles.blockSub}>{block.previsto > 0 ? `prev. ${fmtK(block.previsto)}` : '—'}</span>
+            <span style={styles.blockValue}>{hideValues ? <HiddenAmount /> : fmtK(block.realizado)}</span>
+            <span style={styles.blockSub}>{block.previsto > 0 ? (hideValues ? <HiddenAmount size="sm" prefix="prev. " /> : `prev. ${fmtK(block.previsto)}`) : '—'}</span>
           </div>
         ))}
       </div>
@@ -139,23 +183,82 @@ export default function FinanceSummaryCard({ data = {}, mes, ano, isLoading = fa
 
       <div style={styles.balanceSection}>
         <div style={styles.balanceLabel}>Saldo Realizado do Mês</div>
-        <div style={{ ...styles.balanceValue, color: saldo >= 0 ? 'var(--green-text)' : 'var(--red)' }}>{fmtBRL(saldo)}</div>
+        <div style={{ ...styles.balanceValue, color: saldo >= 0 ? 'var(--green-text)' : 'var(--red)' }}>
+          {hideValues ? <HiddenAmount size="lg" /> : fmtBRL(saldo)}
+        </div>
 
         {saldoPrev !== 0 ? (
           <div style={styles.balancePrev}>
             Previsto:{' '}
-            <span style={{ color: saldoPrev >= 0 ? 'var(--green-text)' : 'var(--red)' }}>{fmtBRL(saldoPrev)}</span>
+            <span style={{ color: saldoPrev >= 0 ? 'var(--green-text)' : 'var(--red)' }}>
+              {hideValues ? <HiddenAmount size="sm" /> : fmtBRL(saldoPrev)}
+            </span>
           </div>
         ) : null}
 
         {periodLabel ? <div style={styles.period}>{periodLabel}</div> : null}
       </div>
+
+      <style jsx>{`
+        .finance-summary-tools {
+          display: flex;
+          justify-content: flex-end;
+          margin: -4px 0 10px;
+        }
+
+        .finance-privacy-toggle {
+          width: 42px;
+          height: 42px;
+          min-height: 42px;
+          border: 1px solid var(--border-green);
+          border-radius: 999px;
+          background: var(--green-dim);
+          color: var(--green-dark);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+        }
+
+        .finance-privacy-toggle:active {
+          transform: scale(0.96);
+        }
+
+        .finance-privacy-toggle:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+
+        .hidden-amount {
+          font-family: 'Space Mono', monospace;
+          letter-spacing: 0;
+          white-space: nowrap;
+        }
+
+        .hidden-amount-sm {
+          font-size: inherit;
+        }
+
+        .hidden-amount-lg {
+          font-size: inherit;
+        }
+
+        @media (max-width: 420px) {
+          .finance-privacy-toggle {
+            width: 38px;
+            height: 38px;
+            min-height: 38px;
+          }
+        }
+      `}</style>
     </section>
   );
 }
 
 const styles = {
   card: {
+    position: 'relative',
     background: 'var(--bg-card)',
     borderRadius: 'var(--radius-xl)',
     padding: 'var(--padding-card)',
