@@ -258,6 +258,7 @@ export default function ShamarTriboPage() {
   return (
     <ShamarShell activeTab="tribo">
       <ShamarHeader
+        hrefBack="/shamar"
         label={`Camada 3 · Turma ${config?.turma || 'SHAMAR'}`}
         title="👥 TRIBO"
         subtitle={`${Number(stats.guardians || 0)} guardiões construindo patrimônio juntos`}

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import AppHeader from '@/components/layout/AppHeader';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { clampPercent, formatMoney, formatPercent, identityIcon, identityLabel } from '@/src/lib/shamar/formatters';
@@ -14,13 +15,14 @@ const CATEGORY_LABELS = {
   epico: 'Epico'
 };
 
-export function ShamarShell({ children, activeTab = 'shamar', blue = false }) {
+export function ShamarShell({ children, activeTab = 'shamar', blue = false, hideFab = false }) {
   const [isIAOpen, setIsIAOpen] = useState(false);
 
   return (
     <div className={`shamar-screen${blue ? ' shamar-screen-blue' : ''}`}>
+      <AppHeader />
       <main className="shamar-main">{children}</main>
-      <FAB onClick={() => setIsIAOpen(true)} />
+      {hideFab ? null : <FAB onClick={() => setIsIAOpen(true)} />}
       <ShamarBottomNav activeTab={activeTab} />
       <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
       <ShamarStyles />
@@ -270,6 +272,7 @@ export function ShamarStyles() {
     <style jsx global>{`
       .shamar-screen {
         min-height: 100vh;
+        min-height: 100svh;
         background: var(--bg);
         color: var(--text);
       }
@@ -644,7 +647,7 @@ export function ShamarStyles() {
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 150;
+        z-index: 220;
         display: flex;
         justify-content: space-around;
         gap: 6px;
@@ -654,6 +657,7 @@ export function ShamarStyles() {
         padding: 8px 10px calc(24px + env(safe-area-inset-bottom));
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
+        transform: translateZ(0);
       }
 
       .shamar-nav-item {

@@ -2,14 +2,43 @@
 
 Data: 2026-06-19
 Branch atual: main
-Status funcional: main com redirecionamento de links de conteudo autenticado corrigido; build validado
+Status funcional: main com navegacao SHAMAR/TRIBO mobile corrigida e build validado
 
 ## Resumo atual
+- Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
 - Ultimo commit publicado antes da melhoria de encerramento: `34893bd` (`fix(shamar): mostra convites pendentes da tribo`).
 - `npm run build` passou apos a melhoria de encerramento.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-19 — Navegacao e confirmacao fixa no SHAMAR/TRIBO mobile
+
+### Problema observado
+- Na tela mobile da TRIBO/aporte, o usuario ficava sem menu superior e inferior visiveis.
+- A tela nao deixava claro como voltar para a pagina anterior.
+- O tabuleiro completo ocupava a tela inteira e empurrava o botao `Confirmar Aporte` para fora da area visivel, estourando a experiencia mobile.
+
+### Correcao
+- `ShamarShell` passou a renderizar o `AppHeader` em todas as telas SHAMAR e reforcou o menu inferior fixo.
+- `ShamarShell` ganhou a opcao `hideFab` para telas com acao fixa, evitando conflito visual com a confirmacao.
+- A tela `/shamar/aporte/novo`:
+  - marca a aba `TRIBO` quando aberta com `?mode=tribo`;
+  - limita o tabuleiro a uma area rolavel propria no mobile;
+  - fixa a barra de confirmacao acima do menu inferior, com status do valor selecionado.
+- A tela `/shamar/tribo` ganhou link de voltar para `/shamar` no cabecalho.
+- A tela `/shamar/tabuleiro?mode=tribo` tambem marca a aba `TRIBO` no menu inferior.
+
+### Arquivos alterados
+- `components/shamar/ShamarUI.jsx`
+- `app/shamar/aporte/novo/page.jsx`
+- `app/shamar/tribo/page.jsx`
+- `app/shamar/tabuleiro/page.jsx`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
+- Tentativa de validacao visual pelo Browser integrado nao foi possivel porque o `iab` nao estava disponivel nesta sessao.
 
 ## Atualizacao 2026-06-19 — Link direto de aula exige autenticacao e volta ao destino
 

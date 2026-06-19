@@ -145,7 +145,7 @@ export default function NewShamarContributionPage() {
   if (error) return <ShamarSetupError error={error} />;
 
   return (
-    <ShamarShell activeTab="shamar">
+    <ShamarShell activeTab={mode === 'tribo' ? 'tribo' : 'shamar'} hideFab>
       {coinAmount ? <CoinAnimation amount={coinAmount} onComplete={() => setCoinAmount(0)} /> : null}
       <ShamarHeader
         hrefBack={mode ? modePath(mode) : '/shamar'}
@@ -159,7 +159,7 @@ export default function NewShamarContributionPage() {
         ]}
       />
 
-      <form onSubmit={handleSubmit}>
+      <form className="aporte-form" onSubmit={handleSubmit}>
         <ShamarCard title="Dados do aporte">
           <div className="aporte-form-grid">
             <label>
@@ -213,7 +213,7 @@ export default function NewShamarContributionPage() {
           </label>
         </ShamarCard>
 
-        <ShamarCard title={`Selecione os quadrinhos · total deve ser ${formatMoney(amount)}`}>
+        <ShamarCard className="aporte-board-card" title={`Selecione os quadrinhos · total deve ser ${formatMoney(amount)}`}>
           <div className="selection-counter">
             <strong>{formatMoney(selectedSum)} de {formatMoney(amount)}</strong>
             {valuesMatch ? <span className="ok">✓ Valores conferem</span> : <span className="warn">{diffLabel}</span>}
@@ -221,19 +221,32 @@ export default function NewShamarContributionPage() {
           {isBoardLoading ? (
             <p className="aporte-muted">Carregando quadrinhos...</p>
           ) : availableSquares.length > 0 ? (
-            <BoardGrid squares={squares} selectable selectedIds={selectedIds} onToggleSquare={toggleSquare} />
+            <div className="aporte-board-scroll">
+              <BoardGrid squares={squares} selectable selectedIds={selectedIds} onToggleSquare={toggleSquare} />
+            </div>
           ) : (
             <p className="aporte-muted">Nenhum quadrinho disponível para esta temporada.</p>
           )}
         </ShamarCard>
 
-        <button type="submit" className="aporte-submit" disabled={!canSubmit}>
-          {isSubmitting ? 'Confirmando...' : 'Confirmar Aporte 🛡️'}
-        </button>
-        <p className="aporte-phrase">Você escolheu guardar antes de gastar.</p>
+        <div className="aporte-sticky-actions">
+          <div className="aporte-sticky-inner">
+            <div className="aporte-sticky-status">
+              <strong>{formatMoney(selectedSum)}</strong>
+              <span>{valuesMatch ? 'Valores conferem' : diffLabel}</span>
+            </div>
+            <button type="submit" className="aporte-submit" disabled={!canSubmit}>
+              {isSubmitting ? 'Confirmando...' : 'Confirmar Aporte 🛡️'}
+            </button>
+          </div>
+        </div>
       </form>
 
       <style jsx>{`
+        .aporte-form {
+          padding-bottom: calc(124px + env(safe-area-inset-bottom));
+        }
+
         .aporte-form-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -350,6 +363,62 @@ export default function NewShamarContributionPage() {
           color: var(--red);
         }
 
+        .aporte-board-scroll {
+          max-height: min(62vh, 680px);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding: 2px 2px 8px;
+          scrollbar-gutter: stable;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .aporte-sticky-actions {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: calc(82px + env(safe-area-inset-bottom));
+          z-index: 190;
+          border-top: 1px solid var(--border);
+          background: color-mix(in srgb, var(--bg-card) 96%, transparent);
+          box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+          padding: 10px 14px;
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          transform: translateZ(0);
+        }
+
+        .aporte-sticky-inner {
+          width: 100%;
+          max-width: 960px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(160px, 260px);
+          gap: 10px;
+          align-items: center;
+        }
+
+        .aporte-sticky-status {
+          min-width: 0;
+          display: grid;
+          gap: 2px;
+        }
+
+        .aporte-sticky-status strong {
+          color: var(--shamar-dark);
+          font-family: var(--font-mono);
+          font-size: 14px;
+          line-height: 1.1;
+        }
+
+        .aporte-sticky-status span {
+          color: var(--text2);
+          font-size: 11px;
+          font-weight: 800;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .aporte-submit {
           width: 100%;
           border: 0;
@@ -367,14 +436,36 @@ export default function NewShamarContributionPage() {
           cursor: not-allowed;
         }
 
-        .aporte-phrase {
-          text-align: center;
-          margin: 10px 0 0;
-        }
-
         @media (max-width: 560px) {
           .aporte-form-grid {
             grid-template-columns: 1fr;
+          }
+
+          .selection-counter {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .aporte-board-scroll {
+            max-height: 48svh;
+            margin-left: -6px;
+            margin-right: -6px;
+            padding-left: 6px;
+            padding-right: 6px;
+          }
+
+          .aporte-sticky-actions {
+            bottom: calc(86px + env(safe-area-inset-bottom));
+            padding: 9px 10px;
+          }
+
+          .aporte-sticky-inner {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .aporte-submit {
+            min-height: 48px;
           }
         }
       `}</style>

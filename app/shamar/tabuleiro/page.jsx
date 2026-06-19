@@ -65,7 +65,7 @@ export default function ShamarBoardPage() {
   const selectedContribution = selectedSquare?.contribution_id ? contributionsById.get(selectedSquare.contribution_id) : null;
 
   return (
-    <ShamarShell activeTab="shamar">
+    <ShamarShell activeTab={mode === 'tribo' ? 'tribo' : 'shamar'}>
       <ShamarHeader
         hrefBack={mode ? modePath(mode) : '/shamar'}
         label="Tabuleiro SHAMAR"
