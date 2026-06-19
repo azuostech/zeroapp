@@ -7,6 +7,12 @@ function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+function getSafeNextPath(request) {
+  const next = request.nextUrl.searchParams.get('next') || '';
+  if (!next.startsWith('/') || next.startsWith('//')) return '';
+  return next;
+}
+
 function redirect(request, path) {
   return NextResponse.redirect(new URL(path, request.url));
 }
@@ -34,10 +40,11 @@ export async function middleware(request) {
 
   const isAppArea = pathname.startsWith('/app');
   const isAdminArea = pathname.startsWith('/admin');
+  const isContentArea = pathname.startsWith('/conteudo');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
   const isShamarArea = pathname.startsWith('/shamar');
   const isShamarApi = pathname.startsWith('/api/shamar');
-  const protectedPage = isAppArea || isAdminArea || isJacksonArea || isShamarArea;
+  const protectedPage = isAppArea || isAdminArea || isContentArea || isJacksonArea || isShamarArea;
   const protectedApi = isFinanceApi || isAdminApi || isShamarApi;
 
   if (!hasSupabaseEnv()) {
@@ -95,7 +102,7 @@ export async function middleware(request) {
   }
 
   if (pathname === ROOT_PATH && profile.status === 'active') {
-    return redirect(request, profile.role === 'admin' ? '/admin' : '/app');
+    return redirect(request, getSafeNextPath(request) || (profile.role === 'admin' ? '/admin' : '/app'));
   }
 
   if ((protectedPage || protectedApi) && profile.status !== 'active') {

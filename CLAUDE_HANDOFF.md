@@ -1,14 +1,38 @@
 # CLAUDE Handoff - ZeroApp
 
-Data: 2026-06-17
+Data: 2026-06-19
 Branch atual: main
-Status funcional: main sincronizada com origin/main; SHAMAR publicado e build validado
+Status funcional: main com redirecionamento de links de conteudo autenticado corrigido; build validado
 
 ## Resumo atual
+- Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
 - Ultimo commit publicado antes da melhoria de encerramento: `34893bd` (`fix(shamar): mostra convites pendentes da tribo`).
 - `npm run build` passou apos a melhoria de encerramento.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-19 — Link direto de aula exige autenticacao e volta ao destino
+
+### Problema observado
+- Ao compartilhar um link direto como `/conteudo/{programId}/{aulaId}`, usuarios sem sessao viam a tela de aula tentando carregar e exibindo:
+  - `Nao foi possivel carregar este programa agora.`
+- A API de conteudo ja exigia autenticacao, mas as paginas `/conteudo` nao estavam marcadas como protegidas no middleware.
+
+### Correcao
+- `middleware.js` passou a tratar `/conteudo` como area protegida.
+- Sem sessao, o middleware redireciona para `/?next=/conteudo/...`, preservando o link original.
+- Quando um usuario ativo acessa a raiz com `?next=...`, o middleware agora respeita esse destino seguro antes do fallback para `/app` ou `/admin`.
+- A tela de login ja respeitava `next`, entao apos autenticar o usuario volta para a aula compartilhada.
+
+### Arquivos alterados
+- `middleware.js`
+
+### Validacao
+- `npm run build` passou.
+- Teste local sem cookies:
+  - `GET /conteudo/d87d9ab6-0f39-4e0a-9378-9322d2f99f94/0e6aa8a9-693b-4bb7-86d2-5278359b3906` respondeu `307` para `/?next=/conteudo/...`.
+  - `GET /?next=/conteudo/...` respondeu `200` carregando a autenticacao.
+- `npm run lint` nao validou porque `next lint` abriu o prompt interativo de configuracao do ESLint.
 
 ## Atualizacao 2026-06-17 — Edicao completa no gerenciador de programas
 
