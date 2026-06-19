@@ -2,17 +2,46 @@
 
 Data: 2026-06-19
 Branch atual: main
-Status funcional: main com edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
+Status funcional: main com copia discreta de previstos do mes anterior, edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
 
 ## Resumo atual
+- Tela `/financas` agora sugere trazer os valores previstos do mes anterior quando o mes atual esta vazio, sem poluir a interface.
 - Tela `/financas` agora permite editar o nome/texto de linhas ja inseridas pelo proprio editor da linha, sem excluir e cadastrar novamente.
 - Resumo financeiro da home (`/app`) ganhou botao de olhinho para ocultar/mostrar valores, com preferencia salva localmente.
 - Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
-- Ultimo commit publicado antes desta rodada: `1fef2e9` (`fix(shamar): improve tribo mobile navigation`).
+- Ultimo commit publicado antes desta rodada: `6e57711` (`feat(finance): allow line editing and hide summary values`).
 - `npm run build` passou apos as mudancas de financas.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-19 — Financas traz previstos do mes anterior
+
+### Problema observado
+- Ao trocar para um novo mes, os valores previstos ficavam zerados.
+- O usuario precisava digitar tudo novamente mesmo quando a estrutura e os valores planejados eram iguais ou parecidos com o mes anterior.
+- A solucao precisava ajudar sem poluir a tela com muita informacao.
+
+### Correcao
+- A tela `/financas` agora verifica, ao carregar um mes, se:
+  - o mes atual ainda nao tem valores previstos/realizados;
+  - o mes anterior possui algum valor previsto.
+- Quando as duas condicoes sao verdadeiras, aparece uma faixa compacta e contextual com `Trazer previstos`.
+- Ao aplicar, o app copia o planejamento do mes anterior para o mes atual:
+  - preserva nomes, categorias, subcategorias e valores previstos;
+  - zera `valor_realizado`;
+  - marca todos os itens como pendentes.
+- Se o usuario comecar a preencher manualmente, a sugestao some.
+- Se o usuario fechar a sugestao no `x`, ela nao aparece novamente naquele mes/navegador.
+
+### Arquivos alterados
+- `src/modules/finance/presentation/finance-app-page.jsx`
+- `CLAUDE_HANDOFF.md`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou.
+- Tentativa de validacao visual pelo Browser integrado nao foi possivel porque o `iab` nao estava disponivel nesta sessao.
 
 ## Atualizacao 2026-06-19 — Financas com edicao de linhas e privacidade de valores
 

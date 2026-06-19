@@ -20,6 +20,21 @@ const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
 
 const BLOCOS_SAIDA = ['pagar-primeiro', 'doar', 'contas', 'investimentos', 'desfrute'];
+const MESES_LABEL = [
+  '',
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
+];
 const PROFILE_MENU_ITEMS = [
   {
     icon: '🏆',
@@ -268,6 +283,8 @@ export default function FinanceAppPage({
     let saveTimer = null;
     let mounted = true;
     let editingTarget = null;
+    let carryForwardSource = null;
+    let carryForwardRequestKey = '';
     const targetUserId = adminMode ? adminViewUserId : null;
     const targetFinancePath = (path) => withUserQuery(path, targetUserId);
     const targetPayload = (body) => withUserBody(body, targetUserId);
@@ -291,6 +308,24 @@ export default function FinanceAppPage({
       if (!month || !year) return null;
       return { month, year };
     };
+
+    const periodKey = ({ month, year }) => `${year}-${month}`;
+
+    const getPreviousPeriod = (month, year) => {
+      const monthNumber = Number(month);
+      const yearNumber = Number(year);
+      if (!Number.isInteger(monthNumber) || !Number.isInteger(yearNumber)) return null;
+
+      if (monthNumber === 1) {
+        return { month: '12', year: String(yearNumber - 1) };
+      }
+
+      return { month: String(monthNumber - 1).padStart(2, '0'), year: String(yearNumber) };
+    };
+
+    const getPeriodLabel = ({ month, year }) => `${MESES_LABEL[Number(month)] || month}/${year}`;
+
+    const asList = (value) => (Array.isArray(value) ? value : []);
 
     const emitCoinsAwardFeedback = (payload) => {
       const awards = Array.isArray(payload?.coins_awarded) ? payload.coins_awarded : [];
@@ -435,6 +470,7 @@ export default function FinanceAppPage({
       const lbl = document.getElementById('save-label');
       dot?.classList.add('saving');
       if (lbl) lbl.textContent = 'Salvando...';
+      hideCarryForwardSuggestion();
       clearTimeout(saveTimer);
       saveTimer = setTimeout(salvarNuvem, 1500);
     };
@@ -456,6 +492,215 @@ export default function FinanceAppPage({
 
     const ensureDadosShape = () => {
       dados = normalizeFinancialData(dados);
+    };
+
+    const getItemPrevistoValue = (item) => Math.abs(pm(item?.valor_previsto ?? item?.valor ?? '0'));
+    const getItemRealizadoValue = (item) => Math.abs(pm(item?.valor_realizado ?? '0'));
+
+    const hasAnyPlannedValue = (sourceData) => {
+      const safeData = normalizeFinancialData(sourceData);
+
+      if (
+        SIMPLE_BLOCK_KEYS.some((bloco) =>
+          asList(safeData[bloco]).some((item) => getItemPrevistoValue(item) > 0)
+        )
+      ) {
+        return true;
+      }
+
+      return asList(safeData.contas).some((grupo) =>
+        asList(grupo?.subcats).some((item) => getItemPrevistoValue(item) > 0)
+      );
+    };
+
+    const hasAnyFinancialValue = (sourceData) => {
+      const safeData = normalizeFinancialData(sourceData);
+
+      if (
+        SIMPLE_BLOCK_KEYS.some((bloco) =>
+          asList(safeData[bloco]).some((item) => getItemPrevistoValue(item) > 0 || getItemRealizadoValue(item) > 0)
+        )
+      ) {
+        return true;
+      }
+
+      return asList(safeData.contas).some((grupo) =>
+        asList(grupo?.subcats).some((item) => getItemPrevistoValue(item) > 0 || getItemRealizadoValue(item) > 0)
+      );
+    };
+
+    const resetPlannedItem = (currentItem) => {
+      const planned = currentItem?.valor_previsto ?? currentItem?.valor ?? '0';
+      return ensureItemShape({
+        ...(currentItem || {}),
+        valor_previsto: planned,
+        valor: planned,
+        valor_realizado: '0',
+        realized: false
+      });
+    };
+
+    const resetPlannedGroup = (group) => ({
+      ...(group || {}),
+      nome: String(group?.nome || ''),
+      subcats: asList(group?.subcats).map((subcat) => resetPlannedItem(subcat))
+    });
+
+    const buildCarryForwardData = (previousData) => {
+      const previous = normalizeFinancialData(previousData);
+      const next = JSON.parse(JSON.stringify(previous));
+
+      SIMPLE_BLOCK_KEYS.forEach((bloco) => {
+        next[bloco] = asList(previous[bloco]).map((item) => resetPlannedItem(item));
+      });
+      next.contas = asList(previous.contas).map((group) => resetPlannedGroup(group));
+
+      return normalizeFinancialData(next);
+    };
+
+    const setCarryForwardLoading = (loading) => {
+      const button = document.getElementById('carry-forward-apply');
+      if (!button) return;
+      button.disabled = Boolean(loading);
+      button.textContent = loading ? 'Trazendo...' : 'Trazer previstos';
+    };
+
+    const hideCarryForwardSuggestion = () => {
+      const panel = document.getElementById('carry-forward-panel');
+      if (panel) panel.hidden = true;
+      carryForwardSource = null;
+      setCarryForwardLoading(false);
+    };
+
+    const showCarryForwardSuggestion = ({ sourcePeriod, targetPeriod, sourceData }) => {
+      const panel = document.getElementById('carry-forward-panel');
+      const title = document.getElementById('carry-forward-title');
+      const text = document.getElementById('carry-forward-text');
+      if (!panel || !title || !text) return;
+
+      carryForwardSource = {
+        sourcePeriod,
+        targetPeriod,
+        sourceData,
+        sourceLabel: getPeriodLabel(sourcePeriod)
+      };
+      title.textContent = `Usar previstos de ${carryForwardSource.sourceLabel}`;
+      text.textContent = 'Preencha este mês sem redigitar tudo.';
+      panel.hidden = false;
+      setCarryForwardLoading(false);
+    };
+
+    const getCarryForwardDismissKey = ({ month, year }) =>
+      `zeroapp:finance-carry-forward-dismissed:${targetUserId || 'self'}:${year}-${month}`;
+
+    const isCarryForwardDismissed = (period) => {
+      try {
+        return localStorage.getItem(getCarryForwardDismissKey(period)) === '1';
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const dismissCarryForwardSuggestion = () => {
+      const period = getCurrentMonthYear();
+      if (period) {
+        try {
+          localStorage.setItem(getCarryForwardDismissKey(period), '1');
+        } catch (_) {
+          // no-op
+        }
+      }
+      hideCarryForwardSuggestion();
+    };
+
+    const avaliarPlanejamentoAnterior = async (month, year) => {
+      const targetPeriod = { month, year };
+      const previousPeriod = getPreviousPeriod(month, year);
+      const requestKey = periodKey(targetPeriod);
+
+      carryForwardRequestKey = requestKey;
+      hideCarryForwardSuggestion();
+
+      if (!previousPeriod || isCarryForwardDismissed(targetPeriod) || hasAnyFinancialValue(dados)) {
+        return;
+      }
+
+      try {
+        const payload = await apiRequest(
+          targetFinancePath(`/api/finance/month?month=${previousPeriod.month}&year=${previousPeriod.year}`)
+        );
+        if (!mounted || carryForwardRequestKey !== requestKey) return;
+
+        const previousData = normalizeFinancialData(
+          payload?.data && Object.keys(payload.data).length > 0 ? payload.data : cloneDefaultFinancialData()
+        );
+        if (!hasAnyPlannedValue(previousData)) return;
+
+        showCarryForwardSuggestion({
+          sourcePeriod: previousPeriod,
+          targetPeriod,
+          sourceData: previousData
+        });
+      } catch (_) {
+        hideCarryForwardSuggestion();
+      }
+    };
+
+    const aplicarPlanejamentoAnterior = async () => {
+      if (!carryForwardSource) return;
+
+      const source = carryForwardSource;
+      const period = getCurrentMonthYear();
+      if (!period || periodKey(period) !== periodKey(source.targetPeriod)) {
+        hideCarryForwardSuggestion();
+        return;
+      }
+
+      const previousDados = JSON.parse(JSON.stringify(dados));
+      const nextDados = buildCarryForwardData(source.sourceData);
+      const sourceLabel = source.sourceLabel;
+
+      setCarryForwardLoading(true);
+      clearTimeout(saveTimer);
+      dados = nextDados;
+      renderTudo();
+      hideCarryForwardSuggestion();
+
+      const dot = document.getElementById('save-dot');
+      const lbl = document.getElementById('save-label');
+      dot?.classList.add('saving');
+      if (lbl) lbl.textContent = 'Salvando...';
+
+      try {
+        await apiRequest('/api/finance/month', {
+          method: 'POST',
+          body: JSON.stringify(
+            targetPayload({
+              month: period.month,
+              year: period.year,
+              data: dados
+            })
+          )
+        });
+
+        dot?.classList.remove('saving');
+        if (lbl) {
+          lbl.textContent = '✓ Salvo';
+          setTimeout(() => {
+            if (lbl.textContent === '✓ Salvo') lbl.textContent = '';
+          }, 2500);
+        }
+        toast(`Previsão de ${sourceLabel} aplicada`);
+      } catch (_) {
+        dados = previousDados;
+        renderTudo();
+        dot?.classList.remove('saving');
+        if (lbl) lbl.textContent = '⚠ Erro ao salvar';
+        toast('Não foi possível trazer o mês anterior');
+        showCarryForwardSuggestion(source);
+      } finally {
+        setCarryForwardLoading(false);
+      }
     };
 
     const resumoStatus = (previsto, realizado, totalItens, realizados) => {
@@ -958,6 +1203,7 @@ export default function FinanceAppPage({
       const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${mes}&year=${ano}`));
       dados = normalizeFinancialData(payload?.data && Object.keys(payload.data).length > 0 ? payload.data : cloneDefaultFinancialData());
       renderTudo();
+      await avaliarPlanejamentoAnterior(mes, ano);
     };
 
     const trocarMes = async () => {
@@ -1481,6 +1727,8 @@ export default function FinanceAppPage({
     window.openSubcatEditor = openSubcatEditor;
     window.closeItemEditor = closeEditor;
     window.saveItemEditor = saveEditor;
+    window.aplicarPlanejamentoAnterior = aplicarPlanejamentoAnterior;
+    window.dispensarPlanejamentoAnterior = dismissCarryForwardSuggestion;
     window.limparMes = limparMes;
     window.exportarTexto = exportarTexto;
     window.logout = logout;
@@ -1510,6 +1758,8 @@ export default function FinanceAppPage({
       delete window.openSubcatEditor;
       delete window.closeItemEditor;
       delete window.saveItemEditor;
+      delete window.aplicarPlanejamentoAnterior;
+      delete window.dispensarPlanejamentoAnterior;
       delete window.limparMes;
       delete window.exportarTexto;
       delete window.logout;
@@ -1736,6 +1986,31 @@ export default function FinanceAppPage({
           <a className="btn btn-outline" href="/resumo">
             Ver resumo mensal
           </a>
+        </div>
+
+        <div className="carry-forward-panel" id="carry-forward-panel" hidden>
+          <div className="carry-forward-copy">
+            <strong id="carry-forward-title">Usar previstos do mês anterior</strong>
+            <span id="carry-forward-text">Preencha este mês sem redigitar tudo.</span>
+          </div>
+          <div className="carry-forward-actions">
+            <button
+              type="button"
+              className="carry-forward-btn"
+              id="carry-forward-apply"
+              onClick={() => window.aplicarPlanejamentoAnterior?.()}
+            >
+              Trazer previstos
+            </button>
+            <button
+              type="button"
+              className="carry-forward-dismiss"
+              onClick={() => window.dispensarPlanejamentoAnterior?.()}
+              aria-label="Não mostrar esta sugestão neste mês"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         <div id="blocos">
@@ -2645,6 +2920,104 @@ export default function FinanceAppPage({
         .btn-outline:hover {
           border-color: var(--btn-outline-hover-border);
           color: var(--text);
+        }
+
+        .carry-forward-panel {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin: -10px 0 14px;
+          padding: 10px 12px;
+          border: 1px solid rgba(0, 200, 83, 0.24);
+          border-radius: 12px;
+          background: rgba(0, 200, 83, 0.055);
+        }
+
+        .carry-forward-panel[hidden] {
+          display: none;
+        }
+
+        .carry-forward-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .carry-forward-copy strong {
+          color: var(--green);
+          font-size: 12px;
+          line-height: 1.2;
+        }
+
+        .carry-forward-copy span {
+          color: var(--dim);
+          font-size: 11px;
+          line-height: 1.25;
+        }
+
+        .carry-forward-actions {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex: 0 0 auto;
+        }
+
+        .carry-forward-btn {
+          min-height: 34px;
+          border: 1px solid rgba(0, 200, 83, 0.38);
+          border-radius: 999px;
+          background: var(--green);
+          color: #06170d;
+          cursor: pointer;
+          font-family: 'Sora', sans-serif;
+          font-size: 11px;
+          font-weight: 800;
+          padding: 0 13px;
+          white-space: nowrap;
+        }
+
+        .carry-forward-btn:disabled {
+          cursor: progress;
+          opacity: 0.72;
+        }
+
+        .carry-forward-dismiss {
+          width: 32px;
+          height: 32px;
+          min-height: 32px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          background: var(--bg3);
+          color: var(--muted);
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          padding: 0;
+        }
+
+        .carry-forward-btn:focus-visible,
+        .carry-forward-dismiss:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+
+        @media (max-width: 560px) {
+          .carry-forward-panel {
+            align-items: stretch;
+            gap: 10px;
+            margin: -4px 0 12px;
+          }
+
+          .carry-forward-actions {
+            align-self: center;
+          }
+
+          .carry-forward-btn {
+            max-width: 128px;
+            padding: 0 10px;
+          }
         }
 
         .bloco {
