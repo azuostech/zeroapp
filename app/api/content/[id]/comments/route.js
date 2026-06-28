@@ -1,5 +1,28 @@
 import { NextResponse } from 'next/server';
 import { mapAuthor, normalizeBody, normalizeId, parseJsonBody, requireUser } from '../../comments/comment-utils';
+import { canAccessContentItem } from '../../programs/content-program-utils';
+
+async function requireAccessibleContent(supabase, contentId, profile) {
+  const { data: content, error } = await supabase
+    .from('member_area_content')
+    .select('id,is_published,visibility,tier_required,turma_exclusiva,disponivel_em')
+    .eq('id', contentId)
+    .maybeSingle();
+
+  if (error) {
+    return { error: NextResponse.json({ error: error.message || 'content_lookup_failed' }, { status: 500 }) };
+  }
+
+  if (!content) {
+    return { error: NextResponse.json({ error: 'content_not_found' }, { status: 404 }) };
+  }
+
+  if (!canAccessContentItem(content, profile)) {
+    return { error: NextResponse.json({ error: 'content_access_denied' }, { status: 403 }) };
+  }
+
+  return { content };
+}
 
 export async function GET(_request, { params }) {
   const { supabase, user, profile, error } = await requireUser();
@@ -8,6 +31,9 @@ export async function GET(_request, { params }) {
   const resolvedParams = await params;
   const contentId = normalizeId(resolvedParams?.id);
   if (!contentId) return NextResponse.json({ error: 'invalid_content_id' }, { status: 400 });
+
+  const access = await requireAccessibleContent(supabase, contentId, profile);
+  if (access.error) return access.error;
 
   const { data: comments, error: commentsError } = await supabase
     .from('content_comments')
@@ -77,12 +103,15 @@ export async function GET(_request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const { supabase, user, error } = await requireUser();
+  const { supabase, user, profile, error } = await requireUser();
   if (error) return error;
 
   const resolvedParams = await params;
   const contentId = normalizeId(resolvedParams?.id);
   if (!contentId) return NextResponse.json({ error: 'invalid_content_id' }, { status: 400 });
+
+  const access = await requireAccessibleContent(supabase, contentId, profile);
+  if (access.error) return access.error;
 
   const parsed = await parseJsonBody(request);
   if (parsed.error) return parsed.error;

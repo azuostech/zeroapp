@@ -75,6 +75,30 @@ function canPreviewForTurma(itemTurma, userTurma) {
   return requiredTurmas.some((turma) => userTurmas.has(turma));
 }
 
+function isVisibleContent(item) {
+  return item?.visibility !== 'hidden';
+}
+
+function isAccessUnlocked(item, accessibleTiers, turmaUsuario) {
+  return (
+    isVisibleContent(item) &&
+    item?.visibility !== 'locked' &&
+    isDisponivelHoje(item?.disponivel_em) &&
+    canPreviewForTurma(item?.turma_exclusiva, turmaUsuario) &&
+    isTierAcessivel(item?.tier_required, accessibleTiers)
+  );
+}
+
+function isDateLockedForUser(item, accessibleTiers, turmaUsuario) {
+  return (
+    isVisibleContent(item) &&
+    item?.visibility !== 'locked' &&
+    !isDisponivelHoje(item?.disponivel_em) &&
+    canPreviewForTurma(item?.turma_exclusiva, turmaUsuario) &&
+    isTierAcessivel(item?.tier_required, accessibleTiers)
+  );
+}
+
 function isTierAcessivel(requiredTier, accessibleTiers) {
   const normalizedRequired = String(requiredTier || '').trim().toUpperCase();
   return accessibleTiers.includes(normalizedRequired);
@@ -155,6 +179,7 @@ export async function GET(request) {
     .from('member_area_content')
     .select('*')
     .eq('is_published', true)
+    .neq('visibility', 'hidden')
     .order('order_index', { ascending: true });
 
   if (tipo) {
@@ -169,9 +194,9 @@ export async function GET(request) {
   const unlocked = [];
   const dateLocked = [];
   for (const item of content || []) {
-    if (isDisponivelHoje(item?.disponivel_em)) {
+    if (isAccessUnlocked(item, accessibleTiers, turmaUsuario)) {
       unlocked.push(mapUnlockedItem(item));
-    } else {
+    } else if (isDateLockedForUser(item, accessibleTiers, turmaUsuario)) {
       dateLocked.push(mapDateLockedItem(item));
     }
   }
@@ -186,6 +211,7 @@ export async function GET(request) {
         .from('member_area_content')
         .select('*')
         .eq('is_published', true)
+        .neq('visibility', 'hidden')
         .order('order_index', { ascending: true });
 
       if (tipo) {

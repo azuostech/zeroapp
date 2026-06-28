@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   canAccessTier,
+  canAccessTurma,
   isAvailableToday,
   mapProgressByContent,
   normalizeId,
@@ -13,13 +14,15 @@ function sortByOrder(items) {
 
 function mapAula(aula, progress, profile, isAdmin) {
   const lockedByTier = !canAccessTier(aula?.tier_required, profile?.tier, isAdmin);
+  const lockedByTurma = !canAccessTurma(aula?.turma_exclusiva, profile?.turma, isAdmin);
   const lockedByVisibility = aula?.visibility === 'locked';
   const lockedByDate = !isAvailableToday(aula?.disponivel_em);
-  const locked = lockedByTier || lockedByVisibility || lockedByDate;
+  const locked = lockedByTier || lockedByTurma || lockedByVisibility || lockedByDate;
 
   let lockedReason = null;
   if (lockedByVisibility) lockedReason = 'Conteúdo bloqueado';
   else if (lockedByDate) lockedReason = 'Ainda não disponível';
+  else if (lockedByTurma) lockedReason = 'Conteúdo exclusivo para alunos';
   else if (lockedByTier) lockedReason = `Disponível na fase ${aula?.tier_required || 'superior'}`;
 
   return {
@@ -49,6 +52,16 @@ export async function GET(_request, { params }) {
 
   if (programError || !program) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+
+  const isAdmin = String(profile?.role || '').toLowerCase() === 'admin' || profile?.is_admin === true;
+  const programLocked =
+    program?.visibility === 'locked' ||
+    !canAccessTier(program?.tier_required, profile?.tier, isAdmin) ||
+    !canAccessTurma(program?.turma_exclusiva, profile?.turma, isAdmin);
+
+  if (programLocked) {
+    return NextResponse.json({ error: 'program_access_denied' }, { status: 403 });
   }
 
   const { data: sessions, error: sessionsError } = await supabase
@@ -100,7 +113,6 @@ export async function GET(_request, { params }) {
     progressRows = progress || [];
   }
 
-  const isAdmin = String(profile?.role || '').toLowerCase() === 'admin';
   const progressByContent = mapProgressByContent(progressRows);
   const mappedSessions = sortByOrder(sessions).map((session) => {
     const sessionAulas = sortByOrder(session?.member_area_content || [])

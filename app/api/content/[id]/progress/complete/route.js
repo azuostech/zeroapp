@@ -2,15 +2,41 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { canAccessContentItem } from '../../../programs/content-program-utils';
+
+async function requireAccessibleContent(supabase, contentId, profile) {
+  const { data: content, error } = await supabase
+    .from('member_area_content')
+    .select('id,is_published,visibility,tier_required,turma_exclusiva,disponivel_em')
+    .eq('id', contentId)
+    .maybeSingle();
+
+  if (error) {
+    return { error: NextResponse.json({ error: error.message || 'content_lookup_failed' }, { status: 500 }) };
+  }
+
+  if (!content) {
+    return { error: NextResponse.json({ error: 'content_not_found' }, { status: 404 }) };
+  }
+
+  if (!canAccessContentItem(content, profile)) {
+    return { error: NextResponse.json({ error: 'content_access_denied' }, { status: 403 }) };
+  }
+
+  return { content };
+}
 
 export async function POST(_request, { params }) {
   const supabase = await createServerSupabase();
-  const { user } = await getCurrentProfile(supabase);
+  const { user, profile } = await getCurrentProfile(supabase);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const resolvedParams = await params;
   const contentId = String(resolvedParams?.id || '').trim();
   if (!contentId) return NextResponse.json({ error: 'invalid_content_id' }, { status: 400 });
+
+  const access = await requireAccessibleContent(supabase, contentId, profile);
+  if (access.error) return access.error;
 
   const now = new Date().toISOString();
   const { data: existing } = await supabase
@@ -60,12 +86,15 @@ export async function POST(_request, { params }) {
 
 export async function DELETE(_request, { params }) {
   const supabase = await createServerSupabase();
-  const { user } = await getCurrentProfile(supabase);
+  const { user, profile } = await getCurrentProfile(supabase);
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const resolvedParams = await params;
   const contentId = String(resolvedParams?.id || '').trim();
   if (!contentId) return NextResponse.json({ error: 'invalid_content_id' }, { status: 400 });
+
+  const access = await requireAccessibleContent(supabase, contentId, profile);
+  if (access.error) return access.error;
 
   const { error } = await supabase
     .from('content_progress')

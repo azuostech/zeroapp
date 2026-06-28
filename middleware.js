@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 const ROOT_PATH = '/';
 
@@ -43,9 +44,16 @@ export async function middleware(request) {
   const isContentArea = pathname.startsWith('/conteudo');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
   const isShamarArea = pathname.startsWith('/shamar');
+  const isMavfArea = pathname.startsWith('/mavf');
+  const isJornadaArea = pathname.startsWith('/jornada');
+  const isTurmaArea = pathname.startsWith('/turma');
   const isShamarApi = pathname.startsWith('/api/shamar');
-  const protectedPage = isAppArea || isAdminArea || isContentArea || isJacksonArea || isShamarArea;
-  const protectedApi = isFinanceApi || isAdminApi || isShamarApi;
+  const isMavfApi = pathname.startsWith('/api/mavf');
+  const isCommunityApi = pathname.startsWith('/api/community');
+  const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea || isTurmaArea;
+  const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
+  const protectedPage = isAppArea || isAdminArea || isContentArea || isJacksonArea || studentOnlyPage;
+  const protectedApi = isFinanceApi || isAdminApi || studentOnlyApi;
 
   if (!hasSupabaseEnv()) {
     return NextResponse.next({ request });
@@ -88,7 +96,7 @@ export async function middleware(request) {
 
   let profile = null;
   try {
-    const { data } = await supabase.from('profiles').select('role,status').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('profiles').select('role,status,turma,is_admin').eq('id', user.id).maybeSingle();
     profile = data || null;
   } catch (error) {
     console.error('[middleware] profile query failed:', error);
@@ -120,6 +128,14 @@ export async function middleware(request) {
 
   if (isAppArea && profile.role === 'admin') {
     return redirect(request, '/admin');
+  }
+
+  if (profile.role !== 'admin' && studentOnlyPage && !hasStudentAccess(profile)) {
+    return redirect(request, '/app');
+  }
+
+  if (profile.role !== 'admin' && studentOnlyApi && !hasStudentAccess(profile)) {
+    return jsonError('student_access_required', 403);
   }
 
   return response;

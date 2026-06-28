@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 export async function GET() {
   const supabase = await createServerSupabase();
@@ -8,6 +9,10 @@ export async function GET() {
 
   if (!user || !profile) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  if (!hasStudentAccess(profile)) {
+    return NextResponse.json({ error: 'student_access_required' }, { status: 403 });
   }
 
   const turmaUsuario = String(profile?.turma || '').trim() || null;

@@ -38,6 +38,23 @@ export function canAccessTier(requiredTier, userTier, isAdmin = false) {
   return userIndex >= 0 && requiredIndex >= 0 && userIndex >= requiredIndex;
 }
 
+export function splitTurmas(rawTurmas) {
+  return String(rawTurmas || '')
+    .split(/[;,]/)
+    .map((turma) => turma.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function canAccessTurma(requiredTurmas, userTurmas, isAdmin = false) {
+  if (isAdmin) return true;
+
+  const required = splitTurmas(requiredTurmas);
+  if (required.length === 0) return true;
+
+  const userList = new Set(splitTurmas(userTurmas));
+  return required.some((turma) => userList.has(turma));
+}
+
 export function isAvailableToday(dateValue) {
   const value = String(dateValue || '').trim();
   if (!value) return true;
@@ -49,6 +66,14 @@ export function isAvailableToday(dateValue) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today >= releaseDate;
+}
+
+export function canAccessContentItem(content, profile) {
+  const isAdmin = profile?.role === 'admin' || profile?.is_admin === true;
+  if (!content || content?.is_published === false) return false;
+  if (content?.visibility === 'hidden' || content?.visibility === 'locked') return false;
+  if (!isAvailableToday(content?.disponivel_em)) return false;
+  return canAccessTier(content?.tier_required, profile?.tier, isAdmin) && canAccessTurma(content?.turma_exclusiva, profile?.turma, isAdmin);
 }
 
 export function mapProgressByContent(progressRows) {

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 function getAvatarInitial(profile) {
   const base = profile?.full_name || profile?.email || '';
@@ -123,6 +124,8 @@ export default function AppHeader() {
   const profileTier = String(profile?.tier || 'DESPERTAR').toUpperCase();
   const tierClass = `tier-${profileTier.toLowerCase()}`;
   const logoSrc = theme === 'light' ? '/logo-zeroapp-light.png' : '/logo-zeroapp-dark.png';
+  const canUseStudentAreas = hasStudentAccess(profile);
+  const journeyShortcutHref = canUseStudentAreas ? '/jornada' : '/app';
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -145,10 +148,10 @@ export default function AppHeader() {
         </Link>
 
         <div className="header-actions">
-          <Link href="/jornada" className="jornada-shortcut-link" aria-label="Abrir jornada (tier)">
+          <Link href={journeyShortcutHref} className="jornada-shortcut-link" aria-label="Abrir jornada (tier)">
             <TierDisplay size="sm" showName={false} />
           </Link>
-          <Link href="/jornada" className="jornada-shortcut-link" aria-label="Abrir jornada (coins)">
+          <Link href={journeyShortcutHref} className="jornada-shortcut-link" aria-label="Abrir jornada (coins)">
             <CoinsDisplay size="sm" className="header-coins" clickable={false} />
           </Link>
 

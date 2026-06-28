@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 async function readReactionCount(supabase, eventId) {
   const { count, error } = await supabase
@@ -19,6 +20,10 @@ export async function POST(_request, { params }) {
 
   if (!user || !profile) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  if (!hasStudentAccess(profile)) {
+    return NextResponse.json({ error: 'student_access_required' }, { status: 403 });
   }
 
   const eventId = String(params?.id || '').trim();

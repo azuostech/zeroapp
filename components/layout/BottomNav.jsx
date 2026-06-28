@@ -2,28 +2,71 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
-const TABS = [
+const STUDENT_TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
   { id: 'jornada', href: '/mavf', icon: '🌱', label: 'Minha Jornada' },
   { id: 'conquistas', href: '/jornada', icon: '🏆', label: 'Conquistas' }
 ];
 
-function getAutoActiveTab(pathname) {
+const BASIC_TABS = [
+  { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
+  { id: 'financas', href: '/financas', icon: '💰', label: 'Finanças' },
+  { id: 'educacao', href: '/conteudo', icon: '📚', label: 'Educação' }
+];
+
+function getStudentAutoActiveTab(pathname) {
   if (pathname === '/app' || pathname === '/') return 'inicio';
   if (pathname.startsWith('/mavf')) return 'jornada';
   if (pathname.startsWith('/jornada')) return 'conquistas';
   return '';
 }
 
+function getBasicAutoActiveTab(pathname) {
+  if (pathname === '/app' || pathname === '/') return 'inicio';
+  if (pathname.startsWith('/financas')) return 'financas';
+  if (pathname.startsWith('/conteudo')) return 'educacao';
+  return '';
+}
+
 export default function BottomNav({ activeTab = '' }) {
   const pathname = usePathname();
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      try {
+        const response = await fetch('/api/profile/me', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        if (active && response.ok) {
+          setProfile(payload?.profile || null);
+        }
+      } catch (_) {
+        if (active) setProfile(null);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const canUseStudentAreas = hasStudentAccess(profile);
+  const tabs = useMemo(() => (canUseStudentAreas ? STUDENT_TABS : BASIC_TABS), [canUseStudentAreas]);
   const normalizedActiveTab = activeTab === 'mavf' ? 'jornada' : activeTab === 'perfil' || activeTab === 'voce' ? 'conquistas' : activeTab;
-  const current = normalizedActiveTab || getAutoActiveTab(pathname || '');
+  const autoActiveTab = canUseStudentAreas ? getStudentAutoActiveTab(pathname || '') : getBasicAutoActiveTab(pathname || '');
+  const requestedActiveTab = tabs.some((tab) => tab.id === normalizedActiveTab) ? normalizedActiveTab : '';
+  const current = autoActiveTab || requestedActiveTab || 'inicio';
 
   return (
     <nav className="zero-bottom-nav" aria-label="Navegação principal do app">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab.id === current;
         return (
           <Link

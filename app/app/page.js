@@ -7,6 +7,7 @@ import BottomNavHub from '@/components/layout/BottomNavHub';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import NavigationCard from '@/components/layout/NavigationCard';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -26,6 +27,7 @@ export default function HomeHubPage() {
   const [isIAOpen, setIsIAOpen] = useState(false);
   const [isLoadingFinance, setIsLoadingFinance] = useState(true);
   const [financialData, setFinancialData] = useState(null);
+  const [profile, setProfile] = useState(null);
   const period = useMemo(() => nowPeriod(), []);
 
   useEffect(() => {
@@ -64,11 +66,34 @@ export default function HomeHubPage() {
     };
   }, [period.month, period.year]);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadProfile = async () => {
+      try {
+        const response = await fetch('/api/profile/me', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        if (active && response.ok) {
+          setProfile(payload?.profile || null);
+        }
+      } catch (_) {
+        if (active) setProfile(null);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const canUseStudentAreas = hasStudentAccess(profile);
   const navigationCards = [
     { icon: '💰', label: 'Finanças', href: '/financas' },
     { icon: '📚', label: 'Educação', href: '/conteudo' },
-    { icon: '👥', label: 'Comunidade', href: '/turma' },
-    { icon: '🛡️', label: 'SHAMAR', href: '/shamar' }
+    { icon: '👥', label: 'Comunidade', href: '/turma', locked: !canUseStudentAreas },
+    { icon: '🛡️', label: 'SHAMAR', href: '/shamar', locked: !canUseStudentAreas }
   ];
 
   return (
@@ -83,7 +108,7 @@ export default function HomeHubPage() {
         <div className="home-hub-explore-label">ONDE VOCÊ QUER IR?</div>
         <section className="home-hub-nav-grid" aria-label="Acessos principais">
           {navigationCards.map((card) => (
-            <NavigationCard key={card.href} icon={card.icon} label={card.label} href={card.href} />
+            <NavigationCard key={card.href} icon={card.icon} label={card.label} href={card.href} locked={card.locked} />
           ))}
         </section>
       </main>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 export const PROOF_ALLOWED_CONTENT_TYPES = new Set([
   'image/jpeg',
@@ -99,6 +100,15 @@ export async function createAuthenticatedContext() {
       user,
       profile,
       error: jsonError('inactive_account', 403)
+    };
+  }
+
+  if (!hasStudentAccess(profile)) {
+    return {
+      supabase,
+      user,
+      profile,
+      error: jsonError('student_access_required', 403)
     };
   }
 

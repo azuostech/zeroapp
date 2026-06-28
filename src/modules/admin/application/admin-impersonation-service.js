@@ -39,7 +39,7 @@ export async function resolveImpersonationContext({ supabase, requestedUserId })
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id,email,full_name,phone,status,role,tier,is_admin,created_at,approved_at,approved_by')
+      .select('id,email,full_name,phone,status,role,tier,turma,is_admin,created_at,approved_at,approved_by')
       .eq('id', normalizedRequestedUserId)
       .maybeSingle();
 

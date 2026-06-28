@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { TierBadge } from '@/components/gamification/TierBadge';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -119,6 +120,7 @@ export default function PerfilPage() {
   const profileInitial = useMemo(() => firstName.charAt(0).toUpperCase() || 'M', [firstName]);
   const safeTier = useMemo(() => String(profile?.tier || 'DESPERTAR').toUpperCase(), [profile?.tier]);
   const avatarTierClass = resolveTierAvatarClass(safeTier);
+  const canUseStudentAreas = hasStudentAccess(profile);
 
   const handleEmailSubmit = async (event) => {
     event.preventDefault();
@@ -266,21 +268,30 @@ export default function PerfilPage() {
 
             <section className="card account-links">
               <h2>Acesso rápido</h2>
-              <Link href="/jornada" className="menu-item">
-                <span className="menu-icon">🏆</span>
-                <span className="menu-label">Conquistas</span>
-                <span className="menu-arrow">›</span>
-              </Link>
-              <Link href="/mavf" className="menu-item">
-                <span className="menu-icon">🌱</span>
-                <span className="menu-label">Minha Jornada</span>
-                <span className="menu-arrow">›</span>
-              </Link>
               <Link href="/financas" className="menu-item">
                 <span className="menu-icon">💰</span>
                 <span className="menu-label">Finanças</span>
                 <span className="menu-arrow">›</span>
               </Link>
+              <Link href="/conteudo" className="menu-item">
+                <span className="menu-icon">📚</span>
+                <span className="menu-label">Educação</span>
+                <span className="menu-arrow">›</span>
+              </Link>
+              {canUseStudentAreas ? (
+                <>
+                  <Link href="/jornada" className="menu-item">
+                    <span className="menu-icon">🏆</span>
+                    <span className="menu-label">Conquistas</span>
+                    <span className="menu-arrow">›</span>
+                  </Link>
+                  <Link href="/mavf" className="menu-item">
+                    <span className="menu-icon">🌱</span>
+                    <span className="menu-label">Minha Jornada</span>
+                    <span className="menu-arrow">›</span>
+                  </Link>
+                </>
+              ) : null}
             </section>
 
             <section className="card">

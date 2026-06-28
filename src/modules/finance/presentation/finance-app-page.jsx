@@ -8,6 +8,7 @@ import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import BottomNav from '@/components/layout/BottomNav';
 import QuickAccessCard from '@/components/layout/QuickAccessCard';
+import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 import {
   SIMPLE_BLOCK_KEYS,
   cloneDefaultFinancialData,
@@ -148,7 +149,7 @@ export default function FinanceAppPage({
   const handleMavfClick = (event) => {
     if (canAccessMavf) return;
     event.preventDefault();
-    window.alert('O MAVF e exclusivo para membros da Mentoria em Grupo (tier MOVIMENTO ou superior).');
+    window.alert('O MAVF é exclusivo para alunos com turma ativa.');
   };
 
   useEffect(() => {
@@ -1665,7 +1666,7 @@ export default function FinanceAppPage({
         }
 
         const tier = payload.profile.tier || 'DESPERTAR';
-        const canAccess = adminMode ? true : ALLOWED_MAVF_TIERS.includes(tier);
+        const canAccess = adminMode ? true : ALLOWED_MAVF_TIERS.includes(tier) && hasStudentAccess(payload.profile);
         let hasActiveSession = false;
 
         if (canAccess) {
