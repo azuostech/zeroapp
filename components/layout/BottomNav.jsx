@@ -22,36 +22,43 @@ export default function BottomNav({ activeTab = '' }) {
   const current = normalizedActiveTab || getAutoActiveTab(pathname || '');
 
   return (
-    <nav className="bottom-nav" aria-label="Navegação principal do app">
+    <nav className="zero-bottom-nav" aria-label="Navegação principal do app">
       {TABS.map((tab) => {
         const isActive = tab.id === current;
         return (
-          <Link key={tab.id} href={tab.href} className={`nav-item ${isActive ? 'active' : ''}`}>
-            <span className="nav-icon">{tab.icon}</span>
-            <span className="nav-label">{tab.label}</span>
+          <Link
+            key={tab.id}
+            href={tab.href}
+            className={`zero-bottom-nav-item ${isActive ? 'active' : ''}`}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            <span className="zero-bottom-nav-icon" aria-hidden="true">{tab.icon}</span>
+            <span className="zero-bottom-nav-label">{tab.label}</span>
           </Link>
         );
       })}
 
-      <style jsx>{`
-        .bottom-nav {
+      <style jsx global>{`
+        .zero-bottom-nav {
           position: fixed;
           left: 0;
           right: 0;
           bottom: 0;
-          z-index: 150;
+          z-index: 180;
           display: flex;
           justify-content: space-around;
           gap: 6px;
           background: color-mix(in srgb, var(--bg-nav) 94%, transparent);
           border-top: 1px solid var(--border);
           box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
-          padding: 8px 10px calc(24px + env(safe-area-inset-bottom));
+          min-height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+          padding: 8px max(10px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px))
+            max(10px, env(safe-area-inset-right, 0px));
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
         }
 
-        :global(.nav-item) {
+        .zero-bottom-nav-item {
           flex: 1;
           min-width: 0;
           max-width: 120px;
@@ -67,17 +74,17 @@ export default function BottomNav({ activeTab = '' }) {
           transition: var(--transition);
         }
 
-        :global(.nav-item.active) {
+        .zero-bottom-nav-item.active {
           color: var(--green-dark);
           background: var(--green-dim);
         }
 
-        .nav-icon {
+        .zero-bottom-nav-icon {
           font-size: 20px;
           line-height: 1;
         }
 
-        .nav-label {
+        .zero-bottom-nav-label {
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.5px;
