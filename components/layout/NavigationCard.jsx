@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 
-export default function NavigationCard({ icon, label, onClick, href, locked = false }) {
+export default function NavigationCard({ icon, label, onClick, onLockedClick, href, locked = false }) {
   const handleClick = (event) => {
     if (locked) {
       event.preventDefault();
+      onLockedClick?.(event);
       return;
     }
     if (onClick) onClick(event);

@@ -1,4 +1,4 @@
-export function baseTemplate({ preheader, content }) {
+export function baseTemplate({ preheader, content, footerText = 'Voce recebe este email por ser mentorado ativo do programa Financas do Zero.' }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.szadigital.com.br';
 
   return `<!DOCTYPE html>
@@ -58,7 +58,7 @@ export function baseTemplate({ preheader, content }) {
       ${content}
     </div>
     <div class="footer">
-      Voce recebe este email por ser mentorado ativo do programa Financas do Zero.<br>
+      ${footerText}<br>
       <a href="${siteUrl}">Abrir ZeroApp</a>
       &nbsp;·&nbsp;
       <a href="${siteUrl}/perfil">Gerenciar preferencias</a>

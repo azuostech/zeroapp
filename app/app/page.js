@@ -7,6 +7,7 @@ import BottomNavHub from '@/components/layout/BottomNavHub';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import NavigationCard from '@/components/layout/NavigationCard';
+import RestrictedAccessModal from '@/components/layout/RestrictedAccessModal';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 function pad2(value) {
@@ -28,6 +29,7 @@ export default function HomeHubPage() {
   const [isLoadingFinance, setIsLoadingFinance] = useState(true);
   const [financialData, setFinancialData] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [restrictedModalOpen, setRestrictedModalOpen] = useState(false);
   const period = useMemo(() => nowPeriod(), []);
 
   useEffect(() => {
@@ -108,7 +110,14 @@ export default function HomeHubPage() {
         <div className="home-hub-explore-label">ONDE VOCÊ QUER IR?</div>
         <section className="home-hub-nav-grid" aria-label="Acessos principais">
           {navigationCards.map((card) => (
-            <NavigationCard key={card.href} icon={card.icon} label={card.label} href={card.href} locked={card.locked} />
+            <NavigationCard
+              key={card.href}
+              icon={card.icon}
+              label={card.label}
+              href={card.href}
+              locked={card.locked}
+              onLockedClick={() => setRestrictedModalOpen(true)}
+            />
           ))}
         </section>
       </main>
@@ -116,6 +125,7 @@ export default function HomeHubPage() {
       <FAB onClick={() => setIsIAOpen(true)} />
       <BottomNavHub />
       <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
+      <RestrictedAccessModal isOpen={restrictedModalOpen} onClose={() => setRestrictedModalOpen(false)} />
     </div>
   );
 }

@@ -248,7 +248,7 @@ export default function LoginPage() {
       return;
     }
 
-    const { error } = await sb.auth.signUp({
+    const { data, error } = await sb.auth.signUp({
       email: signupEmail.trim(),
       password: signupPassword,
       options: {
@@ -264,6 +264,16 @@ export default function LoginPage() {
       setSignupLoading(false);
       return;
     }
+
+    fetch('/api/email/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: signupEmail.trim(),
+        full_name: signupName.trim(),
+        user_id: data?.user?.id || null
+      })
+    }).catch(() => {});
 
     setPendingVisible(true);
     setSignupLoading(false);

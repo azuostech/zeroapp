@@ -7,7 +7,7 @@ import {
   buildMentorshipWhatsappUrl
 } from '@/src/lib/commerce/access-offer';
 
-export default function InterestModal({ isOpen, onClose, program }) {
+export default function RestrictedAccessModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -19,45 +19,47 @@ export default function InterestModal({ isOpen, onClose, program }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !program) return null;
+  if (!isOpen) return null;
 
-  const whatsappUrl = buildMentorshipWhatsappUrl();
+  const mentorshipUrl = buildMentorshipWhatsappUrl();
 
   return (
     <div
-      className="interest-overlay"
+      className="restricted-overlay"
       role="presentation"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
-      <section className="interest-sheet" role="dialog" aria-modal="true" aria-labelledby="interest-title">
+      <section className="restricted-sheet" role="dialog" aria-modal="true" aria-labelledby="restricted-title">
         <div className="sheet-handle" />
-        <div className="icon-wrap" aria-hidden="true">
-          🎓
-        </div>
-        <h2 id="interest-title">{program.title}</h2>
-        <span className="reason">{program.locked_reason || 'Conteúdo exclusivo'}</span>
-        <p>
-          Este é um ambiente restrito para alunos. Com o Acesso Básico, você libera a Imersão Finanças do Zero,
-          ferramentas SHAMAR e comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.
+        <div className="lock-icon" aria-hidden="true">🔒</div>
+        <p className="eyebrow">Ambiente restrito para alunos</p>
+        <h2 id="restricted-title">Libere sua jornada no ZeroApp</h2>
+        <p className="intro">
+          Este espaço é exclusivo para alunos. Com o Acesso Básico, você entra na Imersão Finanças do Zero,
+          libera ferramentas SHAMAR e participa da comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.
         </p>
-        <a href={BASIC_ACCESS_CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="primary-cta" onClick={onClose}>
-          Adquirir acesso básico
-        </a>
-        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="secondary-cta" onClick={onClose}>
-          Falar sobre mentoria
-        </a>
+
+        <div className="actions">
+          <a href={BASIC_ACCESS_CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="primary-cta" onClick={onClose}>
+            Adquirir acesso básico
+          </a>
+          <a href={mentorshipUrl} target="_blank" rel="noopener noreferrer" className="secondary-cta" onClick={onClose}>
+            Falar sobre mentoria
+          </a>
+        </div>
+
         <button type="button" className="close-button" onClick={onClose}>
           Agora não
         </button>
       </section>
 
       <style jsx>{`
-        .interest-overlay {
+        .restricted-overlay {
           position: fixed;
           inset: 0;
-          z-index: 300;
+          z-index: 360;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
@@ -65,7 +67,7 @@ export default function InterestModal({ isOpen, onClose, program }) {
           padding-top: 64px;
         }
 
-        .interest-sheet {
+        .restricted-sheet {
           width: 100%;
           max-width: 560px;
           margin: 0 auto;
@@ -82,45 +84,53 @@ export default function InterestModal({ isOpen, onClose, program }) {
         .sheet-handle {
           width: 42px;
           height: 4px;
-          margin: 12px auto 20px;
+          margin: 12px auto 18px;
           border-radius: var(--radius-full);
           background: var(--border-2);
         }
 
-        .icon-wrap {
-          margin-bottom: 12px;
-          font-size: 46px;
+        .lock-icon {
+          display: grid;
+          place-items: center;
+          width: 58px;
+          height: 58px;
+          margin: 0 auto 14px;
+          border: 1px solid var(--green-mid);
+          border-radius: 50%;
+          background: var(--green-dim);
+          font-size: 30px;
           line-height: 1;
+        }
+
+        .eyebrow {
+          margin: 0 0 8px;
+          color: var(--green);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          line-height: 1.25;
+          text-transform: uppercase;
         }
 
         h2 {
           margin: 0;
           color: var(--text);
-          font-size: 20px;
+          font-size: 21px;
           font-weight: 900;
           line-height: 1.2;
         }
 
-        .reason {
-          display: inline-flex;
-          max-width: 100%;
-          margin-top: 10px;
-          border: 1px solid var(--green-mid);
-          border-radius: var(--radius-full);
-          background: var(--green-dim);
-          color: var(--green);
-          padding: 5px 14px;
-          font-size: 12px;
-          font-weight: 900;
-          line-height: 1.25;
-        }
-
-        p {
-          margin: 16px auto 22px;
-          max-width: 420px;
+        .intro {
+          margin: 14px auto 22px;
+          max-width: 440px;
           color: var(--text-2);
           font-size: 14px;
           line-height: 1.65;
+        }
+
+        .actions {
+          display: grid;
+          gap: 10px;
         }
 
         .primary-cta,
@@ -133,31 +143,29 @@ export default function InterestModal({ isOpen, onClose, program }) {
           font-weight: 900;
         }
 
-        .primary-cta {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid var(--green-mid);
-          background: var(--green);
-          color: var(--bg);
-          text-decoration: none;
-          font-size: 15px;
-        }
-
+        .primary-cta,
         .secondary-cta {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          margin-top: 10px;
-          border: 1px solid var(--border-2);
-          background: var(--bg-surface);
-          color: var(--text);
           text-decoration: none;
           font-size: 14px;
         }
 
+        .primary-cta {
+          border: 1px solid var(--green-mid);
+          background: var(--green);
+          color: var(--bg);
+        }
+
+        .secondary-cta {
+          border: 1px solid var(--border-2);
+          background: var(--bg-surface);
+          color: var(--text);
+        }
+
         .close-button {
-          margin-top: 10px;
+          margin-top: 8px;
           border: 0;
           background: transparent;
           color: var(--text-2);
@@ -170,6 +178,19 @@ export default function InterestModal({ isOpen, onClose, program }) {
         .close-button:focus-visible {
           outline: 2px solid var(--green);
           outline-offset: 3px;
+        }
+
+        @media (min-width: 640px) {
+          .restricted-overlay {
+            justify-content: center;
+            padding: 24px;
+          }
+
+          .restricted-sheet {
+            border-bottom: 1px solid var(--border-2);
+            border-radius: 22px;
+            padding-bottom: 30px;
+          }
         }
       `}</style>
     </div>
