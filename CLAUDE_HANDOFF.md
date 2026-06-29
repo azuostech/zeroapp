@@ -1,19 +1,50 @@
 # CLAUDE Handoff - ZeroApp
 
-Data: 2026-06-19
+Data: 2026-06-29
 Branch atual: main
-Status funcional: main com copia discreta de previstos do mes anterior, edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
+Status funcional: main com edicao completa de programas em `/admin/conteudo`, copia discreta de previstos do mes anterior, edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
 
 ## Resumo atual
+- Tela `/admin/conteudo` agora abre o formulario completo de programa ao clicar em `Editar`, em vez de usar `window.prompt` apenas para titulo.
 - Tela `/financas` agora sugere trazer os valores previstos do mes anterior quando o mes atual esta vazio, sem poluir a interface.
 - Tela `/financas` agora permite editar o nome/texto de linhas ja inseridas pelo proprio editor da linha, sem excluir e cadastrar novamente.
 - Resumo financeiro da home (`/app`) ganhou botao de olhinho para ocultar/mostrar valores, com preferencia salva localmente.
 - Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
-- Ultimo commit publicado antes desta rodada: `6e57711` (`feat(finance): allow line editing and hide summary values`).
-- `npm run build` passou apos as mudancas de financas.
+- Ultimo commit publicado antes desta rodada: `83d7e2a` (`feat: add basic access checkout workflow`).
+- `npm run build` passou apos a correcao do admin de conteudo.
 - `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+
+## Atualizacao 2026-06-29 — Edicao completa de programa em `/admin/conteudo`
+
+### Problema observado
+- Na rota principal `/admin/conteudo`, o botao `Editar` do card de programa ainda abria `window.prompt('Novo nome do programa')`.
+- Isso permitia alterar apenas o titulo e deixava inacessiveis campos importantes do programa nessa tela:
+  - descricao;
+  - capa;
+  - tier;
+  - turma exclusiva;
+  - visibilidade;
+  - publicacao;
+  - ordem.
+- A tela irma `/admin/conteudo/programas` ja usava `ProgramAdminForm` em modal, mas esse fluxo nao tinha sido replicado na visao estrutural principal.
+
+### Correcao
+- `app/admin/conteudo/page.jsx` passou a importar `ProgramAdminForm`.
+- A pagina ganhou estado `editingProgram` e renderiza um modal embutido quando o admin clica em `Editar`.
+- O formulario usa `mode="edit"` e `variant="embedded"`, reaproveitando o fluxo existente de `PATCH /api/admin/programs/[id]`.
+- Ao salvar, a pagina chama `refreshAll()`, fecha o modal e exibe o feedback `Programa atualizado.`.
+- O `window.prompt` de edicao de programa foi removido dessa rota. Prompts de criacao/edicao de sessao continuam fora do escopo desta correcao.
+
+### Arquivos alterados
+- `app/admin/conteudo/page.jsx`
+- `CLAUDE_HANDOFF.md`
+
+### Validacao
+- `npm run build` passou.
+- `npm run lint` nao validou porque `next lint` abriu o prompt interativo de configuracao do ESLint.
+- `npm run dev` iniciou localmente em `http://localhost:3000` apos aprovacao para bind fora do sandbox.
 
 ## Atualizacao 2026-06-19 — Financas traz previstos do mes anterior
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import ProgramAdminForm from '@/components/admin/ProgramAdminForm';
 import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 import { useAdminContent } from '@/hooks/useAdminContent';
 import { useAdminPrograms } from '@/hooks/useAdminPrograms';
@@ -180,6 +181,7 @@ export default function AdminConteudoPage() {
   const [expanded, setExpanded] = useState({});
   const [busyId, setBusyId] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [editingProgram, setEditingProgram] = useState(null);
 
   const sortedPrograms = useMemo(() => sortByOrder(programs), [programs]);
   const { bySession: contentBySession, loose: looseContent } = useMemo(() => mapContentBySession(content), [content]);
@@ -257,10 +259,15 @@ export default function AdminConteudoPage() {
     setExpanded((current) => ({ ...current, [program.id]: true }));
   };
 
-  const handleEditProgram = async (program) => {
-    const title = window.prompt('Novo nome do programa', program?.title || '');
-    if (!title || !title.trim() || title.trim() === program?.title) return;
-    await runAction(`program:${program.id}`, () => updateProgram(program.id, { title: title.trim() }), 'Programa atualizado.');
+  const handleEditProgram = (program) => {
+    setFeedback('');
+    setEditingProgram(program);
+  };
+
+  const handleProgramSaved = async () => {
+    await refreshAll();
+    setEditingProgram(null);
+    setFeedback('Programa atualizado.');
   };
 
   const handleDeleteProgram = async (program) => {
@@ -385,6 +392,20 @@ export default function AdminConteudoPage() {
 
         {feedback ? <div className="feedback">{feedback}</div> : null}
         {!isLoading && error && !isForbiddenError(error) ? <div className="feedback error">{error}</div> : null}
+
+        {editingProgram ? (
+          <div className="edit-backdrop" role="dialog" aria-modal="true" aria-label={`Editar ${editingProgram?.title || 'programa'}`}>
+            <div className="edit-dialog">
+              <ProgramAdminForm
+                mode="edit"
+                variant="embedded"
+                initialProgram={editingProgram}
+                onCancel={() => setEditingProgram(null)}
+                onSaved={handleProgramSaved}
+              />
+            </div>
+          </div>
+        ) : null}
 
         <section className="program-list">
           {isLoading ? <div className="state-inline">Carregando estrutura de conteúdo...</div> : null}
@@ -738,6 +759,26 @@ export default function AdminConteudoPage() {
         .program-list {
           display: grid;
           gap: 12px;
+        }
+
+        .edit-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          background: rgba(3, 12, 7, 0.55);
+          display: grid;
+          place-items: start center;
+          padding: 18px;
+          overflow: auto;
+        }
+
+        .edit-dialog {
+          width: min(920px, 100%);
+          border: 1px solid var(--border-2);
+          border-radius: var(--radius-xl);
+          background: var(--bg-card);
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+          padding: 16px;
         }
 
         .program-card,
