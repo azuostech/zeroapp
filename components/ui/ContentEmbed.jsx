@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Maximize2, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { VideoPlayer } from '@/components/ui/VideoPlayer';
 
 function normalizeUrl(url) {
@@ -74,7 +75,79 @@ function getEmbedConfig(rawUrl, contentType) {
 
 export function ContentEmbed({ url, contentType, title, poster }) {
   const [iframeError, setIframeError] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
+  const videoFrameRef = useRef(null);
   const config = useMemo(() => getEmbedConfig(url, contentType), [contentType, url]);
+
+  useEffect(() => {
+    if (!isLandscape) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isLandscape]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsLandscape(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }, []);
+
+  const closeLandscapeMode = useCallback(async () => {
+    setIsLandscape(false);
+
+    try {
+      window.screen?.orientation?.unlock?.();
+    } catch (_) {
+      // Alguns navegadores nao permitem liberar orientacao via script.
+    }
+
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (_) {
+        // O modo fixo do app continua funcionando mesmo sem a API de fullscreen.
+      }
+    }
+  }, []);
+
+  const openLandscapeMode = useCallback(async () => {
+    setIsLandscape(true);
+
+    if (videoFrameRef.current?.requestFullscreen) {
+      try {
+        await videoFrameRef.current.requestFullscreen();
+      } catch (_) {
+        // Sem fullscreen nativo, o container fixo ainda ocupa a tela do app.
+      }
+    }
+
+    try {
+      await window.screen?.orientation?.lock?.('landscape');
+    } catch (_) {
+      // iOS/Safari normalmente bloqueiam isso; o CSS rotaciona em retrato.
+    }
+  }, []);
+
+  const toggleLandscapeMode = useCallback(() => {
+    if (isLandscape) {
+      closeLandscapeMode();
+      return;
+    }
+
+    openLandscapeMode();
+  }, [closeLandscapeMode, isLandscape, openLandscapeMode]);
 
   if (config.type === 'mp4') {
     return (
@@ -97,32 +170,54 @@ export function ContentEmbed({ url, contentType, title, poster }) {
     const isYouTube = config.type === 'youtube';
 
     return (
-      <div className={`embed-video-frame ${isYouTube ? 'is-youtube' : ''}`}>
-        <iframe
-          src={config.embedUrl}
-          title={title || 'Conteúdo em vídeo'}
-          className="embed-iframe"
-          allow={
-            isYouTube
-              ? 'accelerometer; autoplay; encrypted-media; picture-in-picture'
-              : 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen'
-          }
-          allowFullScreen={!isYouTube}
-          frameBorder="0"
-          onError={() => setIframeError(true)}
-        />
-        {isYouTube ? (
-          <>
-            <div className="youtube-title-mask" aria-hidden="true" />
-            <div className="youtube-brand-mask" aria-hidden="true" />
-          </>
-        ) : null}
+      <div
+        ref={videoFrameRef}
+        className={`embed-video-frame ${isYouTube ? 'is-youtube' : ''} ${isLandscape ? 'is-landscape' : ''}`}
+      >
+        <div className="embed-media-box">
+          <iframe
+            src={config.embedUrl}
+            title={title || 'Conteúdo em vídeo'}
+            className="embed-iframe"
+            allow={
+              isYouTube
+                ? 'accelerometer; autoplay; encrypted-media; picture-in-picture'
+                : 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen'
+            }
+            allowFullScreen={!isYouTube}
+            frameBorder="0"
+            onError={() => setIframeError(true)}
+          />
+          {isYouTube ? (
+            <>
+              <div className="youtube-title-mask" aria-hidden="true" />
+              <div className="youtube-brand-mask" aria-hidden="true" />
+            </>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className="landscape-toggle"
+          onClick={toggleLandscapeMode}
+          aria-label={isLandscape ? 'Fechar modo horizontal' : 'Ver vídeo na horizontal'}
+          aria-pressed={isLandscape}
+          title={isLandscape ? 'Fechar modo horizontal' : 'Ver vídeo na horizontal'}
+        >
+          {isLandscape ? <X size={22} /> : <Maximize2 size={20} />}
+        </button>
         <style jsx>{`
           .embed-video-frame {
             width: 100%;
             aspect-ratio: 16 / 9;
             border-radius: var(--card-radius, 1rem);
             overflow: hidden;
+            background: #000;
+            position: relative;
+          }
+
+          .embed-media-box {
+            width: 100%;
+            height: 100%;
             background: #000;
             position: relative;
           }
@@ -154,6 +249,71 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             background: #000;
             pointer-events: none;
             z-index: 2;
+          }
+
+          .landscape-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 4;
+            width: 42px;
+            height: 42px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.72);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition:
+              background 0.2s ease,
+              transform 0.2s ease;
+          }
+
+          .landscape-toggle:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.03);
+          }
+
+          .embed-video-frame.is-landscape {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            width: 100vw;
+            height: 100dvh;
+            aspect-ratio: auto;
+            border-radius: 0;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            background: #000;
+            padding:
+              env(safe-area-inset-top)
+              env(safe-area-inset-right)
+              env(safe-area-inset-bottom)
+              env(safe-area-inset-left);
+          }
+
+          .embed-video-frame.is-landscape .embed-media-box {
+            width: min(100vw, calc(100dvh * 16 / 9));
+            height: auto;
+            max-height: 100dvh;
+            aspect-ratio: 16 / 9;
+          }
+
+          .embed-video-frame.is-landscape .landscape-toggle {
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            width: 44px;
+            height: 44px;
+          }
+
+          @media (orientation: portrait) {
+            .embed-video-frame.is-landscape .embed-media-box {
+              width: min(100dvh, calc(100vw * 16 / 9));
+              transform: rotate(90deg);
+            }
           }
         `}</style>
       </div>
