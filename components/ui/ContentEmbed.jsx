@@ -10,8 +10,8 @@ function normalizeUrl(url) {
 function buildYouTubeEmbedUrl(videoId) {
   const params = new URLSearchParams({
     autoplay: '0',
-    controls: '0',
-    disablekb: '1',
+    controls: '1',
+    disablekb: '0',
     fs: '0',
     iv_load_policy: '3',
     modestbranding: '1',
@@ -97,7 +97,7 @@ export function ContentEmbed({ url, contentType, title, poster }) {
     const isYouTube = config.type === 'youtube';
 
     return (
-      <div className="embed-video-frame">
+      <div className={`embed-video-frame ${isYouTube ? 'is-youtube' : ''}`}>
         <iframe
           src={config.embedUrl}
           title={title || 'Conteúdo em vídeo'}
@@ -111,6 +111,12 @@ export function ContentEmbed({ url, contentType, title, poster }) {
           frameBorder="0"
           onError={() => setIframeError(true)}
         />
+        {isYouTube ? (
+          <>
+            <div className="youtube-title-mask" aria-hidden="true" />
+            <div className="youtube-brand-mask" aria-hidden="true" />
+          </>
+        ) : null}
         <style jsx>{`
           .embed-video-frame {
             width: 100%;
@@ -118,12 +124,36 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             border-radius: var(--card-radius, 1rem);
             overflow: hidden;
             background: #000;
+            position: relative;
           }
 
           .embed-iframe {
             width: 100%;
             height: 100%;
             border: 0;
+            display: block;
+          }
+
+          .youtube-title-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: clamp(52px, 13%, 92px);
+            background: #000;
+            pointer-events: none;
+            z-index: 2;
+          }
+
+          .youtube-brand-mask {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: clamp(112px, 18%, 190px);
+            height: clamp(44px, 14%, 76px);
+            background: #000;
+            pointer-events: none;
+            z-index: 2;
           }
         `}</style>
       </div>
