@@ -186,14 +186,9 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             }
             allowFullScreen={!isYouTube}
             frameBorder="0"
+            sandbox={isYouTube ? 'allow-scripts allow-same-origin allow-presentation' : undefined}
             onError={() => setIframeError(true)}
           />
-          {isYouTube ? (
-            <>
-              <div className="youtube-link-mask" aria-hidden="true" />
-              <div className="youtube-logo-mask" aria-hidden="true" />
-            </>
-          ) : null}
         </div>
         <button
           type="button"
@@ -227,29 +222,6 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             height: 100%;
             border: 0;
             display: block;
-          }
-
-          .youtube-link-mask,
-          .youtube-logo-mask {
-            position: absolute;
-            background: #000;
-            cursor: default;
-            pointer-events: auto;
-            z-index: 3;
-          }
-
-          .youtube-link-mask {
-            left: 0;
-            top: 28%;
-            width: clamp(112px, 22%, 240px);
-            height: clamp(72px, 28%, 180px);
-          }
-
-          .youtube-logo-mask {
-            right: 0;
-            top: 28%;
-            width: clamp(124px, 22%, 240px);
-            height: clamp(72px, 28%, 180px);
           }
 
           .landscape-toggle {
