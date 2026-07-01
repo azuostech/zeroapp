@@ -7,6 +7,21 @@ function normalizeUrl(url) {
   return String(url || '').trim();
 }
 
+function buildYouTubeEmbedUrl(videoId) {
+  const params = new URLSearchParams({
+    autoplay: '0',
+    controls: '0',
+    disablekb: '1',
+    fs: '0',
+    iv_load_policy: '3',
+    modestbranding: '1',
+    playsinline: '1',
+    rel: '0'
+  });
+
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+}
+
 function getEmbedConfig(rawUrl, contentType) {
   const url = normalizeUrl(rawUrl);
   const type = String(contentType || '').trim().toLowerCase();
@@ -20,7 +35,7 @@ function getEmbedConfig(rawUrl, contentType) {
     return {
       type: 'youtube',
       sourceUrl: url,
-      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0&modestbranding=1`
+      embedUrl: buildYouTubeEmbedUrl(ytMatch[1])
     };
   }
 
@@ -79,14 +94,20 @@ export function ContentEmbed({ url, contentType, title, poster }) {
   }
 
   if ((config.type === 'youtube' || config.type === 'vimeo') && !iframeError) {
+    const isYouTube = config.type === 'youtube';
+
     return (
       <div className="embed-video-frame">
         <iframe
           src={config.embedUrl}
           title={title || 'Conteúdo em vídeo'}
           className="embed-iframe"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
+          allow={
+            isYouTube
+              ? 'accelerometer; autoplay; encrypted-media; picture-in-picture'
+              : 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen'
+          }
+          allowFullScreen={!isYouTube}
           frameBorder="0"
           onError={() => setIframeError(true)}
         />
