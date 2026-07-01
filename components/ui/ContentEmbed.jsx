@@ -190,8 +190,8 @@ export function ContentEmbed({ url, contentType, title, poster }) {
           />
           {isYouTube ? (
             <>
-              <div className="youtube-title-mask" aria-hidden="true" />
-              <div className="youtube-brand-mask" aria-hidden="true" />
+              <div className="youtube-link-mask" aria-hidden="true" />
+              <div className="youtube-logo-mask" aria-hidden="true" />
             </>
           ) : null}
         </div>
@@ -229,26 +229,27 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             display: block;
           }
 
-          .youtube-title-mask {
+          .youtube-link-mask,
+          .youtube-logo-mask {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: clamp(52px, 13%, 92px);
             background: #000;
-            pointer-events: none;
-            z-index: 2;
+            cursor: default;
+            pointer-events: auto;
+            z-index: 3;
           }
 
-          .youtube-brand-mask {
-            position: absolute;
+          .youtube-link-mask {
+            left: 0;
+            top: 28%;
+            width: clamp(112px, 22%, 240px);
+            height: clamp(72px, 28%, 180px);
+          }
+
+          .youtube-logo-mask {
             right: 0;
-            bottom: 0;
-            width: clamp(112px, 18%, 190px);
-            height: clamp(44px, 14%, 76px);
-            background: #000;
-            pointer-events: none;
-            z-index: 2;
+            top: 28%;
+            width: clamp(124px, 22%, 240px);
+            height: clamp(72px, 28%, 180px);
           }
 
           .landscape-toggle {
