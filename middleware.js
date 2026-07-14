@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 const ROOT_PATH = '/';
+const FINANCE_TIERS = new Set(['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
 
 function hasSupabaseEnv() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -38,10 +39,13 @@ export async function middleware(request) {
   const isFinanceApi = pathname.startsWith('/api/finance');
   const isAdminApi = pathname.startsWith('/api/admin');
   const isAuthApi = pathname.startsWith('/api/auth');
+  const isPortalApi = pathname === '/api/portal' || pathname.startsWith('/api/portal/');
 
   const isAppArea = pathname.startsWith('/app');
   const isAdminArea = pathname.startsWith('/admin');
   const isContentArea = pathname.startsWith('/conteudo');
+  const isFinanceArea = pathname.startsWith('/financas');
+  const isPortalArea = pathname === '/portal' || pathname.startsWith('/portal/');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
   const isShamarArea = pathname.startsWith('/shamar');
   const isMavfArea = pathname.startsWith('/mavf');
@@ -52,8 +56,8 @@ export async function middleware(request) {
   const isCommunityApi = pathname.startsWith('/api/community');
   const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea || isTurmaArea;
   const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
-  const protectedPage = isAppArea || isAdminArea || isContentArea || isJacksonArea || studentOnlyPage;
-  const protectedApi = isFinanceApi || isAdminApi || studentOnlyApi;
+  const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || studentOnlyPage);
+  const protectedApi = !isPortalApi && (isFinanceApi || isAdminApi || studentOnlyApi);
 
   if (!hasSupabaseEnv()) {
     return NextResponse.next({ request });
@@ -96,7 +100,7 @@ export async function middleware(request) {
 
   let profile = null;
   try {
-    const { data } = await supabase.from('profiles').select('role,status,turma,is_admin').eq('id', user.id).maybeSingle();
+    const { data } = await supabase.from('profiles').select('role,status,tier,turma,is_admin').eq('id', user.id).maybeSingle();
     profile = data || null;
   } catch (error) {
     console.error('[middleware] profile query failed:', error);
@@ -130,11 +134,17 @@ export async function middleware(request) {
     return redirect(request, '/admin');
   }
 
-  if (profile.role !== 'admin' && studentOnlyPage && !hasStudentAccess(profile)) {
+  const isAdmin = profile.role === 'admin' || profile.is_admin === true;
+  const profileTier = String(profile.tier || 'DESPERTAR').toUpperCase();
+  if (isFinanceArea && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+    return redirect(request, '/upgrade');
+  }
+
+  if (!isAdmin && studentOnlyPage && !hasStudentAccess(profile)) {
     return redirect(request, '/app');
   }
 
-  if (profile.role !== 'admin' && studentOnlyApi && !hasStudentAccess(profile)) {
+  if (!isAdmin && studentOnlyApi && !hasStudentAccess(profile)) {
     return jsonError('student_access_required', 403);
   }
 

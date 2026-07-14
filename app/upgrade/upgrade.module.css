@@ -1,0 +1,126 @@
+.screen {
+  min-height: 100vh;
+  padding-bottom: calc(var(--bottom-nav-height) + 28px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+
+.main {
+  width: min(720px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.card {
+  padding: clamp(26px, 5vw, 44px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--green-dim);
+  font-size: 28px;
+}
+
+.eyebrow {
+  display: block;
+  margin: 24px 0 8px;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(30px, 6vw, 46px);
+  letter-spacing: -0.04em;
+}
+
+.description {
+  margin: 14px 0 0;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.benefits {
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+}
+
+.benefits li {
+  min-height: 48px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.check {
+  color: var(--green-dark);
+  font-weight: 900;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.primary,
+.secondary {
+  min-height: 48px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primary {
+  flex: 1;
+  color: #fff;
+  background: var(--green);
+}
+
+.secondary {
+  color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+@media (max-width: 580px) {
+  .main {
+    width: min(100% - 24px, 720px);
+    padding: 28px 0;
+  }
+
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

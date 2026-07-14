@@ -104,6 +104,13 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    if (requestedTab === 'signup' || requestedTab === 'login') {
+      setTab(requestedTab);
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     const checkSession = async () => {
@@ -241,25 +248,21 @@ export default function LoginPage() {
     setSignupLoading(true);
     clearMsg();
 
-    const sb = getClient();
-    if (!sb) {
-      setMessage({ text: 'Configuração do Supabase ausente no ambiente.', type: 'error' });
-      setSignupLoading(false);
-      return;
-    }
-
-    const { data, error } = await sb.auth.signUp({
-      email: signupEmail.trim(),
-      password: signupPassword,
-      options: {
-        data: {
+    let data;
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: signupEmail.trim(),
+          password: signupPassword,
           full_name: signupName.trim(),
           phone: signupPhone.trim()
-        }
-      }
-    });
-
-    if (error) {
+        })
+      });
+      data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || 'Nao foi possivel concluir o cadastro.');
+    } catch (error) {
       setMessage({ text: translateError(error.message), type: 'error' });
       setSignupLoading(false);
       return;
@@ -271,9 +274,15 @@ export default function LoginPage() {
       body: JSON.stringify({
         email: signupEmail.trim(),
         full_name: signupName.trim(),
-        user_id: data?.user?.id || null
+        user_id: data?.user_id || null
       })
     }).catch(() => {});
+
+    if (data?.has_session) {
+      router.replace(safeNextPath() || '/app');
+      router.refresh();
+      return;
+    }
 
     setPendingVisible(true);
     setSignupLoading(false);
@@ -445,10 +454,10 @@ export default function LoginPage() {
           </form>
 
           <div className="pending-box" style={{ display: pendingVisible ? 'block' : 'none' }}>
-            <div className="pending-icon">⏳</div>
+            <div className="pending-icon">✓</div>
             <div className="pending-title">Cadastro realizado!</div>
             <div className="pending-text">
-              Sua conta está em análise. Em breve você receberá uma confirmação e poderá acessar a plataforma.
+              Seu acesso gratuito está liberado. Confirme seu e-mail e entre para começar.
             </div>
           </div>
         </div>

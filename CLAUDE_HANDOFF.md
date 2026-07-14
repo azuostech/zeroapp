@@ -1,10 +1,14 @@
 # CLAUDE Handoff - ZeroApp
 
-Data: 2026-06-29
-Branch atual: main
-Status funcional: main com edicao completa de programas em `/admin/conteudo`, copia discreta de previstos do mes anterior, edicao de linhas financeiras, privacidade de valores no resumo financeiro, navegacao SHAMAR/TRIBO mobile corrigida e build validado
+Data: 2026-07-14
+Branch atual: feature/portal-publico
+Status funcional: portal publico em `/portal`, signup DESPERTAR com ativacao imediata, paywall de `/financas`, tela `/upgrade` e build validados
 
 ## Resumo atual
+- Portal publico em `/portal` lista o catalogo real de programas sem exigir login e sem expor URLs de aulas.
+- Cadastros comuns agora passam pela API `/api/auth/signup` e ativam imediatamente apenas perfis do tier `DESPERTAR`.
+- `/financas` exige sessao ativa e tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`; `DESPERTAR` e redirecionado para `/upgrade`.
+- A tela `/upgrade` usa o header/menu do app e direciona o usuario ao atendimento do Workshop.
 - Tela `/admin/conteudo` agora abre o formulario completo de programa ao clicar em `Editar`, em vez de usar `window.prompt` apenas para titulo.
 - Tela `/financas` agora sugere trazer os valores previstos do mes anterior quando o mes atual esta vazio, sem poluir a interface.
 - Tela `/financas` agora permite editar o nome/texto de linhas ja inseridas pelo proprio editor da linha, sem excluir e cadastrar novamente.
@@ -14,7 +18,68 @@ Status funcional: main com edicao completa de programas em `/admin/conteudo`, co
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
 - Ultimo commit publicado antes desta rodada: `83d7e2a` (`feat: add basic access checkout workflow`).
 - `npm run build` passou apos a correcao do admin de conteudo.
-- `backup.dump` segue nao rastreado e nao deve entrar em commit sem decisao explicita.
+- `backup.dump` segue fora do versionamento e agora esta explicitamente ignorado pelo Git.
+
+## Atualizacao 2026-07-14 — Portal publico e acesso DESPERTAR
+
+### Entrega
+- Criado o portal publico mobile-first em `/portal`, com:
+  - header publico e identidade Financas do Zero;
+  - hero com CTAs de login e cadastro;
+  - destaque automatico para o programa cujo titulo contem `blog`;
+  - grid de programas gratuitos e pagos;
+  - CTA final para cadastro e planos;
+  - SEO e Open Graph basicos.
+- Criado o detalhe publico `/portal/[id]`, que mostra apenas metadados e leva ao cadastro para consumir o conteudo.
+- Criada `GET /api/portal/programs` sem autenticacao:
+  - consulta a RPC `get_content_program_catalog` no servidor;
+  - usa cache interno de 5 minutos e cache CDN com stale-while-revalidate;
+  - devolve somente id, titulo, descricao, capa, tier/turma, contagens e flags publicas;
+  - nao devolve URLs, sessoes ou dados de progresso.
+- O acesso ao catalogo usa o client server-side com service role porque a RPC instalada revoga `PUBLIC` e concede execucao somente a `authenticated`; a resposta permanece estritamente sanitizada.
+
+### Signup DESPERTAR
+- Criada `POST /api/auth/signup` para substituir o signup direto do browser.
+- A rota cria o usuario via Supabase Auth e ativa o perfil somente quando o tier persistido e `DESPERTAR`.
+- Tiers superiores continuam fora desse fluxo e preservam a aprovacao/manual ou liberacao comercial existente.
+- Quando o Supabase devolve sessao no cadastro, o usuario entra direto em `/app` (ou no `next` seguro); quando exige confirmacao de e-mail, a interface informa que o acesso ja esta liberado e pede a confirmacao.
+- A tela de autenticacao passou a aceitar `?tab=login` e `?tab=signup`, usados pelos CTAs do portal.
+
+### Paywall de financas e upgrade
+- `middleware.js` passou a proteger a pagina `/financas` sem incluir `/api/finance/*` no bloqueio por tier.
+- Sem sessao, `/financas` continua redirecionando para `/?next=/financas`.
+- Com perfil ativo `DESPERTAR`, `/financas` redireciona para `/upgrade`.
+- Tiers `MOVIMENTO`, `ACELERACAO`, `AUTOGOVERNO` e admins mantem acesso.
+- `/upgrade` nao foi adicionada a lista protegida do middleware; a propria Server Component exige usuario logado e redireciona visitantes para login.
+- A tela usa `AppHeader` e `BottomNav`, lista os beneficios do Workshop e oferece CTA por WhatsApp.
+
+### Arquivos principais
+- `app/api/auth/signup/route.js`
+- `app/api/portal/programs/route.js`
+- `app/portal/page.jsx`
+- `app/portal/[id]/page.jsx`
+- `app/upgrade/page.jsx`
+- `components/portal/*`
+- `src/modules/content/application/public-catalog-service.js`
+- `src/modules/auth/presentation/login-page.jsx`
+- `middleware.js`
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e gerou `/portal`, `/portal/[id]`, `/upgrade`, `/api/portal/programs` e `/api/auth/signup`.
+- Consulta somente leitura a RPC real confirmou 6 programas, incluindo `BLOG: FINANÇAS DO ZERO`.
+- Testes locais sem cookie:
+  - `GET /portal` respondeu `200` e continha hero, blog e programas reais;
+  - `GET /api/portal/programs` respondeu `200`, com 6 programas e sem URLs de aula;
+  - `GET /portal/{blogId}` respondeu `200`;
+  - `GET /financas` respondeu `307` para `/?next=%2Ffinancas`;
+  - `GET /upgrade` respondeu `307` para `/?next=/upgrade`.
+- O navegador integrado nao estava disponivel nesta sessao; a verificacao visual automatizada foi substituida por validacao do HTML renderizado e respostas HTTP.
+
+### Pontos para smoke test em deploy
+- Criar uma conta nova e confirmar `profiles.status='active'`, `tier='DESPERTAR'` e entrada direta quando a confirmacao de e-mail estiver desabilitada.
+- Validar com sessoes reais os redirects de `/financas` para DESPERTAR e o acesso para MOVIMENTO+.
+- Conferir o CTA do Workshop com `NEXT_PUBLIC_WHATSAPP_NUMBER` no ambiente Vercel.
 
 ## Atualizacao 2026-06-29 — Edicao completa de programa em `/admin/conteudo`
 

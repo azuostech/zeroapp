@@ -12,4 +12,5 @@ apps/web/dev-dist
 .vercel
 .env*.local
 backup_zeroapp.sql
+backup.dump
 backups/
