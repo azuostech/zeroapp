@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#060c0a'
+  themeColor: '#f7faf8'
 };
 
 export default function PortalLayout({ children }) {

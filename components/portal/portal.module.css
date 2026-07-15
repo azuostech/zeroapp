@@ -1,16 +1,16 @@
 .portalLayout,
 .portalPage {
-  --p-bg: #060c0a;
-  --p-bg-card: #0d1612;
-  --p-bg-mid: #0c1310;
-  --p-border: #1e2e28;
-  --p-border-acc: rgba(58, 255, 95, 0.22);
-  --p-acc: #3aff5f;
-  --p-acc2: #73ff00;
-  --p-ag: linear-gradient(to left, #73ff00, #3aff5f);
-  --p-nw: #f0f2f0;
-  --p-mut: #7a8c83;
-  --p-dark: #060c0a;
+  --p-bg: #f7faf8;
+  --p-bg-card: #ffffff;
+  --p-bg-mid: #edf5f0;
+  --p-border: #d8e5dc;
+  --p-border-acc: rgba(0, 168, 71, 0.24);
+  --p-acc: #008f3c;
+  --p-acc2: #00c853;
+  --p-ag: linear-gradient(to left, #42df78, #00c853);
+  --p-nw: #102018;
+  --p-mut: #63766b;
+  --p-dark: #06150d;
   min-height: 100vh;
   background: var(--p-bg);
   color: var(--p-nw);
@@ -24,20 +24,19 @@
 .topBar {
   padding: 9px 20px;
   text-align: center;
-  background: #0d1f12;
+  background: #edf7f0;
   border-bottom: 1px solid var(--p-border);
 }
 
 .topBar p {
   margin: 0;
   color: var(--p-nw);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.topBar span,
+.topBar strong,
 .heroHeadlineAccent,
 .ctaStrip h2 span {
   color: transparent;
@@ -51,7 +50,7 @@
   top: 0;
   z-index: 30;
   color: var(--p-nw);
-  background: rgba(6, 12, 10, 0.94);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--p-border);
   backdrop-filter: blur(16px);
 }
@@ -90,7 +89,7 @@
   border: 1px solid rgba(115, 255, 0, 0.45);
   border-radius: 9px;
   background: var(--p-ag);
-  box-shadow: 0 0 18px rgba(58, 255, 95, 0.2);
+  box-shadow: 0 8px 22px rgba(0, 143, 60, 0.16);
 }
 
 .brandMark img {
@@ -130,7 +129,7 @@
 .loginLink {
   color: var(--p-nw);
   border: 1px solid var(--p-border);
-  background: transparent;
+  background: #fff;
 }
 
 .signupButton,
@@ -140,7 +139,7 @@
   color: var(--p-dark);
   border: 1px solid rgba(115, 255, 0, 0.65);
   background: var(--p-ag);
-  box-shadow: 0 3px 0 #2e7d32, 0 16px 28px -12px rgba(58, 255, 95, 0.52);
+  box-shadow: 0 3px 0 #159447, 0 14px 26px -12px rgba(0, 168, 71, 0.38);
 }
 
 .hero {
@@ -149,8 +148,8 @@
   text-align: center;
   background-color: var(--p-bg);
   background-image:
-    radial-gradient(460px 400px at 15% 60%, rgba(22, 199, 132, 0.12), transparent 78%),
-    radial-gradient(300px 350px at 85% 40%, rgba(58, 255, 95, 0.06), transparent 78%);
+    radial-gradient(460px 400px at 15% 60%, rgba(0, 200, 83, 0.11), transparent 78%),
+    radial-gradient(300px 350px at 85% 40%, rgba(66, 223, 120, 0.1), transparent 78%);
 }
 
 .heroInner {
@@ -170,8 +169,8 @@
 .heroPill {
   padding: 6px 16px;
   color: var(--p-acc);
-  border: 1px solid rgba(58, 255, 95, 0.35);
-  background: rgba(58, 255, 95, 0.06);
+  border: 1px solid rgba(0, 168, 71, 0.3);
+  background: rgba(0, 200, 83, 0.07);
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.16em;
@@ -230,8 +229,8 @@
 .portalDivider {
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent 0%, #73ff00 22%, #3aff5f 78%, transparent 100%);
-  box-shadow: 0 0 16px rgba(58, 255, 95, 0.3);
+  background: linear-gradient(90deg, transparent 0%, #42df78 22%, #00c853 78%, transparent 100%);
+  box-shadow: 0 0 14px rgba(0, 168, 71, 0.18);
 }
 
 .main {
@@ -270,8 +269,8 @@
   text-decoration: none;
   border: 1px solid var(--p-border-acc);
   border-radius: 15px;
-  background: linear-gradient(160deg, var(--p-bg-card), #0a120e);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(160deg, var(--p-bg-card), #f7fbf8);
+  box-shadow: 0 16px 38px rgba(20, 61, 37, 0.08);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -299,8 +298,8 @@
 
 .articleCoverFallback {
   background:
-    radial-gradient(circle at 78% 20%, rgba(115, 255, 0, 0.12), transparent 28%),
-    linear-gradient(150deg, #10241a, #07100c);
+    radial-gradient(circle at 78% 20%, rgba(255, 255, 255, 0.5), transparent 28%),
+    linear-gradient(150deg, #9fe7b8, #42c775);
 }
 
 .articleBody {
@@ -392,8 +391,8 @@
   flex-direction: column;
   border: 1px solid var(--p-border);
   border-radius: 14px;
-  background: linear-gradient(160deg, var(--p-bg-card), #0a120e);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(160deg, var(--p-bg-card), #f8fbf9);
+  box-shadow: 0 14px 34px rgba(20, 61, 37, 0.07);
 }
 
 .programCover {
@@ -426,7 +425,7 @@
 
 .programCoverShade {
   z-index: 1;
-  background: linear-gradient(180deg, rgba(6, 12, 10, 0.06), rgba(6, 12, 10, 0.54));
+  background: linear-gradient(180deg, rgba(6, 21, 13, 0.02), rgba(6, 21, 13, 0.28));
 }
 
 .programCover > .freeBadge,
@@ -436,11 +435,11 @@
 }
 
 .freeCover {
-  background: linear-gradient(160deg, #0d2018, #081510);
+  background: linear-gradient(160deg, #e5f7eb, #ccefd8);
 }
 
 .paidCover {
-  background: linear-gradient(160deg, #131713, #0a0d0b);
+  background: linear-gradient(160deg, #eff2f0, #dfe5e1);
 }
 
 .freeBadge,
@@ -459,9 +458,9 @@
 }
 
 .lockedBadge {
-  color: var(--p-mut);
+  color: #405148;
   border: 1px solid var(--p-border);
-  background: rgba(6, 12, 10, 0.82);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .programBody {
@@ -510,9 +509,9 @@
 .cardSecondary,
 .backLink,
 .ctaSecondary {
-  color: var(--p-nw);
+  color: var(--p-acc);
   border: 1px solid var(--p-border);
-  background: #111d18;
+  background: #fff;
 }
 
 .emptyState {
@@ -535,8 +534,8 @@
   border: 1px solid var(--p-border-acc);
   border-radius: 16px;
   background:
-    radial-gradient(280px 180px at 15% 50%, rgba(58, 255, 95, 0.08), transparent 75%),
-    linear-gradient(160deg, var(--p-bg-card), #0a120e);
+    radial-gradient(280px 180px at 15% 50%, rgba(0, 200, 83, 0.09), transparent 75%),
+    linear-gradient(160deg, var(--p-bg-card), #f5faf7);
 }
 
 .ctaStrip h2 {
@@ -619,7 +618,7 @@
   min-height: calc(100vh - 96px);
   padding: 72px 16px;
   background:
-    radial-gradient(460px 400px at 15% 60%, rgba(22, 199, 132, 0.1), transparent 78%),
+    radial-gradient(460px 400px at 15% 60%, rgba(0, 200, 83, 0.09), transparent 78%),
     var(--p-bg);
 }
 
@@ -629,8 +628,8 @@
   padding: clamp(26px, 5vw, 48px);
   border: 1px solid var(--p-border-acc);
   border-radius: 16px;
-  background: linear-gradient(160deg, var(--p-bg-card), #0a120e);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(160deg, var(--p-bg-card), #f7fbf8);
+  box-shadow: 0 20px 50px rgba(20, 61, 37, 0.09);
 }
 
 .detailCard h1 {
@@ -662,7 +661,7 @@
   border: 1px solid var(--p-border-acc);
   border-bottom: 0;
   border-radius: 14px 14px 0 0;
-  background: linear-gradient(160deg, var(--p-bg-card), #0a120e);
+  background: linear-gradient(160deg, var(--p-bg-card), #f7fbf8);
 }
 
 .articleReaderTitle {
@@ -697,8 +696,8 @@
   padding: 24px;
   border: 1px solid var(--p-border-acc);
   border-radius: 14px;
-  background: linear-gradient(160deg, var(--p-bg-card), #0a120e);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  background: linear-gradient(160deg, var(--p-bg-card), #f7fbf8);
+  box-shadow: 0 14px 34px rgba(20, 61, 37, 0.08);
 }
 
 .articleEngagementCard h2 {
@@ -743,7 +742,7 @@
   color: var(--p-nw);
   border: 1px solid var(--p-border);
   border-radius: 9px;
-  background: #111d18;
+  background: #fff;
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -757,7 +756,7 @@
 .articleStatusDone {
   color: var(--p-acc);
   border-color: var(--p-border-acc);
-  background: rgba(58, 255, 95, 0.06);
+  background: rgba(0, 200, 83, 0.07);
 }
 
 .articleCompleteButton,
@@ -769,7 +768,7 @@
   color: var(--p-dark);
   border-color: rgba(115, 255, 0, 0.6);
   background: var(--p-ag);
-  box-shadow: 0 3px 0 #2e7d32, 0 14px 24px -12px rgba(58, 255, 95, 0.5);
+  box-shadow: 0 3px 0 #159447, 0 14px 24px -12px rgba(0, 168, 71, 0.4);
 }
 
 .articleCompleteButton:disabled,
@@ -796,24 +795,24 @@
 }
 
 .portalComments {
-  --border-2: #1e2e28;
+  --border-2: #d8e5dc;
   --radius-lg: 14px;
   --radius-md: 9px;
   --radius-sm: 7px;
-  --bg-card: #0d1612;
-  --bg-input: #0c1310;
-  --bg: #060c0a;
-  --shadow-sm: 0 16px 36px rgba(0, 0, 0, 0.22);
-  --green: #3aff5f;
-  --green-mid: rgba(58, 255, 95, 0.45);
-  --green-dim: rgba(58, 255, 95, 0.08);
-  --green-dark: #3aff5f;
-  --text: #f0f2f0;
-  --text2: #f0f2f0;
-  --text-2: #7a8c83;
-  --text-on-green: #060c0a;
-  --red: #ff7b7b;
-  --red-dim: rgba(255, 123, 123, 0.08);
+  --bg-card: #ffffff;
+  --bg-input: #f4f8f5;
+  --bg: #edf5f0;
+  --shadow-sm: 0 14px 34px rgba(20, 61, 37, 0.08);
+  --green: #00a846;
+  --green-mid: rgba(0, 168, 71, 0.4);
+  --green-dim: rgba(0, 200, 83, 0.08);
+  --green-dark: #007f35;
+  --text: #102018;
+  --text2: #102018;
+  --text-2: #63766b;
+  --text-on-green: #ffffff;
+  --red: #c93f4d;
+  --red-dim: rgba(201, 63, 77, 0.08);
   color: var(--p-nw);
   font-family: 'Inter', sans-serif;
 }
@@ -833,8 +832,8 @@
 
   .articleCard:hover,
   .programCard:hover {
-    border-color: rgba(58, 255, 95, 0.45);
-    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.28), 0 0 20px rgba(58, 255, 95, 0.08);
+    border-color: rgba(0, 168, 71, 0.42);
+    box-shadow: 0 18px 42px rgba(20, 61, 37, 0.12), 0 0 18px rgba(0, 168, 71, 0.07);
   }
 }
 

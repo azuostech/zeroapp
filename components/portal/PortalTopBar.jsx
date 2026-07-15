@@ -4,8 +4,7 @@ export default function PortalTopBar() {
   return (
     <div className={styles.topBar}>
       <p>
-        Portal educacional · conteúdo gratuito baseado no método{' '}
-        <span>Lucro Primeiro</span>
+        <strong>Portal educacional</strong> · Jackson Souza · Método Finanças do Zero
       </p>
     </div>
   );
