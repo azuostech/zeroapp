@@ -1,28 +1,20 @@
-import Link from 'next/link';
+import BlogArticleCard from './BlogArticleCard';
 import styles from './portal.module.css';
 
-function pluralize(count, singular, plural) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
-export default function BlogHighlight({ program }) {
+export default function BlogHighlight({ program, articles = [] }) {
   if (!program) return null;
 
+  const featuredArticles = articles.slice(0, 3);
+
   return (
-    <section className={styles.section} aria-labelledby="portal-blog-title">
-      <div className={styles.eyebrow}>Destaque</div>
-      <article className={styles.blogCard}>
-        <div>
-          <span className={styles.freeBadge}>Acesso livre</span>
-          <h2 id="portal-blog-title">{program.title}</h2>
-          <p>{program.description || 'Artigos práticos para transformar sua relação com o dinheiro.'}</p>
-          <div className={styles.metadata}>
-            <span>{pluralize(program.total_aulas, 'artigo', 'artigos')}</span>
-            <span>{pluralize(program.total_sessoes, 'coleção', 'coleções')}</span>
-          </div>
+    <section className={styles.section} aria-label="Artigos em destaque">
+      {featuredArticles.length > 0 ? (
+        <div className={styles.articleGrid}>
+          {featuredArticles.map((article) => (
+            <BlogArticleCard key={article.id} article={article} compact />
+          ))}
         </div>
-        <Link href={`/portal/${program.id}`} className={styles.outlineButton}>Acessar blog <span aria-hidden="true">→</span></Link>
-      </article>
+      ) : null}
     </section>
   );
 }

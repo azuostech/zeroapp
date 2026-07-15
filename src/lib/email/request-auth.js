@@ -1,11 +1,9 @@
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
-
-const CRON_SECRET = process.env.CRON_SECRET || '';
+import { isCronRequestAuthorized } from '@/src/lib/security/cron-auth';
 
 export function isCronAuthorized(request) {
-  const authHeader = request.headers.get('authorization');
-  return Boolean(CRON_SECRET) && authHeader === `Bearer ${CRON_SECRET}`;
+  return isCronRequestAuthorized(request);
 }
 
 export async function authorizeCronOrAdmin(request) {
@@ -27,7 +25,7 @@ export async function authorizeCronOrAdmin(request) {
     };
   }
 
-  const isAdmin = Boolean(profile?.role === 'admin');
+  const isAdmin = profile?.role === 'admin' || profile?.is_admin === true;
   if (!isAdmin) {
     return {
       ok: false,

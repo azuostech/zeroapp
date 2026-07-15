@@ -20,24 +20,6 @@ function redirectToAuthCallbackWithNext() {
   window.location.replace(`/auth/callback?${params.toString()}`);
 }
 
-function getVerifyRedirectUrl() {
-  const url = new URL('/auth/reset-password', window.location.origin);
-  url.searchParams.set('from_verify', '1');
-  return url.toString();
-}
-
-function redirectThroughSupabaseVerify({ token, type }) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) return false;
-
-  const verifyUrl = new URL('/auth/v1/verify', supabaseUrl);
-  verifyUrl.searchParams.set('token', token);
-  verifyUrl.searchParams.set('type', type);
-  verifyUrl.searchParams.set('redirect_to', getVerifyRedirectUrl());
-  window.location.replace(verifyUrl.toString());
-  return true;
-}
-
 function friendlyError(message = '') {
   if (message.includes('PKCE code verifier not found in storage')) {
     return 'Não foi possível validar o link neste navegador. Solicite um novo link e abra no mesmo navegador onde pediu a recuperação.';
@@ -68,10 +50,7 @@ export default function ResetPasswordPage() {
         const queryParams = new URLSearchParams(window.location.search);
         const code = queryParams.get('code');
         const tokenHash = queryParams.get('token_hash');
-        const token = queryParams.get('token');
         const queryType = queryParams.get('type');
-        const email = queryParams.get('email');
-        const fromVerify = queryParams.get('from_verify') === '1';
         const hashParams = readHashParams();
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
@@ -89,16 +68,6 @@ export default function ResetPasswordPage() {
           const { error: otpError } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: queryType });
           if (otpError) throw otpError;
           cleanRecoveryUrl();
-        } else if (token && queryType && email) {
-          const { error: otpError } = await sb.auth.verifyOtp({ token, type: queryType, email });
-          if (otpError) throw otpError;
-          cleanRecoveryUrl();
-        } else if (token && queryType && !fromVerify) {
-          const redirected = redirectThroughSupabaseVerify({ token, type: queryType });
-          if (redirected) return;
-          throw new Error(
-            'Configuração de link de recuperação incompleta. Ajuste o template de e-mail para usar .ConfirmationURL ou token_hash.'
-          );
         } else if (hashType === 'recovery' && accessToken && refreshToken) {
           const { error: sessionError } = await sb.auth.setSession({
             access_token: accessToken,

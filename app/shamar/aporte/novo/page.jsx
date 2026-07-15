@@ -68,6 +68,12 @@ export default function NewShamarContributionPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('O comprovante deve ter no máximo 10 MB.');
+      event.target.value = '';
+      return;
+    }
+
     setIsUploading(true);
     try {
       const signedRes = await fetch('/api/shamar/proof-upload', {
@@ -90,10 +96,22 @@ export default function NewShamarContributionPage() {
 
       if (uploadError) throw new Error(uploadError.message || 'proof_upload_failed');
 
+      const finalizeRes = await fetch('/api/shamar/proof-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'finalize',
+          path: signedData.path,
+          content_type: file.type
+        })
+      });
+      const finalized = await finalizeRes.json().catch(() => ({}));
+      if (!finalizeRes.ok) throw new Error(finalized?.error || 'proof_validation_failed');
+
       setProof({
-        path: signedData.path,
+        path: finalized.path,
         filename: file.name,
-        content_type: file.type
+        content_type: finalized.content_type
       });
       toast.success('Comprovante anexado');
     } catch (uploadError) {
@@ -198,7 +216,7 @@ export default function NewShamarContributionPage() {
 
         <ShamarCard title="Comprovante bancário">
           <label className={`proof-zone${proof?.path ? ' done' : ''}`}>
-            <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFile} disabled={isUploading} />
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} disabled={isUploading} />
             {proof?.path ? (
               <>
                 <strong>✓ {proof.filename}</strong>
@@ -207,7 +225,7 @@ export default function NewShamarContributionPage() {
             ) : (
               <>
                 <strong>📎 Toque para anexar</strong>
-                <span>{isUploading ? 'Enviando...' : 'JPG, PNG, WebP ou PDF · OBRIGATÓRIO'}</span>
+                <span>{isUploading ? 'Enviando...' : 'JPG, PNG ou WebP · até 10 MB · OBRIGATÓRIO'}</span>
               </>
             )}
           </label>

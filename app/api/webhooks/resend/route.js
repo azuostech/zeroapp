@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getResendClient } from '@/src/lib/email/resend-client';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 
 export const runtime = 'nodejs';
@@ -21,7 +22,7 @@ async function updateByResendId(supabase, resendId, updater) {
     .maybeSingle();
 
   if (fetchError || !current) {
-    if (fetchError) console.error('[Webhook Resend] lookup failed:', fetchError.message || fetchError);
+    if (fetchError) throw fetchError;
     return;
   }
 
@@ -34,29 +35,88 @@ async function updateByResendId(supabase, resendId, updater) {
     .eq('id', current.id);
 
   if (error) {
-    console.error('[Webhook Resend] update failed:', error.message || error);
+    throw error;
   }
 }
 
-export async function POST(request) {
-  try {
-    const svixId = request.headers.get('svix-id');
-    const svixSignature = request.headers.get('svix-signature');
+async function claimEvent(supabase, svixId, eventType) {
+  const { error } = await supabase.from('resend_webhook_events').insert({
+    svix_id: svixId,
+    event_type: eventType || null,
+    status: 'processing'
+  });
 
-    if (!svixId || !svixSignature) {
-      return NextResponse.json({ error: 'missing_headers' }, { status: 401 });
+  if (!error) return true;
+  if (error.code === '23505') return false;
+  throw error;
+}
+
+async function completeEvent(supabase, svixId) {
+  const { error } = await supabase
+    .from('resend_webhook_events')
+    .update({ status: 'processed', processed_at: new Date().toISOString() })
+    .eq('svix_id', svixId);
+  if (error) throw error;
+}
+
+async function releaseEvent(supabase, svixId) {
+  const { error } = await supabase
+    .from('resend_webhook_events')
+    .delete()
+    .eq('svix_id', svixId)
+    .eq('status', 'processing');
+  if (error) console.error('[Webhook Resend] claim release failed:', error.message || error);
+}
+
+export async function POST(request) {
+  const webhookSecret = String(process.env.RESEND_WEBHOOK_SECRET || '').trim();
+  if (!webhookSecret) {
+    console.error('[Webhook Resend] RESEND_WEBHOOK_SECRET ausente');
+    return NextResponse.json({ error: 'webhook_not_configured' }, { status: 503 });
+  }
+
+  const svixId = request.headers.get('svix-id');
+  const svixTimestamp = request.headers.get('svix-timestamp');
+  const svixSignature = request.headers.get('svix-signature');
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return NextResponse.json({ error: 'missing_signature_headers' }, { status: 401 });
+  }
+
+  const rawBody = await request.text();
+  let body;
+  try {
+    const resend = getResendClient();
+    if (!resend) throw new Error('resend_not_configured');
+    body = await resend.webhooks.verify({
+      payload: rawBody,
+      headers: {
+        id: svixId,
+        timestamp: svixTimestamp,
+        signature: svixSignature
+      },
+      webhookSecret
+    });
+  } catch (_) {
+    return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
+  }
+
+  const type = String(body?.type || '').trim();
+  const data = body?.data || {};
+  const resendId = resolveResendId(data);
+  const supabase = getServiceSupabase();
+  let claimed = false;
+
+  try {
+    claimed = await claimEvent(supabase, svixId, type);
+    if (!claimed) {
+      return NextResponse.json({ received: true, duplicate: true });
     }
 
-    const body = await request.json().catch(() => null);
-    const type = String(body?.type || '').trim();
-    const data = body?.data || {};
-    const resendId = resolveResendId(data);
-
     if (!resendId) {
+      await completeEvent(supabase, svixId);
       return NextResponse.json({ received: true });
     }
 
-    const supabase = getServiceSupabase();
     const now = new Date().toISOString();
     const eventAt = resolveEventAt(data);
 
@@ -103,9 +163,11 @@ export async function POST(request) {
       });
     }
 
+    await completeEvent(supabase, svixId);
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('[Webhook Resend]', error);
-    return NextResponse.json({ received: true, warning: 'processing_error' });
+    if (claimed) await releaseEvent(supabase, svixId);
+    return NextResponse.json({ error: 'processing_error' }, { status: 500 });
   }
 }

@@ -122,19 +122,20 @@ export async function middleware(request) {
     return redirectToLogin(request);
   }
 
-  if (isAdminArea && profile.role !== 'admin') {
+  const isAdmin = profile.role === 'admin' || profile.is_admin === true;
+
+  if (isAdminArea && !isAdmin) {
     return redirect(request, '/app');
   }
 
-  if (isAdminApi && profile.role !== 'admin') {
+  if (isAdminApi && !isAdmin) {
     return jsonError('forbidden', 403);
   }
 
-  if (isAppArea && profile.role === 'admin') {
+  if (isAppArea && isAdmin) {
     return redirect(request, '/admin');
   }
 
-  const isAdmin = profile.role === 'admin' || profile.is_admin === true;
   const profileTier = String(profile.tier || 'DESPERTAR').toUpperCase();
   if (isFinanceArea && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
     return redirect(request, '/upgrade');

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { clearZeroAppClientStorage } from '@/src/lib/security/client-storage';
 
 function getAvatarInitial(profile) {
   const base = profile?.full_name || profile?.email || '';
@@ -134,6 +135,7 @@ export default function AppHeader() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
+      clearZeroAppClientStorage();
       router.replace('/');
       router.refresh();
     }

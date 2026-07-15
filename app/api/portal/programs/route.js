@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
-import { getCachedPublicPrograms } from '@/src/modules/content/application/public-catalog-service';
+import {
+  getCachedPublicBlogArticles,
+  getCachedPublicPrograms
+} from '@/src/modules/content/application/public-catalog-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const programs = await getCachedPublicPrograms();
+    const blogProgram = programs.find((program) => program.is_blog);
+    const blogArticles = blogProgram
+      ? (await getCachedPublicBlogArticles(blogProgram.id)).slice(0, 3)
+      : [];
     return NextResponse.json(
-      { programs },
-      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } }
+      { programs, blog_articles: blogArticles },
+      { headers: { 'Cache-Control': 'no-store' } }
     );
   } catch (error) {
     console.error('[portal/programs] catalog failed:', error?.message || error);

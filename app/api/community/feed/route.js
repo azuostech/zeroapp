@@ -135,7 +135,6 @@ export async function GET(request) {
       event_type: resolvedEventType,
       title: event.title,
       body: event.body,
-      metadata: event.metadata || {},
       created_at: event.created_at,
       user_id: event.user_id,
       turma: event.turma || null,

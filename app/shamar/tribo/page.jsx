@@ -114,7 +114,7 @@ export default function ShamarTriboPage() {
   };
 
   const removeParticipant = (participant) => {
-    const ok = window.confirm(`Remover ${participant.name || participant.email || 'participante'} desta TRIBO? O histórico de aportes será preservado.`);
+    const ok = window.confirm(`Remover ${participant.name || 'participante'} desta TRIBO? O histórico de aportes será preservado.`);
     if (!ok) return;
     manageTribo({
       method: 'DELETE',
@@ -146,7 +146,7 @@ export default function ShamarTriboPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'shamar_invite_resend_failed');
-      setManageMessage(`Email reenviado para ${invite.invited_email}.`);
+      setManageMessage('Email do convite reenviado.');
       await loadTribo();
     } catch (resendError) {
       setManageMessage(resendError?.message || 'Não foi possível reenviar o convite.');
@@ -408,7 +408,7 @@ export default function ShamarTriboPage() {
                 <div className="tribo-manage-row" key={participant.season_id}>
                   <div>
                     <span>{participant.name}</span>
-                    <em>{participant.email || 'Email não encontrado'}{participant.is_creator ? ' · criador' : ''}</em>
+                    <em>{participant.is_creator ? 'Criador da TRIBO' : 'Participante ativo'}</em>
                   </div>
                   {!participant.is_creator ? (
                     <button type="button" onClick={() => removeParticipant(participant)} disabled={Boolean(savingManageAction)}>
@@ -422,10 +422,10 @@ export default function ShamarTriboPage() {
             <div className="tribo-manage-list">
               <strong>Convites pendentes</strong>
               {pendingInvites.length === 0 ? <p className="tribo-muted">Nenhum convite pendente.</p> : null}
-              {pendingInvites.map((invite) => (
+              {pendingInvites.map((invite, index) => (
                 <div className="tribo-manage-row" key={invite.id}>
                   <div>
-                    <span>{invite.invited_email}</span>
+                    <span>Convite pendente {index + 1}</span>
                     <em>{invite.email_sent ? 'Email enviado' : invite.email_error || 'Email pendente'}</em>
                   </div>
                   <div className="tribo-manage-row-actions">

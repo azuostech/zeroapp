@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import BlogArticleCard from '@/components/portal/BlogArticleCard';
 import PortalHeader from '@/components/portal/PortalHeader';
 import styles from '@/components/portal/portal.module.css';
-import { getCachedPublicPrograms } from '@/src/modules/content/application/public-catalog-service';
+import {
+  getCachedPublicBlogArticles,
+  getCachedPublicPrograms
+} from '@/src/modules/content/application/public-catalog-service';
 
 export const revalidate = 300;
 export const dynamic = 'force-dynamic';
@@ -23,6 +27,45 @@ export default async function PortalProgramPage({ params }) {
   const programs = await getCachedPublicPrograms().catch(() => []);
   const program = programs.find((item) => item.id === id);
   if (!program) notFound();
+
+  if (program.is_blog) {
+    const articles = await getCachedPublicBlogArticles(program.id).catch(() => []);
+
+    return (
+      <div className={styles.portalPage}>
+        <PortalHeader />
+        <main className={styles.blogPageShell}>
+          <header className={styles.blogPageHeader}>
+            <span className={styles.freeBadge}>Acesso livre</span>
+            <span className={styles.eyebrow}>Blog Finanças do Zero</span>
+            <h1>{program.title}</h1>
+            <p>{program.description || 'Artigos práticos para transformar sua relação com o dinheiro.'}</p>
+            <div className={styles.metadata}>
+              <span>{articles.length} {articles.length === 1 ? 'artigo publicado' : 'artigos publicados'}</span>
+              <span>Sem necessidade de cadastro</span>
+            </div>
+          </header>
+
+          {articles.length > 0 ? (
+            <section aria-labelledby="blog-articles-title">
+              <div className={styles.blogListHeading}>
+                <div>
+                  <span className={styles.eyebrow}>Leituras</span>
+                  <h2 id="blog-articles-title">Conteúdos mais recentes</h2>
+                </div>
+                <Link href="/portal" className={styles.backTextLink}>← Voltar ao portal</Link>
+              </div>
+              <div className={styles.articleGrid}>
+                {articles.map((article) => <BlogArticleCard key={article.id} article={article} />)}
+              </div>
+            </section>
+          ) : (
+            <div className={styles.emptyState}>Os primeiros artigos serão publicados em breve.</div>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.portalPage}>

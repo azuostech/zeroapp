@@ -2,10 +2,14 @@ import BlogHighlight from '@/components/portal/BlogHighlight';
 import CtaStrip from '@/components/portal/CtaStrip';
 import PortalHeader from '@/components/portal/PortalHeader';
 import PortalHero from '@/components/portal/PortalHero';
+import PortalDivider from '@/components/portal/PortalDivider';
 import PortalProgramCard from '@/components/portal/PortalProgramCard';
 import styles from '@/components/portal/portal.module.css';
 import { createServerSupabase } from '@/src/lib/supabase/server';
-import { getCachedPublicPrograms } from '@/src/modules/content/application/public-catalog-service';
+import {
+  getCachedPublicBlogArticles,
+  getCachedPublicPrograms
+} from '@/src/modules/content/application/public-catalog-service';
 
 export const metadata = {
   title: 'Portal Finanças do Zero — Educação financeira gratuita',
@@ -32,11 +36,18 @@ async function getPortalData() {
     .catch(() => false);
 
   const [programs, isLoggedIn] = await Promise.all([programsPromise, sessionPromise]);
-  return { programs, isLoggedIn };
+  const blogProgram = programs.find((program) => program.is_blog);
+  const blogArticles = blogProgram
+    ? await getCachedPublicBlogArticles(blogProgram.id).catch((error) => {
+        console.error('[portal] blog articles failed:', error?.message || error);
+        return [];
+      })
+    : [];
+  return { programs, isLoggedIn, blogArticles };
 }
 
 export default async function PortalPage() {
-  const { programs, isLoggedIn } = await getPortalData();
+  const { programs, isLoggedIn, blogArticles } = await getPortalData();
   const blogProgram = programs.find((program) => program.is_blog);
   const displayedPrograms = programs.filter((program) => !program.is_blog);
 
@@ -44,16 +55,19 @@ export default async function PortalPage() {
     <div className={styles.portalPage}>
       <PortalHeader />
       <PortalHero />
+      <PortalDivider />
       <main className={styles.main}>
-        <BlogHighlight program={blogProgram} />
+        <BlogHighlight program={blogProgram} articles={blogArticles} />
+
+        <PortalDivider />
 
         <section className={styles.section} aria-labelledby="all-programs-title">
           <div className={styles.sectionHeading}>
             <div>
-              <span className={styles.eyebrow}>Explore</span>
+              <span className={styles.eyebrow}>Todos os programas</span>
               <h2 id="all-programs-title">Todos os programas</h2>
             </div>
-            <p>Comece pelos conteúdos gratuitos e descubra os próximos níveis da sua jornada.</p>
+            <p><strong>{displayedPrograms.length}</strong> disponíveis · comece pelos conteúdos gratuitos</p>
           </div>
 
           {displayedPrograms.length > 0 ? (
@@ -67,6 +81,7 @@ export default async function PortalPage() {
           )}
         </section>
 
+        <PortalDivider />
         <CtaStrip />
       </main>
     </div>

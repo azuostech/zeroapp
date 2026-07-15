@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
+import { isCronRequestAuthorized } from '@/src/lib/security/cron-auth';
 
 export const runtime = 'nodejs';
-
-function isAuthorized(request) {
-  const cronSecret = process.env.CRON_SECRET || '';
-  const authHeader = request.headers.get('authorization');
-  return Boolean(cronSecret) && authHeader === `Bearer ${cronSecret}`;
-}
 
 function resolveBaseUrl(request) {
   const configured = String(process.env.NEXT_PUBLIC_SITE_URL || '').trim();
@@ -37,7 +32,7 @@ async function parseJsonSafe(response) {
 }
 
 export async function GET(request) {
-  if (!isAuthorized(request)) {
+  if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

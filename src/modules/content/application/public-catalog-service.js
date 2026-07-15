@@ -1,6 +1,5 @@
 import 'server-only';
-import { unstable_cache } from 'next/cache';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
+import { getAnonSupabase } from '@/src/lib/supabase/anon';
 
 function toPublicProgram(row) {
   const tierRequired = String(row?.tier_required || 'LIVRE').toUpperCase();
@@ -10,7 +9,7 @@ function toPublicProgram(row) {
     id: row?.id,
     title,
     description: String(row?.description || '').trim(),
-    cover_image_url: row?.thumbnail_url || null,
+    cover_image_url: normalizePublicUrl(row?.thumbnail_url) || null,
     tier_required: tierRequired,
     turma_exclusiva: row?.turma_exclusiva || null,
     total_sessoes: Number(row?.sessions_count || 0),
@@ -21,7 +20,7 @@ function toPublicProgram(row) {
 }
 
 export async function getPublicPrograms() {
-  const supabase = getServiceSupabase();
+  const supabase = getAnonSupabase();
   const { data, error } = await supabase.rpc('get_content_program_catalog');
 
   if (error) {
@@ -31,7 +30,51 @@ export async function getPublicPrograms() {
   return (data || []).map(toPublicProgram).filter((program) => program.id && program.title);
 }
 
-export const getCachedPublicPrograms = unstable_cache(getPublicPrograms, ['public-program-catalog'], {
-  revalidate: 300,
-  tags: ['public-program-catalog']
-});
+function normalizePublicUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function toPublicBlogArticle(row) {
+  return {
+    id: row?.id,
+    program_id: row?.program_id,
+    title: String(row?.title || '').trim(),
+    description: String(row?.description || '').trim(),
+    content_type: String(row?.content_type || 'article').trim(),
+    url: normalizePublicUrl(row?.article_url),
+    thumbnail_url: normalizePublicUrl(row?.thumbnail_url) || null,
+    session_title: String(row?.session_title || '').trim(),
+    published_at: row?.published_at || null
+  };
+}
+
+export async function getPublicBlogArticles(programId) {
+  const normalizedProgramId = String(programId || '').trim();
+  if (!normalizedProgramId) return [];
+
+  const supabase = getAnonSupabase();
+  const { data, error } = await supabase.rpc('get_public_blog_articles', {
+    p_program_id: normalizedProgramId
+  });
+
+  if (error) {
+    throw new Error(error.message || 'public_blog_articles_failed');
+  }
+
+  return (data || [])
+    .map(toPublicBlogArticle)
+    .filter((article) => article.id && article.program_id === normalizedProgramId && article.title && article.url);
+}
+
+// Programas também podem ter a thumbnail alterada pelo admin. A consulta sem
+// cache garante que a vitrine pública reflita a imagem cadastrada imediatamente.
+export const getCachedPublicPrograms = getPublicPrograms;
+
+// Artigos podem ter título, descrição e thumbnail alterados pelo admin.
+// Mantemos a consulta sem cache para refletir essas edições imediatamente no portal.
+export const getCachedPublicBlogArticles = getPublicBlogArticles;

@@ -2,17 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { resolveShamarDbError } from '@/src/lib/shamar/api';
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
+import { isCronRequestAuthorized } from '@/src/lib/security/cron-auth';
 
 export const runtime = 'nodejs';
 
-function isAuthorized(request) {
-  const cronSecret = process.env.CRON_SECRET || '';
-  const authHeader = request.headers.get('authorization');
-  return Boolean(cronSecret) && authHeader === `Bearer ${cronSecret}`;
-}
-
 async function runIndexJob(request) {
-  if (!isAuthorized(request)) {
+  if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
+import { consumeSignupRateLimit } from '@/src/lib/security/signup-rate-limit';
 
 const signupSchema = z.object({
   email: z.string().trim().email().max(320),
@@ -32,6 +33,29 @@ export async function POST(request) {
   }
 
   const { email, password, full_name: fullName, phone } = parsed.data;
+
+  let rateLimit;
+  try {
+    rateLimit = await consumeSignupRateLimit(request);
+  } catch (error) {
+    console.error('[signup] rate limit unavailable:', error?.message || error);
+    return NextResponse.json({ error: 'Cadastro temporariamente indisponivel.' }, { status: 503 });
+  }
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas de cadastro. Tente novamente mais tarde.' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rateLimit.retryAfter),
+          'X-RateLimit-Limit': '5',
+          'X-RateLimit-Remaining': '0'
+        }
+      }
+    );
+  }
+
   const supabase = await createServerSupabase();
   const origin = getSiteOrigin(request.url);
   const emailRedirectTo = new URL('/auth/callback?next=/app', origin).toString();
@@ -84,11 +108,19 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Conta criada, mas nao foi possivel liberar o acesso agora. Tente entrar em instantes.' }, { status: 500 });
   }
 
-  return NextResponse.json({
-    ok: true,
-    user_id: userId,
-    tier: 'DESPERTAR',
-    status: 'active',
-    has_session: Boolean(data?.session)
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      user_id: userId,
+      tier: 'DESPERTAR',
+      status: 'active',
+      has_session: Boolean(data?.session)
+    },
+    {
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': String(rateLimit.remaining)
+      }
+    }
+  );
 }

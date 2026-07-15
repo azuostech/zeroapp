@@ -1,11 +1,15 @@
 # CLAUDE Handoff - ZeroApp
 
 Data: 2026-07-14
-Branch atual: feature/portal-publico
-Status funcional: portal publico em `/portal`, signup DESPERTAR com ativacao imediata, paywall de `/financas`, tela `/upgrade` e build validados
+Branch atual: main
+Status funcional: portal publico dark neon e hardening de seguranca implementados; migracao critica pre-deploy aplicada; service role e migracao pos-deploy ainda precisam ser confirmadas no deploy
 
 ## Resumo atual
+- Hardening de seguranca fecha autoelevacao de perfil e acesso publico a `award_coins`, adiciona rate limit no signup, assinatura Resend, upload SHAMAR validado e headers HTTP.
+- `scripts/migrate-security-hardening-predeploy.sql` ja foi aplicado no Supabase; o SQL pos-deploy deve aguardar a publicacao deste codigo.
+- A configuracao atual de `SUPABASE_SERVICE_ROLE_KEY` nao tem formato de service role e agora e rejeitada; corrigir no Vercel antes do deploy.
 - Portal publico em `/portal` lista o catalogo real de programas sem exigir login e sem expor URLs de aulas.
+- O portal usa o design system isolado PageBill Dark Neon e preserva blog interno, progresso de leitura, comentarios e thumbnails do admin.
 - Cadastros comuns agora passam pela API `/api/auth/signup` e ativam imediatamente apenas perfis do tier `DESPERTAR`.
 - `/financas` exige sessao ativa e tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`; `DESPERTAR` e redirecionado para `/upgrade`.
 - A tela `/upgrade` usa o header/menu do app e direciona o usuario ao atendimento do Workshop.
@@ -16,9 +20,125 @@ Status funcional: portal publico em `/portal`, signup DESPERTAR com ativacao ime
 - Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
 - O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
-- Ultimo commit publicado antes desta rodada: `83d7e2a` (`feat: add basic access checkout workflow`).
-- `npm run build` passou apos a correcao do admin de conteudo.
+- Base publicada antes desta rodada: `9cffd19`.
+- `npm run build` passou apos o redesign completo do portal e gerou 98 paginas.
 - `backup.dump` segue fora do versionamento e agora esta explicitamente ignorado pelo Git.
+
+## Atualizacao 2026-07-14 — Design system PageBill Dark Neon no Portal
+
+### Entrega visual
+- `/portal` ganhou layout isolado com fundo `#060c0a`, gradientes neon `#3aff5f`/`#73ff00`, halos no hero, divisorias luminosas e CTAs com glow.
+- Tipografia do portal usa Inter, Montserrat 900, IBM Plex Mono e Manrope sem alterar `styles/theme.css` nem o tema da area logada.
+- Foram adicionados `PortalTopBar`, `PortalDivider` e um layout proprio em `app/portal/layout.jsx`.
+- Header, hero, artigos, programas, CTA final, detalhe do blog e leitor interno foram adaptados ao mesmo sistema visual.
+- Cards pagos recebem grayscale somente na thumbnail; badges e CTAs continuam legiveis no tema escuro.
+- Grid responsivo: tres colunas no desktop, duas no tablet e uma no celular.
+
+### Fluxos preservados e ampliados
+- A home continua mostrando somente os cards dos artigos, sem restaurar o antigo card grande do blog.
+- O clique em artigo abre `/portal/[id]/artigos/[articleId]` e mantem a fonte externa incorporada no ambiente ZeroApp.
+- O leitor preserva anterior/proxima, marcar como lida/nao lida, moedas e comentarios/respostas da area educacional para usuarios autenticados.
+- Visitantes podem ler sem conta e recebem CTA de login apenas para progresso e comentarios.
+- Cards de artigos usam `member_area_content.thumbnail_url`; cards de programas usam `content_programs.thumbnail_url`.
+- URLs comuns e Google Drive sao suportadas pelo proxy interno de imagens.
+- Catalogo e artigos do portal ficaram sem cache de aplicacao/CDN para refletir thumbnails e edicoes do admin imediatamente.
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 98 paginas.
+- Sem cookie, `/portal`, `/api/portal/programs`, a listagem do blog e o leitor interno responderam `200`.
+- A API retornou 6 programas e 1 artigo sem expor URLs de aulas dos demais programas.
+- O HTML renderizado confirmou fontes do portal, headline em duas linhas, thumbnails via proxy e iframe do artigo.
+- O navegador integrado `iab` nao estava disponivel; a verificacao foi feita por build, HTML renderizado e probes HTTP locais.
+
+### Arquivos principais
+- `app/portal/layout.jsx`
+- `app/portal/page.jsx`
+- `app/portal/[id]/page.jsx`
+- `app/portal/[id]/artigos/[articleId]/page.jsx`
+- `components/portal/portal.module.css`
+- `components/portal/PortalTopBar.jsx`
+- `components/portal/PortalDivider.jsx`
+- `components/portal/BlogArticleExperience.jsx`
+- `components/portal/PortalProgramCard.jsx`
+- `src/modules/content/application/public-catalog-service.js`
+
+## Atualizacao 2026-07-14 — Hardening do checklist de seguranca
+
+### Banco e autorizacao
+- Auditoria ao vivo confirmou RLS ativo em 24 tabelas sensiveis e os indices pedidos.
+- Foi encontrado e corrigido um drift critico: `award_coins` estava concedido a `anon` e `authenticated`.
+- Foi encontrado e corrigido outro risco critico: `profiles_update_self` permitia tentativa de update em todas as colunas do perfil.
+- A migracao pre-deploy aplicada:
+  - restringe `award_coins` a `service_role` e valida role, usuario, amount, action, descricao e metadata;
+  - protege campos de privilegio do perfil por trigger;
+  - remove grants perigosos de TRUNCATE/TRIGGER/REFERENCES;
+  - cria contador persistente do signup e deduplicacao de webhooks;
+  - reafirma RLS, indices e bucket privado.
+- Probe anonimo apos a migracao recebeu `401` em `award_coins`; o catalogo anonimo continuou em `200` com 6 programas.
+
+### Aplicacao
+- Signup ganhou limite de 5 tentativas por hora/IP, armazenando apenas HMAC SHA-256 do IP.
+- Service client agora rejeita publishable/anon key no lugar de service role.
+- Webhook Resend valida criptograficamente o corpo bruto com o SDK e evita replay por `svix-id`.
+- Upload de comprovante passou a usar UUID, staging `/pending/`, 10 MB, JPEG/PNG/WebP e magic bytes; so depois move para `/proofs/`.
+- `/api/shamar/contributions` aceita apenas paths finalizados e pertencentes ao usuario.
+- Feed nao retorna metadata bruta e TRIBO nao retorna e-mails de participantes/convites.
+- Admin financeiro usa service role apos autenticacao e grava leitura em `admin_action_logs`.
+- Reset de senha nao aceita token bruto em query string.
+- Logout limpa storage local/session do ZeroApp e a resposta nao pode ser cacheada.
+- Cron usa comparacao timing-safe de `Bearer CRON_SECRET`.
+- Headers de seguranca foram adicionados em `vercel.json` e `next.config.mjs`.
+
+### Operacao e arquivos
+- Procedimentos: `docs/security-operations.md`.
+- Status item a item: `docs/security-checklist-status.md`.
+- SQL ja aplicado: `scripts/migrate-security-hardening-predeploy.sql`.
+- SQL coordenado com deploy: `scripts/migrate-security-hardening-postdeploy.sql`.
+- Variaveis novas em `.env.example`: `SIGNUP_RATE_LIMIT_SECRET` e `RESEND_WEBHOOK_SECRET`.
+- `CRON_SECRET`, `SIGNUP_RATE_LIMIT_SECRET` e `RESEND_WEBHOOK_SECRET` foram configurados localmente e no Vercel pelo responsavel.
+
+### Pendencias obrigatorias antes do deploy
+- Configurar no Vercel uma `SUPABASE_SERVICE_ROLE_KEY` real; a configuracao local auditada nao e service role.
+- Publicar o codigo e aplicar imediatamente o SQL pos-deploy para restringir upload e leitura financeira admin.
+- Executar smoke tests autenticados de signup, upload e painel financeiro.
+
+### Validacao desta rodada
+- `git diff --check` passou sem erros.
+- `vercel.json` foi validado como JSON.
+- `npm run build` passou com Next.js 15.5.15 e gerou 98 paginas.
+- Probes locais sem autenticacao confirmaram `401` nas rotas de cron, admin e upload; assinatura Resend falsa tambem recebeu `401`.
+- Probes no Supabase apos a migracao confirmaram `award_coins` negado ao anonimo, catalogo publico funcional e grants/trigger de perfil endurecidos.
+
+## Atualizacao 2026-07-14 — Blog publico no Portal
+
+### Entrega
+- O destaque `BLOG: FINANÇAS DO ZERO` em `/portal` agora mostra cards dos tres primeiros artigos publicados.
+- O detalhe `/portal/91954b55-d841-4702-a752-e4483d4bea6d` virou a pagina publica do blog e lista os artigos sem exigir autenticacao.
+- Cada card abre um leitor interno no ZeroApp; a URL original permanece disponivel por um link secundario com `noopener noreferrer`.
+- A grade e responsiva: tres colunas no desktop, duas no tablet e uma no celular.
+- Hoje existe um artigo publicado (`88% Endividados no Brasil`); os dois proximos cards entram automaticamente quando novos conteudos forem cadastrados.
+
+### Seguranca e dados
+- Criada e aplicada a RPC `get_public_blog_articles(uuid)` no Supabase.
+- A RPC so retorna conteudos do programa com titulo exato `BLOG: FINANÇAS DO ZERO`, programa/aula publicados e visiveis, tier `LIVRE`, sem turma exclusiva e com data ja disponivel.
+- Nenhum conteudo ou URL dos demais programas foi liberado.
+- URLs recebidas pelo frontend sao aceitas apenas com protocolo HTTP/HTTPS.
+
+### Validacao
+- `git diff --check` passou.
+- `npm run build` passou com Next.js 15.5.15 e 98 paginas.
+- Sem cookie, `/portal`, o detalhe do blog e `/api/portal/programs` responderam `200`.
+- A API retornou um artigo e nao expos URLs de aulas dos demais programas.
+- O navegador integrado estava indisponivel; a validacao visual foi substituida por HTML renderizado responsivo e probes HTTP locais.
+
+### Arquivos principais
+- `components/portal/BlogArticleCard.jsx`
+- `components/portal/BlogHighlight.jsx`
+- `app/portal/page.jsx`
+- `app/portal/[id]/page.jsx`
+- `src/modules/content/application/public-catalog-service.js`
+- `scripts/migrate-portal-public-blog.sql`
 
 ## Atualizacao 2026-07-14 — Portal publico e acesso DESPERTAR
 
@@ -33,10 +153,10 @@ Status funcional: portal publico em `/portal`, signup DESPERTAR com ativacao ime
 - Criado o detalhe publico `/portal/[id]`, que mostra apenas metadados e leva ao cadastro para consumir o conteudo.
 - Criada `GET /api/portal/programs` sem autenticacao:
   - consulta a RPC `get_content_program_catalog` no servidor;
-  - usa cache interno de 5 minutos e cache CDN com stale-while-revalidate;
+  - consulta os metadados sem cache para refletir edicoes e thumbnails do admin imediatamente;
   - devolve somente id, titulo, descricao, capa, tier/turma, contagens e flags publicas;
   - nao devolve URLs, sessoes ou dados de progresso.
-- O acesso ao catalogo usa o client server-side com service role porque a RPC instalada revoga `PUBLIC` e concede execucao somente a `authenticated`; a resposta permanece estritamente sanitizada.
+- O acesso ao catalogo usa client anonimo sem sessao; a RPC nao recebe parametros e a resposta permanece estritamente sanitizada.
 
 ### Signup DESPERTAR
 - Criada `POST /api/auth/signup` para substituir o signup direto do browser.

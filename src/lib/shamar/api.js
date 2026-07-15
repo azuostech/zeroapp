@@ -4,13 +4,6 @@ import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { getCurrentProfile } from '@/src/modules/profile/application/profile-service';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 
-export const PROOF_ALLOWED_CONTENT_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf'
-]);
-
 export function jsonError(error, status = 500, details = undefined) {
   return NextResponse.json(
     details ? { error, details } : { error },
@@ -48,18 +41,6 @@ export function normalizeIsoDate(value) {
   const date = new Date(`${raw}T00:00:00.000Z`);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
-}
-
-export function sanitizeFilename(filename) {
-  const normalized = String(filename || '')
-    .split(/[\\/]/)
-    .pop()
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .replace(/_+/g, '_')
-    .slice(0, 120);
-
-  return normalized || `comprovante_${Date.now()}`;
 }
 
 export function profileHasTurma(userTurmas, requiredTurma) {

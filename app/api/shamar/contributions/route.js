@@ -240,7 +240,8 @@ export async function POST(request) {
   if (amount === null) return NextResponse.json({ error: 'amount_invalido' }, { status: 422 });
   if (!contributedAt) return NextResponse.json({ error: 'contributed_at_invalido' }, { status: 422 });
   if (!proofUrl) return NextResponse.json({ error: 'proof_url_obrigatorio' }, { status: 422 });
-  if (!proofUrl.startsWith(`${context.user.id}/`)) {
+  const ownedProofPattern = new RegExp(`^${context.user.id}/proofs/[0-9a-f-]{36}\\.(?:jpg|png|webp)$`, 'i');
+  if (!ownedProofPattern.test(proofUrl)) {
     return NextResponse.json({ error: 'proof_url_deve_pertencer_ao_usuario' }, { status: 422 });
   }
   if (squareIds.length === 0) return NextResponse.json({ error: 'square_ids_obrigatorio' }, { status: 422 });

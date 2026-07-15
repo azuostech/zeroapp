@@ -255,12 +255,11 @@ async function createTriboInvites({ supabase, context, config, requestUrl, email
       .single();
 
     if (emailUpdateError) warnings.push(resolveShamarDbError(emailUpdateError, 'shamar_invite_email_status_update_failed'));
-    if (!emailResult.success) warnings.push(`Email ${invite.invited_email}: ${emailResult.error || 'email_send_failed'}`);
+    if (!emailResult.success) warnings.push(emailResult.error || 'invite_email_send_failed');
 
     const row = updatedInvite || { ...invite, ...emailPatch };
     invites.push({
       id: row.id,
-      invited_email: row.invited_email,
       status: row.status,
       email_sent: Boolean(row.email_sent_at),
       email_error: row.email_error || null,
@@ -270,7 +269,7 @@ async function createTriboInvites({ supabase, context, config, requestUrl, email
 
   return NextResponse.json({
     invited: invites,
-    skipped: normalizedEmails.filter((email) => !eligibleEmails.includes(email)),
+    skipped_count: normalizedEmails.filter((email) => !eligibleEmails.includes(email)).length,
     warnings
   }, { status: 201 });
 }
@@ -394,7 +393,6 @@ export async function GET(request) {
         season_id: item.id,
         user_id: item.user_id,
         name: displayName(profile),
-        email: profile?.email || null,
         avatar: avatarInitial(profile),
         current_user: item.user_id === context.user.id,
         is_creator: item.user_id === config.created_by,
@@ -423,25 +421,26 @@ export async function GET(request) {
       };
     });
 
+    const canManage = config.created_by === context.user.id || context.profile?.role === 'admin' || context.profile?.is_admin === true;
+
     return NextResponse.json({
       config,
       current_season_id: season.id,
       permissions: {
-        can_manage: config.created_by === context.user.id || context.profile?.role === 'admin' || context.profile?.is_admin === true,
+        can_manage: canManage,
         creator_user_id: config.created_by || null
       },
       participants,
-      pending_invites: (invitesResult.data || [])
+      pending_invites: canManage ? (invitesResult.data || [])
         .filter((invite) => invite.status === 'pending')
         .map((invite) => ({
           id: invite.id,
-          invited_email: invite.invited_email,
           status: invite.status,
           email_sent: Boolean(invite.email_sent_at),
           email_error: invite.email_error || null,
           created_at: invite.created_at,
           accept_url: new URL(`/shamar/convites?token=${encodeURIComponent(invite.token)}`, getSiteOrigin(request.url)).toString()
-        })),
+        })) : [],
       stats: {
         guardians: (seasons || []).length,
         patrimonio_total: totalPatrimonio,

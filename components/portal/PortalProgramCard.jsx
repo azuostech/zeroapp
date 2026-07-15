@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { resolveImageUrlForDisplay } from '@/src/lib/drive-image-url';
 import styles from './portal.module.css';
 
 const TIER_LABELS = {
@@ -16,13 +17,15 @@ function getProgramHref(program, isLoggedIn) {
 export default function PortalProgramCard({ program, isLoggedIn = false }) {
   const tierLabel = TIER_LABELS[program.tier_required] || program.tier_required || 'Exclusivo';
   const href = getProgramHref(program, isLoggedIn);
+  const thumbnailUrl = resolveImageUrlForDisplay(program.cover_image_url);
 
   return (
     <article className={styles.programCard}>
-      <div
-        className={`${styles.programCover} ${program.is_free ? styles.freeCover : styles.paidCover}`}
-        style={program.cover_image_url ? { backgroundImage: `linear-gradient(rgba(10,10,10,.18), rgba(10,10,10,.42)), url("${program.cover_image_url}")` } : undefined}
-      >
+      <div className={`${styles.programCover} ${program.is_free ? styles.freeCover : styles.paidCover}`}>
+        {thumbnailUrl ? (
+          <img src={thumbnailUrl} alt="" className={styles.programCoverImage} loading="lazy" />
+        ) : null}
+        {thumbnailUrl ? <span className={styles.programCoverShade} aria-hidden="true" /> : null}
         <span className={program.is_free ? styles.freeBadge : styles.lockedBadge}>
           {program.is_free ? 'Grátis' : `🔒 ${tierLabel}`}
         </span>
