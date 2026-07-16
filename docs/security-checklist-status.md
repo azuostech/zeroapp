@@ -11,7 +11,9 @@ Auditoria: 2026-07-14
   `turma`, `shamar_unlocked` e demais campos gerenciados pelo servidor.
 - Catalogo publico usa cliente anonimo; programas comuns nao devolvem URL/email,
   e somente a RPC restrita do blog devolve URLs HTTP/HTTPS de artigos LIVRE.
-- Signup limitado a 5 tentativas/hora por HMAC do IP em contador persistente.
+- Signup usa o limite nativo do Supabase Auth e, quando a credencial
+  `service_role` esta valida, adiciona 5 tentativas/hora por HMAC do IP em
+  contador persistente. Falha do contador adicional nao desativa o cadastro.
 - Cron usa comparacao constante e falha fechado sem secret adequado.
 - Webhook Resend verifica assinatura criptografica sobre o corpo bruto e deduplica
   por `svix-id`.
@@ -35,6 +37,10 @@ Auditoria: 2026-07-14
 `scripts/migrate-security-hardening-predeploy.sql` foi aplicado em 2026-07-14.
 Os grants resultantes foram validados: `award_coins` e
 `consume_signup_rate_limit` sao executaveis somente por `service_role`.
+
+`scripts/migrate-auth-signup-admin-routing.sql` foi aplicado em 2026-07-16.
+Cadastros publicos DESPERTAR passam a nascer ativos com `role=user`, e o flag
+legado `is_admin` foi alinhado ao papel administrativo canonico.
 
 ## Configuracao confirmada
 

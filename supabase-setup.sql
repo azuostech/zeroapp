@@ -56,13 +56,17 @@ CREATE POLICY "financial_admin" ON public.financial_data
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, status, role)
+  INSERT INTO public.profiles (id, email, full_name, phone, status, role)
   VALUES (
     NEW.id,
     NEW.email,
     NEW.raw_user_meta_data->>'full_name',
-    'pending',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'user')
+    NULLIF(BTRIM(NEW.raw_user_meta_data->>'phone'), ''),
+    CASE
+      WHEN NEW.raw_user_meta_data->>'signup_source' = 'public_despertar' THEN 'active'
+      ELSE 'pending'
+    END,
+    'user'
   );
   RETURN NEW;
 END;

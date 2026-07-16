@@ -122,7 +122,10 @@ export async function middleware(request) {
     return redirectToLogin(request);
   }
 
-  const isAdmin = profile.role === 'admin' || profile.is_admin === true;
+  // `role` is the canonical authorization field. `is_admin` is a legacy flag
+  // still used by a few content features and must never redirect a student to
+  // the administration area or grant access to admin routes.
+  const isAdmin = profile.role === 'admin';
 
   if (isAdminArea && !isAdmin) {
     return redirect(request, '/app');

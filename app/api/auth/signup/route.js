@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerSupabase } from '@/src/lib/supabase/server';
-import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { consumeSignupRateLimit } from '@/src/lib/security/signup-rate-limit';
 
 const signupSchema = z.object({
@@ -34,15 +33,16 @@ export async function POST(request) {
 
   const { email, password, full_name: fullName, phone } = parsed.data;
 
-  let rateLimit;
+  let rateLimit = null;
   try {
     rateLimit = await consumeSignupRateLimit(request);
   } catch (error) {
     console.error('[signup] rate limit unavailable:', error?.message || error);
-    return NextResponse.json({ error: 'Cadastro temporariamente indisponivel.' }, { status: 503 });
+    // O Supabase Auth aplica o proprio limite de cadastro. A indisponibilidade
+    // do contador adicional nao deve desligar completamente novos cadastros.
   }
 
-  if (!rateLimit.allowed) {
+  if (rateLimit && !rateLimit.allowed) {
     return NextResponse.json(
       { error: 'Muitas tentativas de cadastro. Tente novamente mais tarde.' },
       {
@@ -86,28 +86,6 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Este e-mail ja esta cadastrado.' }, { status: 400 });
   }
 
-  try {
-    const serviceSupabase = getServiceSupabase();
-    const { data: profile, error: profileError } = await serviceSupabase
-      .from('profiles')
-      .update({
-        status: 'active',
-        phone: phone || null
-      })
-      .eq('id', userId)
-      .eq('tier', 'DESPERTAR')
-      .select('id,status,tier')
-      .maybeSingle();
-
-    if (profileError) throw profileError;
-    if (!profile || profile.status !== 'active' || profile.tier !== 'DESPERTAR') {
-      throw new Error('despertar_profile_activation_failed');
-    }
-  } catch (activationError) {
-    console.error('[signup] DESPERTAR activation failed:', activationError?.message || activationError);
-    return NextResponse.json({ error: 'Conta criada, mas nao foi possivel liberar o acesso agora. Tente entrar em instantes.' }, { status: 500 });
-  }
-
   return NextResponse.json(
     {
       ok: true,
@@ -116,11 +94,13 @@ export async function POST(request) {
       status: 'active',
       has_session: Boolean(data?.session)
     },
-    {
-      headers: {
-        'X-RateLimit-Limit': '5',
-        'X-RateLimit-Remaining': String(rateLimit.remaining)
-      }
-    }
+    rateLimit
+      ? {
+          headers: {
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': String(rateLimit.remaining)
+          }
+        }
+      : undefined
   );
 }
