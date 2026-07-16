@@ -1,0 +1,116 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 0%, var(--green-mid), transparent 42%), var(--bg);
+}
+
+.glow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: var(--green-glow);
+  filter: blur(90px);
+  opacity: 0.45;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 38px 34px 32px;
+  border: 1px solid var(--border-green);
+  border-radius: var(--radius-2xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.logo {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin: 0 auto 18px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.success {
+  background: var(--green);
+  box-shadow: var(--shadow-green);
+}
+
+.error {
+  background: var(--red);
+}
+
+.card h1 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.card p {
+  margin: 0 auto 26px;
+  max-width: 380px;
+  color: var(--text2);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.primaryButton {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: var(--green);
+  box-shadow: var(--shadow-green);
+  color: var(--text-on-green);
+  font-weight: 700;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.primaryButton:hover {
+  background: var(--green-dark);
+  transform: translateY(-1px);
+}
+
+.note {
+  display: block;
+  margin-top: 18px;
+  color: var(--text3);
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .shell {
+    padding: 16px;
+  }
+
+  .card {
+    padding: 30px 22px 26px;
+    border-radius: var(--radius-xl);
+  }
+
+  .card h1 {
+    font-size: 28px;
+  }
+}

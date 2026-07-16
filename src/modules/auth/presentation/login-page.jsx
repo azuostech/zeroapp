@@ -154,6 +154,13 @@ export default function LoginPage() {
     setMessage({ text: 'Senha redefinida com sucesso. Faça login com sua nova senha.', type: 'success' });
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('confirmed') !== 'success') return;
+    setTab('login');
+    setMessage({ text: 'E-mail confirmado com sucesso. Agora você já pode entrar.', type: 'success' });
+  }, []);
+
   const clearMsg = () => setMessage({ text: '', type: '' });
 
   const switchTab = (nextTab) => {

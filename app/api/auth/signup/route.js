@@ -58,7 +58,7 @@ export async function POST(request) {
 
   const supabase = await createServerSupabase();
   const origin = getSiteOrigin(request.url);
-  const emailRedirectTo = new URL('/auth/callback?next=/app', origin).toString();
+  const emailRedirectTo = new URL('/auth/callback?next=/auth/confirmed', origin).toString();
 
   const { data, error } = await supabase.auth.signUp({
     email,
