@@ -274,6 +274,15 @@
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.articleCardMain {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+}
+
 .articleCover {
   min-height: 195px;
   padding: 16px;
@@ -327,17 +336,95 @@
 }
 
 .articleBody p {
-  margin: 0 0 18px;
+  margin: 0;
   color: var(--p-mut);
   font-size: 13px;
   line-height: 1.6;
 }
 
+.articleActions {
+  position: relative;
+  min-height: 62px;
+  margin: 0 19px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--p-border);
+}
+
 .articleLink {
-  margin-top: auto;
   color: var(--p-acc);
   font-size: 12px;
   font-weight: 700;
+  text-decoration: none;
+}
+
+.articleShareButton {
+  min-height: 34px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--p-acc);
+  border: 1px solid rgba(0, 168, 71, 0.22);
+  border-radius: 999px;
+  background: rgba(0, 200, 83, 0.06);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+.articleShareButton:hover,
+.articleShareButton[aria-expanded='true'] {
+  color: #fff;
+  border-color: var(--p-acc);
+  background: var(--p-acc);
+}
+
+.articleShareButton:focus-visible,
+.articleShareMenu button:focus-visible {
+  outline: 3px solid rgba(0, 200, 83, 0.25);
+  outline-offset: 2px;
+}
+
+.articleShareMenu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% - 4px);
+  z-index: 10;
+  width: min(230px, calc(100vw - 48px));
+  padding: 7px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--p-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(16, 32, 24, 0.18);
+}
+
+.articleShareMenu button {
+  min-height: 42px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--p-nw);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.articleShareMenu button:hover {
+  color: var(--p-acc);
+  background: rgba(0, 200, 83, 0.07);
 }
 
 .articleCardCompact .articleCover {
@@ -835,6 +922,10 @@
     border-color: rgba(0, 168, 71, 0.42);
     box-shadow: 0 18px 42px rgba(20, 61, 37, 0.12), 0 0 18px rgba(0, 168, 71, 0.07);
   }
+
+  .articleCard:has(.articleShareButton[aria-expanded='true']) {
+    transform: none;
+  }
 }
 
 @media (max-width: 880px) {
@@ -922,6 +1013,10 @@
   .articleCover,
   .articleCardCompact .articleCover {
     min-height: 190px;
+  }
+
+  .articleActions {
+    margin-inline: 16px;
   }
 
   .ctaStrip {
