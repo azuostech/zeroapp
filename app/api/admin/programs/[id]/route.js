@@ -17,6 +17,7 @@ const ALLOWED_FIELDS = new Set([
   'thumbnail_url',
   'tier_required',
   'turma_exclusiva',
+  'is_public_blog',
   'visibility',
   'is_published',
   'order_index'
@@ -96,6 +97,7 @@ export async function PATCH(request, { params }) {
     }
 
     if (field === 'turma_exclusiva') updates.turma_exclusiva = normalizeNullableText(value);
+    if (field === 'is_public_blog') updates.is_public_blog = normalizeBoolean(value, false);
 
     if (field === 'visibility') {
       const normalized = normalizeVisibility(value);

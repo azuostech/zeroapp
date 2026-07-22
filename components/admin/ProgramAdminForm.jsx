@@ -9,6 +9,7 @@ const INITIAL_FORM = {
   thumbnail_url: '',
   tier_required: 'LIVRE',
   turma_exclusiva: '',
+  is_public_blog: false,
   visibility: 'visible',
   is_published: false,
   order_index: 0
@@ -51,6 +52,7 @@ function buildInitialForm(program) {
     thumbnail_url: String(program.thumbnail_url || ''),
     tier_required: String(program.tier_required || 'LIVRE'),
     turma_exclusiva: String(program.turma_exclusiva || ''),
+    is_public_blog: Boolean(program.is_public_blog),
     visibility: String(program.visibility || 'visible'),
     is_published: Boolean(program.is_published),
     order_index: Number(program.order_index || 0)
@@ -183,6 +185,12 @@ export default function ProgramAdminForm({ mode = 'create', initialProgram = nul
           <label className="publish-row">
             <input type="checkbox" checked={form.is_published} onChange={(event) => setField('is_published', event.target.checked)} />
             <span>Publicado</span>
+          </label>
+
+          <label className="publish-row">
+            <input type="checkbox" checked={form.is_public_blog} onChange={(event) => setField('is_public_blog', event.target.checked)} />
+            <span>Blog público do Portal</span>
+            <small>Somente um programa pode ser o blog público em destaque.</small>
           </label>
 
           {error ? <div className="error-box">{error}</div> : null}

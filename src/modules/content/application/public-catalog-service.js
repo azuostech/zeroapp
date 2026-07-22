@@ -3,11 +3,10 @@ import { getAnonSupabase } from '@/src/lib/supabase/anon';
 
 function toPublicProgram(row) {
   const tierRequired = String(row?.tier_required || 'LIVRE').toUpperCase();
-  const title = String(row?.title || '').trim();
 
   return {
     id: row?.id,
-    title,
+    title: String(row?.title || '').trim(),
     description: String(row?.description || '').trim(),
     cover_image_url: normalizePublicUrl(row?.thumbnail_url) || null,
     tier_required: tierRequired,
@@ -15,7 +14,7 @@ function toPublicProgram(row) {
     total_sessoes: Number(row?.sessions_count || 0),
     total_aulas: Number(row?.catalog_total_aulas || 0),
     is_free: tierRequired === 'LIVRE' || tierRequired === 'DESPERTAR',
-    is_blog: title.toLocaleLowerCase('pt-BR').includes('blog')
+    is_blog: row?.is_public_blog === true
   };
 }
 

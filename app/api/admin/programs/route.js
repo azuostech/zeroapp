@@ -73,6 +73,7 @@ export async function POST(request) {
       thumbnail_url: normalizeThumbnail(body.thumbnail_url),
       tier_required: tierRequired,
       turma_exclusiva: normalizeNullableText(body.turma_exclusiva),
+      is_public_blog: normalizeBoolean(body.is_public_blog, false),
       visibility,
       is_published: normalizeBoolean(body.is_published, false),
       order_index: orderIndex
