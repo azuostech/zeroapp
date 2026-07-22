@@ -61,11 +61,20 @@ export default function AdminEmailsPage() {
 
   const activeMonth = filters.period === 'month' ? filters.month : '';
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async ({ sync = false } = {}) => {
     setIsLoading(true);
     setError('');
 
     try {
+      if (sync) {
+        const syncResponse = await fetch('/api/admin/email-logs/sync', {
+          method: 'POST',
+          cache: 'no-store'
+        });
+        const syncPayload = await parseResponse(syncResponse);
+        if (!syncResponse.ok) throw new Error(syncPayload?.error || 'resend_sync_failed');
+      }
+
       const query = buildQuery({ ...filters, month: activeMonth }, page);
       const statsQuery = activeMonth ? `?month=${encodeURIComponent(activeMonth)}` : '';
       const [logsResult, statsResult] = await Promise.all([
@@ -83,7 +92,7 @@ export default function AdminEmailsPage() {
   }, [activeMonth, filters, page]);
 
   useEffect(() => {
-    loadData();
+    loadData({ sync: true });
   }, [loadData]);
 
   const updateFilter = (key, value) => {
@@ -111,8 +120,8 @@ export default function AdminEmailsPage() {
           <h1>Gestão de Emails 📧</h1>
           <p>Logs de envio, rastreamento e pontos de contato</p>
         </div>
-        <button type="button" className="refresh-btn" onClick={loadData}>
-          Atualizar
+        <button type="button" className="refresh-btn" onClick={() => loadData({ sync: true })} disabled={isLoading}>
+          {isLoading ? 'Atualizando...' : 'Atualizar'}
         </button>
       </header>
 

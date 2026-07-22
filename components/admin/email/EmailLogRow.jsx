@@ -50,7 +50,13 @@ function typeLabel(type) {
     monthly_report: 'Mensal',
     phase_milestone: 'Marco',
     reconnect: 'Reconexão',
-    test: 'Teste'
+    test: 'Teste',
+    shamar_invite: 'Convite SHAMAR',
+    shamar_invite_resend: 'Reenvio SHAMAR',
+    shamar_invite_admin_resend: 'Reenvio SHAMAR',
+    shamar_contribution_registered: 'Aporte SHAMAR',
+    welcome_lead: 'Boas-vindas',
+    workshop_access_granted: 'Acesso Workshop'
   };
   return labels[type] || type || 'Email';
 }

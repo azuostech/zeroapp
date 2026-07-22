@@ -5,6 +5,12 @@ import { shamarContributionTemplate } from '@/src/lib/email/templates/shamar-con
 import { awardShamarPointsSafely, awardZeroCoinsSafely } from '@/src/lib/shamar/awards';
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
 import {
+  MAX_PROOF_BYTES,
+  detectProofImageType,
+  isOwnedFinalProofPath,
+  isOwnedPendingProofPath
+} from '@/src/lib/shamar/proof-files';
+import {
   createAuthenticatedContext,
   getShamarWriterSupabase,
   normalizeId,
@@ -48,6 +54,16 @@ function getSiteOrigin(requestUrl) {
 function normalizeSquareIds(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.map(normalizeId).filter(Boolean))];
+}
+
+async function validatePendingProof(supabase, path) {
+  const { data: file, error } = await supabase.storage.from('shamar-provas').download(path);
+  if (error || !file) return { ok: false, error: error?.message || 'proof_download_failed' };
+  if (file.size <= 0 || file.size > MAX_PROOF_BYTES) return { ok: false, error: 'tamanho_de_arquivo_invalido' };
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (!detectProofImageType(bytes)) return { ok: false, error: 'assinatura_de_arquivo_invalida' };
+  return { ok: true };
 }
 
 async function loadOwnedSeason(supabase, userId, seasonId) {
@@ -240,9 +256,16 @@ export async function POST(request) {
   if (amount === null) return NextResponse.json({ error: 'amount_invalido' }, { status: 422 });
   if (!contributedAt) return NextResponse.json({ error: 'contributed_at_invalido' }, { status: 422 });
   if (!proofUrl) return NextResponse.json({ error: 'proof_url_obrigatorio' }, { status: 422 });
-  const ownedProofPattern = new RegExp(`^${context.user.id}/proofs/[0-9a-f-]{36}\\.(?:jpg|png|webp)$`, 'i');
-  if (!ownedProofPattern.test(proofUrl)) {
+  const isFinalProof = isOwnedFinalProofPath(proofUrl, context.user.id);
+  const isPendingProof = isOwnedPendingProofPath(proofUrl, context.user.id);
+  if (!isFinalProof && !isPendingProof) {
     return NextResponse.json({ error: 'proof_url_deve_pertencer_ao_usuario' }, { status: 422 });
+  }
+  if (isPendingProof) {
+    const validation = await validatePendingProof(context.supabase, proofUrl);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error || 'proof_validation_failed' }, { status: 422 });
+    }
   }
   if (squareIds.length === 0) return NextResponse.json({ error: 'square_ids_obrigatorio' }, { status: 422 });
 
