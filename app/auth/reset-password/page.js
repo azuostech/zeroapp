@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
@@ -210,9 +211,9 @@ export default function ResetPasswordPage() {
           </button>
         </form>
 
-        <a className={styles.backLink} href="/">
+        <Link className={styles.backLink} href="/">
           Voltar para o login
-        </a>
+        </Link>
       </section>
     </main>
   );

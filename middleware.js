@@ -40,6 +40,7 @@ export async function middleware(request) {
   const isAdminApi = pathname.startsWith('/api/admin');
   const isAuthApi = pathname.startsWith('/api/auth');
   const isPortalApi = pathname === '/api/portal' || pathname.startsWith('/api/portal/');
+  const isIrcApi = pathname.startsWith('/api/irc');
 
   const isAppArea = pathname.startsWith('/app');
   const isAdminArea = pathname.startsWith('/admin');
@@ -51,13 +52,14 @@ export async function middleware(request) {
   const isMavfArea = pathname.startsWith('/mavf');
   const isJornadaArea = pathname.startsWith('/jornada');
   const isTurmaArea = pathname.startsWith('/turma');
+  const isIrcArea = pathname.startsWith('/diagnostico-completo');
   const isShamarApi = pathname.startsWith('/api/shamar');
   const isMavfApi = pathname.startsWith('/api/mavf');
   const isCommunityApi = pathname.startsWith('/api/community');
   const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea || isTurmaArea;
   const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
-  const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || studentOnlyPage);
-  const protectedApi = !isPortalApi && (isFinanceApi || isAdminApi || studentOnlyApi);
+  const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || isIrcArea || studentOnlyPage);
+  const protectedApi = !isPortalApi && (isFinanceApi || isAdminApi || isIrcApi || studentOnlyApi);
 
   if (!hasSupabaseEnv()) {
     return NextResponse.next({ request });

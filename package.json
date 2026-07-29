@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
@@ -16,6 +17,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "next": "^15.2.4",
+    "pdfkit": "^0.19.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.6.0",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "eslint": "^9.20.1",
-    "eslint-config-next": "^15.2.4"
+    "eslint-config-next": "^15.2.4",
+    "vitest": "^4.1.10"
   }
 }

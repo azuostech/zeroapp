@@ -1,0 +1,397 @@
+.page {
+  --irc-green: #00a94f;
+  --irc-dark: #087d3d;
+  --irc-soft: #e8f8ef;
+  --irc-text: #17231c;
+  min-height: 100dvh;
+  color: var(--irc-text);
+  background:
+    radial-gradient(circle at 50% -12%, rgba(0, 169, 79, 0.13), transparent 36%),
+    #f8fbf9;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px max(16px, env(safe-area-inset-left)) 10px;
+  border-bottom: 1px solid rgba(0, 169, 79, 0.16);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 30px rgba(8, 66, 34, 0.07);
+  backdrop-filter: blur(16px);
+}
+
+.header img {
+  border-radius: 12px;
+}
+
+.header div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header strong {
+  font-size: 15px;
+}
+
+.header span {
+  color: #66736b;
+  font-size: 11px;
+}
+
+.progressLabel {
+  color: var(--irc-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.progressTrack {
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2ebe5;
+}
+
+.progressTrack > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--irc-green), var(--irc-dark));
+  transition: width 280ms ease;
+}
+
+.conversation {
+  width: min(100%, 780px);
+  min-height: calc(100dvh - 78px);
+  margin: 0 auto;
+  padding: 28px 16px calc(42px + env(safe-area-inset-bottom));
+}
+
+.messageRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.userRow {
+  justify-content: flex-end;
+}
+
+.avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--irc-green);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 5px 14px rgba(0, 169, 79, 0.22);
+}
+
+.bubble {
+  max-width: min(86%, 610px);
+  padding: 13px 15px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.58;
+  white-space: pre-line;
+}
+
+.botBubble {
+  border: 1px solid #dce8df;
+  border-bottom-left-radius: 5px;
+  background: #fff;
+  box-shadow: 0 7px 22px rgba(24, 61, 39, 0.06);
+}
+
+.userBubble {
+  border-bottom-right-radius: 5px;
+  background: var(--irc-dark);
+  color: #fff;
+}
+
+.choices {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 650px);
+  margin: 20px 0 16px auto;
+  padding-left: 42px;
+}
+
+.choices button,
+.errorCard button {
+  min-height: 50px;
+  padding: 12px 15px;
+  border: 1px solid rgba(0, 169, 79, 0.32);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--irc-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 18px rgba(16, 68, 37, 0.05);
+  transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
+}
+
+.choices button:hover {
+  border-color: var(--irc-green);
+  background: var(--irc-soft);
+  transform: translateY(-1px);
+}
+
+.choices button:focus-visible,
+.errorCard button:focus-visible,
+.buyButton:focus-visible {
+  outline: 3px solid rgba(0, 169, 79, 0.3);
+  outline-offset: 3px;
+}
+
+.choices button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.processing,
+.errorCard,
+.reportCard {
+  width: calc(100% - 43px);
+  margin: 22px 0 20px 43px;
+  padding: 24px;
+  border: 1px solid #dce8df;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(18, 65, 37, 0.08);
+}
+
+.processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.processing strong {
+  margin: 14px 0 5px;
+  color: var(--irc-dark);
+  font-size: 18px;
+}
+
+.processing p,
+.processing small,
+.errorCard p,
+.reportIntro {
+  color: #617067;
+  line-height: 1.6;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #d8eee1;
+  border-top-color: var(--irc-green, #00a94f);
+  border-radius: 50%;
+  animation: spin 850ms linear infinite;
+}
+
+.errorCard strong {
+  color: #9c3f2f;
+}
+
+.errorCard button {
+  border: 0;
+  background: var(--irc-dark);
+  color: #fff;
+  text-align: center;
+}
+
+.ready {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--irc-soft);
+  color: var(--irc-dark);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.reportCard :global(.irc-report-content) {
+  margin-top: 28px;
+}
+
+.reportCard :global(.irc-report-content h2) {
+  margin: 31px 0 11px;
+  color: var(--irc-dark);
+  font-family: 'Playfair Display', serif;
+  font-size: 23px;
+  line-height: 1.2;
+}
+
+.reportCard :global(.irc-report-content p),
+.reportCard :global(.irc-report-content li) {
+  color: #25342b;
+  font-size: 15px;
+  line-height: 1.78;
+}
+
+.reportCard :global(.irc-report-content ul) {
+  display: grid;
+  gap: 9px;
+  padding-left: 22px;
+}
+
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid #e2ebe5;
+}
+
+.reportActions a,
+.reportActions span {
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: var(--irc-soft);
+  color: var(--irc-dark);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.inlineError {
+  margin-left: 43px;
+  color: #a13b2e;
+  font-size: 13px;
+}
+
+.loadingShell,
+.offerShell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: radial-gradient(circle at 50% 0, #d9f5e5, transparent 43%), #f8fbf9;
+  color: #17231c;
+  text-align: center;
+}
+
+.loadingShell {
+  align-content: center;
+  gap: 14px;
+}
+
+.offerCard {
+  width: min(100%, 570px);
+  padding: 38px 32px;
+  border: 1px solid rgba(0, 169, 79, 0.2);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 22px 65px rgba(11, 74, 38, 0.11);
+}
+
+.offerCard img {
+  margin: 0 auto 18px;
+  border-radius: 17px;
+}
+
+.eyebrow {
+  display: block;
+  color: #087d3d;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offerCard h1 {
+  margin: 13px 0;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(29px, 6vw, 43px);
+  line-height: 1.08;
+}
+
+.offerCard p {
+  color: #617067;
+  line-height: 1.65;
+}
+
+.price {
+  margin: 20px 0 14px;
+  color: #087d3d;
+  font-size: 31px;
+  font-weight: 900;
+}
+
+.buyButton {
+  display: block;
+  width: 100%;
+  padding: 15px 18px;
+  border-radius: 12px;
+  background: #00a94f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 10px 27px rgba(0, 169, 79, 0.22);
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 18px;
+  color: #617067;
+  font-size: 13px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .conversation {
+    padding-inline: 12px;
+  }
+
+  .bubble {
+    max-width: 88%;
+  }
+
+  .choices {
+    padding-left: 0;
+  }
+
+  .processing,
+  .errorCard,
+  .reportCard {
+    width: 100%;
+    margin-left: 0;
+    padding: 20px 17px;
+  }
+
+  .offerCard {
+    padding: 30px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressTrack > div,
+  .choices button {
+    transition: none;
+  }
+
+  .spinner {
+    animation-duration: 1.8s;
+  }
+}
