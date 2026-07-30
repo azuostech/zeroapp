@@ -1,0 +1,491 @@
+.page {
+  --thanks-purple: #8166ff;
+  --thanks-green: #00ad58;
+  --thanks-green-dark: #078444;
+  --thanks-green-soft: #eafaf1;
+  --thanks-ink: #20231f;
+  --thanks-muted: #69706b;
+  min-height: 100dvh;
+  color: var(--thanks-ink);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(0, 173, 88, 0.07), transparent 34rem),
+    #f6f8f9;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(23, 45, 31, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.headerInner {
+  width: min(100%, 980px);
+  min-height: 112px;
+  margin: 0 auto;
+  padding: 18px 28px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.headerAvatar,
+.messageAvatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #7054f2, #9077ff);
+  color: #fff;
+  font-weight: 850;
+  box-shadow: 0 10px 26px rgba(111, 82, 242, 0.2);
+}
+
+.headerAvatar {
+  width: 64px;
+  height: 64px;
+  font-size: 19px;
+}
+
+.headerCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.headerCopy strong {
+  font-size: clamp(18px, 3vw, 27px);
+  line-height: 1.2;
+}
+
+.headerCopy span {
+  color: #92949f;
+  font-size: clamp(14px, 2vw, 18px);
+}
+
+.progress {
+  padding: 14px 23px;
+  border-radius: 999px;
+  background: #e6f8ee;
+  color: var(--thanks-green-dark);
+  font-size: 18px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.progressLine {
+  height: 4px;
+  background: linear-gradient(90deg, var(--thanks-green), #2ac270);
+}
+
+.main {
+  padding: 40px 20px 72px;
+}
+
+.conversation {
+  width: min(100%, 980px);
+  margin: 0 auto;
+}
+
+.messageRow,
+.cardRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.messageAvatar {
+  width: 48px;
+  height: 48px;
+  margin-top: 7px;
+  font-size: 14px;
+}
+
+.messageBubble {
+  width: min(100%, 760px);
+  padding: 25px 30px;
+  border-radius: 6px 34px 34px 34px;
+  background: #eceff2;
+  box-shadow: 0 8px 30px rgba(36, 53, 43, 0.03);
+}
+
+.messageBubbleHighlight strong {
+  display: block;
+  margin-bottom: 13px;
+  color: var(--thanks-green-dark);
+  font-size: clamp(21px, 3vw, 29px);
+}
+
+.messageBubble p {
+  margin: 0;
+  color: #383d3a;
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.48;
+}
+
+.cardRow {
+  align-items: flex-start;
+}
+
+.stepsCard {
+  width: calc(100% - 62px);
+  overflow: hidden;
+  border: 1px solid #cfe5d8;
+  border-radius: 34px;
+  background: #fff;
+  box-shadow: 0 30px 65px rgba(26, 58, 38, 0.1);
+}
+
+.cardHeading {
+  min-height: 154px;
+  padding: 34px 38px;
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  border-bottom: 1px solid #d7ebdf;
+  background: linear-gradient(135deg, #effdf5, #eaf9f1);
+}
+
+.successIcon {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #04b95f, #29c978);
+  color: #fff;
+}
+
+.cardHeading div > span {
+  color: var(--thanks-green-dark);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+}
+
+.cardHeading h1 {
+  margin: 8px 0 0;
+  font-size: clamp(30px, 5vw, 43px);
+  line-height: 1.05;
+}
+
+.timeline {
+  margin: 0;
+  padding: 36px 38px 18px 105px;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  min-height: 255px;
+  padding: 0 0 44px 30px;
+  border-left: 4px solid #deebe3;
+}
+
+.step:last-child {
+  min-height: 0;
+  padding-bottom: 24px;
+  border-left-color: transparent;
+}
+
+.stepNumber {
+  position: absolute;
+  top: -1px;
+  left: -36px;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border: 5px solid #dce9e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #657069;
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.activeStep .stepNumber {
+  border-color: #e3f7ec;
+  background: var(--thanks-green);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0, 173, 88, 0.2);
+}
+
+.stepContent {
+  padding-left: 26px;
+}
+
+.stepLabel {
+  display: inline-flex;
+  margin: 7px 0 12px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #eff2f0;
+  color: #6e7671;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.activeStep .stepLabel {
+  background: #e4faee;
+  color: var(--thanks-green-dark);
+}
+
+.stepContent h2 {
+  margin: 0 0 12px;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.2;
+}
+
+.stepContent > p {
+  margin: 0;
+  color: var(--thanks-muted);
+  font-size: clamp(15px, 2vw, 19px);
+  line-height: 1.6;
+}
+
+.infoBox,
+.reportSummary {
+  margin-top: 20px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid #cfe9da;
+  border-radius: 16px;
+  background: #f3fbf7;
+  color: #326249;
+}
+
+.infoBox svg,
+.reportSummary svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--thanks-green-dark);
+}
+
+.infoBox p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.reportSummary {
+  align-items: center;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.primaryButton {
+  min-height: 68px;
+  margin-top: 22px;
+  padding: 15px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #02ae58, #079447);
+  color: #fff;
+  font-size: clamp(14px, 2vw, 20px);
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 17px 30px rgba(0, 159, 79, 0.19);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 34px rgba(0, 159, 79, 0.25);
+}
+
+.primaryButton:focus-visible {
+  outline: 4px solid rgba(0, 173, 88, 0.24);
+  outline-offset: 4px;
+}
+
+.footer {
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border-top: 1px solid #dcebe2;
+  background: #f7faf8;
+  text-align: center;
+}
+
+.footer strong {
+  font-size: 15px;
+}
+
+.footer span {
+  color: #707873;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .headerInner {
+    min-height: 86px;
+    padding: 13px 16px;
+    gap: 11px;
+  }
+
+  .headerAvatar {
+    width: 50px;
+    height: 50px;
+    font-size: 15px;
+  }
+
+  .headerCopy strong {
+    font-size: 16px;
+  }
+
+  .headerCopy span {
+    font-size: 13px;
+  }
+
+  .progress {
+    padding: 10px 13px;
+    font-size: 14px;
+  }
+
+  .main {
+    padding: 24px 12px 44px;
+  }
+
+  .messageRow,
+  .cardRow {
+    gap: 8px;
+    margin-bottom: 17px;
+  }
+
+  .messageAvatar {
+    width: 37px;
+    height: 37px;
+    font-size: 11px;
+  }
+
+  .messageBubble {
+    width: calc(100% - 45px);
+    padding: 18px 17px;
+    border-radius: 5px 24px 24px 24px;
+  }
+
+  .messageBubble p {
+    font-size: 15px;
+  }
+
+  .stepsCard {
+    width: calc(100% - 45px);
+    border-radius: 24px;
+  }
+
+  .cardHeading {
+    min-height: 0;
+    padding: 23px 18px;
+    gap: 14px;
+  }
+
+  .successIcon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .cardHeading h1 {
+    font-size: 28px;
+  }
+
+  .timeline {
+    padding: 28px 16px 10px 49px;
+  }
+
+  .step {
+    padding-left: 18px;
+    padding-bottom: 38px;
+    border-left-width: 3px;
+  }
+
+  .stepNumber {
+    left: -27px;
+    width: 51px;
+    height: 51px;
+    border-width: 4px;
+    font-size: 17px;
+  }
+
+  .stepContent {
+    padding-left: 10px;
+  }
+
+  .stepLabel {
+    margin-top: 5px;
+    padding: 7px 10px;
+    font-size: 9px;
+  }
+
+  .stepContent h2 {
+    font-size: 21px;
+  }
+
+  .stepContent > p,
+  .infoBox p {
+    font-size: 14px;
+  }
+
+  .infoBox,
+  .reportSummary {
+    padding: 15px;
+  }
+
+  .primaryButton {
+    min-height: 58px;
+    padding-inline: 16px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 390px) {
+  .headerCopy span {
+    display: none;
+  }
+
+  .progress {
+    padding-inline: 11px;
+  }
+
+  .messageAvatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .messageBubble,
+  .stepsCard {
+    width: calc(100% - 42px);
+  }
+
+  .cardHeading {
+    align-items: flex-start;
+  }
+
+  .successIcon {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton {
+    transition: none;
+  }
+}
