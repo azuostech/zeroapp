@@ -44,9 +44,12 @@ export default function IrcExperience() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [delivering, setDelivering] = useState(false);
+  const [deliveryError, setDeliveryError] = useState('');
   const [phase, setPhase] = useState('questions');
   const [error, setError] = useState('');
   const bottomRef = useRef(null);
+  const deliveryAttemptedRef = useRef(false);
 
   const load = useCallback(async () => {
     const response = await fetch('/api/irc/diagnostic', { cache: 'no-store' });
@@ -77,6 +80,23 @@ export default function IrcExperience() {
     setPhase('complete');
     return data;
   }, []);
+
+  const deliverReport = useCallback(async () => {
+    if (delivering) return;
+    setDelivering(true);
+    setDeliveryError('');
+    try {
+      const response = await fetch('/api/irc/deliver', { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'delivery_failed');
+      await load();
+    } catch (_) {
+      setDeliveryError('Não foi possível preparar o PDF e enviar o e-mail agora.');
+      await load().catch(() => {});
+    } finally {
+      setDelivering(false);
+    }
+  }, [delivering, load]);
 
   useEffect(() => {
     let active = true;
@@ -114,16 +134,11 @@ export default function IrcExperience() {
       return undefined;
     }
 
-    let active = true;
-    const deliver = async () => {
-      await fetch('/api/irc/deliver', { method: 'POST' }).catch(() => null);
-      if (active) await load().catch(() => {});
-    };
-    void deliver();
-    return () => {
-      active = false;
-    };
-  }, [load, payload?.diagnostic?.email_status, payload?.diagnostic?.pdf_ready, phase]);
+    if (deliveryAttemptedRef.current) return undefined;
+    deliveryAttemptedRef.current = true;
+    void deliverReport();
+    return undefined;
+  }, [deliverReport, payload?.diagnostic?.email_status, payload?.diagnostic?.pdf_ready, phase]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
@@ -244,9 +259,30 @@ export default function IrcExperience() {
             <p className={styles.reportIntro}>Cruzei tudo o que você revelou ao longo da conversa. Esta é uma leitura integrada do padrão que está influenciando suas decisões financeiras.</p>
             <IrcReport report={payload.diagnostic.report} />
             <div className={styles.reportActions}>
-              {payload.diagnostic.pdf_ready ? <a href="/api/irc/pdf">BAIXAR PDF</a> : <span>PDF em preparação</span>}
-              <span>{payload.diagnostic.email_status === 'sent' ? 'Enviado por e-mail' : 'Envio por e-mail em preparação'}</span>
+              {payload.diagnostic.pdf_ready ? (
+                <a href="/api/irc/pdf">BAIXAR PDF</a>
+              ) : (
+                <span>{delivering ? 'Preparando PDF…' : payload.diagnostic.pdf_status === 'failed' ? 'PDF não gerado' : 'PDF em preparação'}</span>
+              )}
+              <span>
+                {payload.diagnostic.email_status === 'sent'
+                  ? 'Enviado por e-mail'
+                  : delivering
+                    ? 'Preparando envio…'
+                    : payload.diagnostic.email_status === 'failed'
+                      ? 'E-mail não enviado'
+                      : 'Envio por e-mail em preparação'}
+              </span>
+              {(deliveryError ||
+                payload.diagnostic.pdf_status === 'failed' ||
+                payload.diagnostic.email_status === 'failed') &&
+              !(payload.diagnostic.pdf_ready && payload.diagnostic.email_status === 'sent') ? (
+                <button type="button" disabled={delivering} onClick={deliverReport}>
+                  {delivering ? 'TENTANDO NOVAMENTE…' : 'TENTAR GERAR E ENVIAR NOVAMENTE'}
+                </button>
+              ) : null}
             </div>
+            {deliveryError ? <p className={styles.deliveryError} role="alert">{deliveryError}</p> : null}
           </section>
         ) : null}
 

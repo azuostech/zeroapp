@@ -7,6 +7,13 @@ import { ircReportReadyEmail } from '@/src/lib/email/templates/irc-report-ready'
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
+function safeDeliveryError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('.afm') || message.includes('font')) return 'pdf_assets_missing';
+  if (message.includes('bucket') || message.includes('storage') || message.includes('upload')) return 'pdf_upload_failed';
+  return 'delivery_failed';
+}
+
 export async function POST() {
   let context;
   let diagnostic;
@@ -92,17 +99,18 @@ export async function POST() {
 
     return NextResponse.json({ pdf_ready: true, email_status: 'sent' });
   } catch (error) {
-    console.error('[irc/deliver] failed:', error?.message || error);
+    const safeError = safeDeliveryError(error);
+    console.error('[irc/deliver] failed:', safeError, error?.message || error);
     if (context?.service && diagnostic?.id) {
       await context.service
         .from('irc_diagnostics')
         .update({
           ...(diagnostic.pdf_status !== 'ready' ? { pdf_status: 'failed' } : {}),
           ...(diagnostic.email_sent_at ? {} : { email_status: 'failed' }),
-          last_error: 'delivery_failed'
+          last_error: safeError
         })
         .eq('id', diagnostic.id);
     }
-    return NextResponse.json({ error: 'delivery_failed' }, { status: 500 });
+    return NextResponse.json({ error: safeError }, { status: 500 });
   }
 }

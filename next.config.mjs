@@ -9,6 +9,10 @@ const securityHeaders = [
 
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['pdfkit'],
+  outputFileTracingIncludes: {
+    '/api/irc/deliver': ['./node_modules/pdfkit/js/data/*.afm']
+  },
   async headers() {
     return [
       {
