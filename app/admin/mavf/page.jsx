@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import AdminSessionCard from '@/components/mavf/AdminSessionCard';
+import { MAVF_PILLARS, MAVF_PILLARS_MAP } from '@/lib/mavf-config';
+import styles from './admin-mavf.module.css';
 
 const MAVF_ALLOWED_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
 const SESSION_COLORS = ['#00C853', '#2196F3', '#FFD700', '#E91E63', '#9C27B0', '#FF9800', '#12B0A5', '#FF6B6B'];
@@ -18,6 +19,12 @@ function formatDateBR(value) {
 function pickRandomColor() {
   return SESSION_COLORS[Math.floor(Math.random() * SESSION_COLORS.length)];
 }
+
+const STATUS_META = {
+  active: { label: 'Ao vivo', className: styles.statusActive },
+  draft: { label: 'Preparação', className: styles.statusDraft },
+  completed: { label: 'Finalizada', className: styles.statusCompleted }
+};
 
 export default function AdminMAVFPage() {
   const [sessions, setSessions] = useState([]);
@@ -45,11 +52,18 @@ export default function AdminMAVFPage() {
   const [participantsError, setParticipantsError] = useState('');
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [participantsQuery, setParticipantsQuery] = useState('');
+  const [operationSession, setOperationSession] = useState(null);
 
   useEffect(() => {
     fetchAdminUsers();
     fetchSessions();
   }, []);
+
+  useEffect(() => {
+    if (!operationSession?.id) return;
+    const freshSession = sessions.find((item) => item.id === operationSession.id);
+    if (freshSession) setOperationSession(freshSession);
+  }, [sessions, operationSession?.id]);
 
   const eligibleUsers = useMemo(() => users.filter((user) => isEligibleParticipant(user)), [users]);
 
@@ -226,8 +240,12 @@ export default function AdminMAVFPage() {
           : data?.message || 'Sessão criada como rascunho. Defina participantes e libere o pilar.'
       );
       if (!isEditing) setActiveSection('setup');
-      closeSessionModal();
+      setSessionModal({ open: false, mode: 'create', session: null });
+      setSessionFormError('');
+      setSessionTitle('');
+      setSessionColor('#00C853');
       await fetchSessions();
+      if (!isEditing && data?.session) await openParticipantsModal(data.session);
     } catch (error) {
       setSessionFormError(error?.message || 'Erro ao salvar sessão.');
     } finally {
@@ -300,6 +318,7 @@ export default function AdminMAVFPage() {
 
       if (res.ok) {
         setFeedback(data?.message || 'Sessão excluída com sucesso.');
+        if (operationSession?.id === session.id) setOperationSession(null);
         await fetchSessions();
       } else {
         alert(data?.error || 'Erro ao excluir sessão');
@@ -380,7 +399,14 @@ export default function AdminMAVFPage() {
       }));
 
       setFeedback('Participantes da sessão atualizados com sucesso.');
-      closeParticipantsModal();
+      setOperationSession({
+        ...(sessions.find((item) => item.id === participantsModalSession.id) || participantsModalSession),
+        participants_count: total
+      });
+      setParticipantsModalSession(null);
+      setParticipantsError('');
+      setSelectedParticipantIds([]);
+      setParticipantsQuery('');
     } catch (error) {
       setParticipantsError(error?.message || 'Erro ao salvar participantes.');
     } finally {
@@ -389,129 +415,91 @@ export default function AdminMAVFPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] text-[var(--text2)]">
-        Carregando painel MAVF...
-      </div>
-    );
+    return <div className={styles.loading}>Carregando painel MAVF...</div>;
   }
 
   if (accessDenied) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex items-center justify-center p-6">
-        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] p-7 max-w-md text-center shadow-[var(--shadow-sm)]">
-          <div className="text-4xl mb-4">⛔</div>
-          <h2 className="text-xl font-semibold mb-2">Acesso restrito</h2>
-          <p className="text-[var(--text2)] text-sm">Esta página é exclusiva para administradores.</p>
+      <div className={styles.denied}>
+        <div className={styles.deniedCard}>
+          <div>⛔</div>
+          <h2>Acesso restrito</h2>
+          <p>Esta página é exclusiva para administradores.</p>
         </div>
       </div>
     );
   }
 
-  const renderSessionSection = (title, subtitle, list, accentClass) => (
-    <section className="rounded-[14px] border border-[var(--border)] bg-[var(--bg-card)] p-4 md:p-5 shadow-[var(--shadow-sm)]">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h2 className={`text-lg md:text-xl font-bold ${accentClass}`}>{title}</h2>
-          <p className="text-xs md:text-sm text-[var(--text2)]">{subtitle}</p>
-        </div>
-        <div className="text-xs text-[var(--text2)]">{list.length} sessão(ões)</div>
-      </div>
-
-      {list.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-[var(--border)] bg-[var(--bg-input)] p-5 text-sm text-[var(--text2)]">
-          Nenhuma sessão nesta categoria.
-        </div>
-      ) : (
-        list.map((session) => (
-          <AdminSessionCard
-            key={session.id}
-            session={session}
-            responseStats={responseStats[session.id]}
-            onStartPillar={startPillar}
-            onComplete={completeSession}
-            onRefresh={refreshLiveData}
-            onManageParticipants={openParticipantsModal}
-            onEditSession={openEditSessionModal}
-            onDeleteSession={deleteSession}
-          />
-        ))
-      )}
-    </section>
-  );
-
   const selectedSection = activeSection || (activeSessions.length > 0 ? 'live' : draftSessions.length > 0 ? 'setup' : 'history');
-
   const sectionTabs = [
     { id: 'live', label: 'Ao vivo', icon: '●', count: activeSessions.length },
     { id: 'setup', label: 'Preparação', icon: '⚙', count: draftSessions.length },
     { id: 'history', label: 'Histórico', icon: '✓', count: completedSessions.length }
   ];
 
+  const sectionContent = {
+    live: {
+      title: 'Sessões em andamento',
+      subtitle: 'Acompanhe respostas e abra o painel de operação para liberar pilares.',
+      sessions: activeSessions,
+      emptyIcon: '📡',
+      emptyText: 'Nenhuma sessão está ao vivo agora.'
+    },
+    setup: {
+      title: 'Sessões em preparação',
+      subtitle: 'Defina participantes e configure a sessão antes de iniciar.',
+      sessions: draftSessions,
+      emptyIcon: '🧰',
+      emptyText: 'Nenhuma sessão aguardando preparação.'
+    },
+    history: {
+      title: 'Sessões já realizadas',
+      subtitle: 'Consulte o histórico e as operações disponíveis para cada sessão.',
+      sessions: completedSessions,
+      emptyIcon: '📚',
+      emptyText: 'Ainda não há sessões finalizadas.'
+    }
+  };
+
+  const currentSection = sectionContent[selectedSection];
+  const operationStats = operationSession ? responseStats[operationSession.id] || {} : {};
+  const operationParticipants = Number(operationStats.participantsCount || operationSession?.participants_count || 0);
+  const operationPillar = operationSession?.current_pillar ? MAVF_PILLARS_MAP[operationSession.current_pillar] : null;
+  const operationResponseCount = operationPillar ? Number(operationStats.countsByPillar?.[operationPillar.id] || 0) : 0;
+  const operationProgress = operationParticipants > 0 ? Math.min(100, Math.round((operationResponseCount / operationParticipants) * 100)) : 0;
+
   return (
-    <div className="min-h-screen bg-[var(--bg)] p-4 md:p-8 text-[var(--text)]">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <header className="relative overflow-hidden rounded-[16px] border border-[var(--border-green)] bg-[var(--bg-header)] p-5 md:p-7 shadow-[var(--shadow-green)]">
-          <div className="relative flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.9px] text-white/80 mb-2">Painel Operacional</p>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF Admin</h1>
-              <p className="text-sm text-white/85 max-w-2xl">
-                Prepare novas sessões, conduza a dinâmica ao vivo e consulte o histórico em ambientes separados.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={refreshLiveData}
-                disabled={refreshing}
-                className="px-4 py-3 rounded-[10px] bg-white/10 text-white border border-white/25 font-bold text-sm hover:bg-white/20 disabled:opacity-60"
-              >
-                {refreshing ? 'Atualizando...' : '↻ Atualizar painel'}
-              </button>
-              <button
-                type="button"
-                onClick={openCreateSessionModal}
-                className="px-5 py-3 rounded-[10px] bg-white/20 text-white border border-white/35 font-bold text-sm hover:bg-white/25"
-              >
-                + Nova Sessão
-              </button>
-            </div>
+    <div className={styles.screen}>
+      <div className={styles.container}>
+        <header className={styles.hero}>
+          <div>
+            <p className={styles.eyebrow}>Painel de operações administrativas</p>
+            <h1>MAVF — Gestão de sessões</h1>
+            <p className={styles.heroDescription}>
+              Crie, prepare e conduza as sessões ao vivo em uma visão organizada, seguindo o padrão da gestão de usuários.
+            </p>
+          </div>
+          <div className={styles.heroActions}>
+            <button type="button" onClick={refreshLiveData} disabled={refreshing} className={styles.buttonGhost}>
+              {refreshing ? 'Atualizando...' : '↻ Atualizar painel'}
+            </button>
+            <button type="button" onClick={openCreateSessionModal} className={styles.buttonPrimary}>
+              + Nova sessão
+            </button>
           </div>
         </header>
 
-        {feedback ? (
-          <div className="rounded-[10px] border border-[rgba(61,213,152,0.35)] bg-[rgba(61,213,152,0.12)] text-[#95f5cb] px-4 py-3 text-sm">
-            {feedback}
-          </div>
-        ) : null}
+        {feedback ? <div className={styles.notice}>{feedback}</div> : null}
+        {usersError ? <div className={styles.errorNotice}>{usersError}</div> : null}
 
-        {usersError ? (
-          <div className="rounded-[10px] border border-[rgba(255,82,82,0.35)] bg-[rgba(255,82,82,0.12)] text-[#ff9f9f] px-4 py-3 text-sm">
-            {usersError}
-          </div>
-        ) : null}
+        <section className={styles.stats} aria-label="Resumo das sessões">
+          <div className={styles.stat}><span>Total de sessões</span><strong>{sessions.length}</strong></div>
+          <div className={styles.stat}><span>Ao vivo</span><strong>{activeSessions.length}</strong></div>
+          <div className={styles.stat}><span>Em preparação</span><strong>{draftSessions.length}</strong></div>
+          <div className={styles.stat}><span>Finalizadas</span><strong>{completedSessions.length}</strong></div>
+        </section>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
-            <div className="text-xs text-[var(--text3)] mb-1">Total de Sessões</div>
-            <div className="text-3xl font-bold">{sessions.length}</div>
-          </div>
-          <div className="bg-[var(--bg-card)] border border-[var(--border-green)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
-            <div className="text-xs text-[var(--text3)] mb-1">Ativas</div>
-            <div className="text-3xl font-bold text-[var(--green-dark)]">{activeSessions.length}</div>
-          </div>
-          <div className="bg-[var(--bg-card)] border border-[var(--gold-mid)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
-            <div className="text-xs text-[var(--text3)] mb-1">Rascunhos</div>
-            <div className="text-3xl font-bold text-[var(--gold-dark)]">{draftSessions.length}</div>
-          </div>
-          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[12px] p-4 shadow-[var(--shadow-sm)]">
-            <div className="text-xs text-[var(--text3)] mb-1">Finalizadas</div>
-            <div className="text-3xl font-bold text-[var(--text2)]">{completedSessions.length}</div>
-          </div>
-        </div>
-
-        <nav className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Áreas de gestão MAVF">
+        <nav className={styles.tabs} aria-label="Filtrar sessões por status">
           {sectionTabs.map((tab) => {
             const selected = selectedSection === tab.id;
             return (
@@ -519,79 +507,206 @@ export default function AdminMAVFPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveSection(tab.id)}
-                className={`flex items-center justify-between rounded-[12px] border px-4 py-4 text-left transition ${
-                  selected
-                    ? 'border-[var(--green)] bg-[var(--green-dim)] text-[var(--green-dark)] shadow-[var(--shadow-sm)]'
-                    : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text2)] hover:border-[var(--border-green)]'
-                }`}
-                aria-current={selected ? 'page' : undefined}
+                className={`${styles.tab} ${selected ? styles.tabActive : ''}`}
+                aria-pressed={selected}
               >
-                <span className="flex items-center gap-2 font-bold"><span aria-hidden="true">{tab.icon}</span>{tab.label}</span>
-                <span className="grid h-7 min-w-7 place-items-center rounded-full bg-[var(--bg-input)] px-2 text-xs font-black">{tab.count}</span>
+                <span aria-hidden="true">{tab.icon}</span>
+                {tab.label}
+                <span className={styles.tabCount}>{tab.count}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="text-right text-[11px] text-[var(--text3)]">
-          {lastRefresh ? `Última atualização às ${lastRefresh.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : null}
-        </div>
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>{currentSection.title}</h2>
+              <p>{currentSection.subtitle}</p>
+            </div>
+            <span className={styles.lastUpdate}>
+              {lastRefresh ? `Atualizado às ${lastRefresh.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+            </span>
+          </div>
 
-        <div className="space-y-5">
-          {selectedSection === 'live'
-            ? renderSessionSection(
-                'Sala ao vivo',
-                'Acompanhe respostas e libere o próximo pilar durante a sessão.',
-                activeSessions,
-                'text-[#5fe5ad]'
-              )
-            : null}
-          {selectedSection === 'setup'
-            ? renderSessionSection(
-                'Preparação das próximas sessões',
-                'Configure nome e participantes; depois libere o primeiro pilar para iniciar.',
-                draftSessions,
-                'text-[#ffd166]'
-              )
-            : null}
-          {selectedSection === 'history'
-            ? renderSessionSection(
-                'Sessões já realizadas',
-                'Consulte, edite ou, excepcionalmente, reative uma sessão concluída.',
-                completedSessions,
-                'text-[#c4cfde]'
-              )
-            : null}
-        </div>
+          {currentSection.sessions.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>{currentSection.emptyIcon}</div>
+              {currentSection.emptyText}
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Sessão</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                    <th>Participantes</th>
+                    <th>Pilar atual</th>
+                    <th>Respostas</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentSection.sessions.map((session) => {
+                    const status = STATUS_META[session.status] || STATUS_META.draft;
+                    const stats = responseStats[session.id] || {};
+                    const participants = Number(stats.participantsCount || session.participants_count || 0);
+                    const pillar = session.current_pillar ? MAVF_PILLARS_MAP[session.current_pillar] : null;
+                    const responseCount = pillar ? Number(stats.countsByPillar?.[pillar.id] || 0) : 0;
+                    return (
+                      <tr key={session.id}>
+                        <td>
+                          <div className={styles.sessionName}>
+                            <span className={styles.sessionColor} style={{ background: session.color_hex }} />
+                            <span>{session.title}</span>
+                          </div>
+                          <span className={styles.sessionMeta}>ID {String(session.id).slice(0, 8)}</span>
+                        </td>
+                        <td><span className={`${styles.badge} ${status.className}`}>● {status.label}</span></td>
+                        <td>{formatDateBR(session.completed_at || session.started_at || session.created_at)}</td>
+                        <td><strong>{participants}</strong></td>
+                        <td>{pillar ? `${pillar.emoji} ${pillar.label}` : '—'}</td>
+                        <td>{session.status === 'active' ? `${responseCount}/${participants}` : '—'}</td>
+                        <td>
+                          <div className={styles.actions}>
+                            <button type="button" className={`${styles.actionButton} ${styles.actionPrimary}`} onClick={() => setOperationSession(session)}>
+                              {session.status === 'active' ? 'Operar' : session.status === 'draft' ? 'Configurar' : 'Detalhes'}
+                            </button>
+                            <button type="button" className={styles.actionButton} onClick={() => openParticipantsModal(session)}>Participantes</button>
+                            <button type="button" className={styles.actionButton} onClick={() => openEditSessionModal(session)}>Editar</button>
+                            <button type="button" className={styles.actionDanger} onClick={() => deleteSession(session)}>Excluir</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
 
-      {sessionModal.open ? (
-        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4">
-          <div className="w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] overflow-hidden shadow-[var(--shadow-lg)]">
-            <div className="px-5 py-4 border-b border-[var(--border)]">
-              <h3 className="text-lg font-semibold">{sessionModal.mode === 'edit' ? 'Editar Sessão' : 'Nova Sessão MAVF'}</h3>
-              <p className="text-xs text-[var(--text2)] mt-1">
-                {sessionModal.mode === 'edit'
-                  ? 'Atualize nome e identidade visual da sessão.'
-                  : 'Crie a sessão e depois selecione participantes para liberar acesso.'}
-              </p>
+      {operationSession ? (
+        <div className={styles.overlay} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setOperationSession(null)}>
+          <section className={styles.modalWide} role="dialog" aria-modal="true" aria-labelledby="operation-title">
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Painel de operação</p>
+                <h2 id="operation-title">{operationSession.title}</h2>
+                <p>{STATUS_META[operationSession.status]?.label} • criada em {formatDateBR(operationSession.created_at)}</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setOperationSession(null)} aria-label="Fechar">×</button>
+            </header>
+
+            <div className={styles.modalBody}>
+              <div className={styles.operationSummary}>
+                <div className={styles.operationStat}><span>Status</span><strong>{STATUS_META[operationSession.status]?.label}</strong></div>
+                <div className={styles.operationStat}><span>Participantes</span><strong>{operationParticipants}</strong></div>
+                <div className={styles.operationStat}><span>Pilar atual</span><strong>{operationPillar ? `${operationPillar.emoji} ${operationPillar.label}` : 'Nenhum'}</strong></div>
+              </div>
+
+              {operationSession.status === 'active' ? (
+                <div className={styles.liveBox}>
+                  <span>Respostas recebidas no pilar atual</span>
+                  <strong>{operationResponseCount} de {operationParticipants}</strong>
+                  <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${operationProgress}%` }} /></div>
+                </div>
+              ) : null}
+
+              {operationSession.status === 'draft' ? (
+                <div className={styles.setupBox}>
+                  <span>Preparação da sessão</span>
+                  <strong>{operationParticipants > 0 ? 'Participantes definidos' : 'Defina os participantes'}</strong>
+                  <p>Ao liberar o primeiro pilar, a sessão ficará ativa para os participantes selecionados.</p>
+                </div>
+              ) : null}
+
+              {operationSession.status === 'completed' ? (
+                <div className={styles.setupBox}>
+                  <span>Sessão concluída</span>
+                  <strong>Histórico preservado</strong>
+                  <p>Use os pilares abaixo somente se precisar reativar excepcionalmente esta sessão.</p>
+                </div>
+              ) : null}
+
+              <h3 className={styles.pillarsTitle}>
+                {operationSession.status === 'active' ? 'Liberar pilar durante a sessão' : operationSession.status === 'draft' ? 'Escolha o primeiro pilar' : 'Reativar em um pilar'}
+              </h3>
+              <div className={styles.pillars}>
+                {MAVF_PILLARS.map((pillar) => {
+                  const active = operationSession.current_pillar === pillar.id;
+                  const count = Number(operationStats.countsByPillar?.[pillar.id] || 0);
+                  return (
+                    <button
+                      key={pillar.id}
+                      type="button"
+                      className={`${styles.pillar} ${active ? styles.pillarActive : ''}`}
+                      onClick={() => startPillar(operationSession.id, pillar.id)}
+                    >
+                      <strong>{pillar.emoji} {pillar.label}</strong>
+                      <span>{active ? 'Liberado agora' : `${count} resposta(s)`}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="px-5 py-4 space-y-4">
-              <label className="block">
-                <span className="text-xs text-[var(--text2)]">Título da sessão</span>
+            <footer className={styles.modalFooter}>
+              <div className={styles.operationActions}>
+                <button type="button" className={styles.button} onClick={() => openParticipantsModal(operationSession)}>Participantes</button>
+                <button type="button" className={styles.button} onClick={() => { setOperationSession(null); openEditSessionModal(operationSession); }}>Editar sessão</button>
+                {operationSession.status === 'active' ? <button type="button" className={styles.buttonDanger} onClick={() => completeSession(operationSession.id)}>Finalizar sessão</button> : null}
+              </div>
+              <button type="button" className={styles.buttonGhost} onClick={() => setOperationSession(null)}>Fechar</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {sessionModal.open ? (
+        <div className={`${styles.overlay} ${styles.overlayFront}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeSessionModal()}>
+          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="session-modal-title">
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>{sessionModal.mode === 'edit' ? 'Configuração' : 'Nova sessão'}</p>
+                <h2 id="session-modal-title">{sessionModal.mode === 'edit' ? 'Editar sessão' : 'Criar sessão MAVF'}</h2>
+                <p>
+                {sessionModal.mode === 'edit'
+                  ? 'Atualize nome e identidade visual da sessão.'
+                  : 'A sessão será criada em preparação. Depois, defina participantes e libere o primeiro pilar.'}
+                </p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeSessionModal} aria-label="Fechar">×</button>
+            </header>
+
+            <div className={styles.modalBody}>
+              {sessionModal.mode === 'create' ? (
+                <div className={styles.steps}>
+                  <div className={`${styles.step} ${styles.stepActive}`}>1. Criar sessão</div>
+                  <div className={styles.step}>2. Participantes</div>
+                  <div className={styles.step}>3. Liberar pilar</div>
+                </div>
+              ) : null}
+
+              <div className={styles.field}>
+                <label htmlFor="session-title">Título da sessão</label>
                 <input
+                  id="session-title"
                   type="text"
                   value={sessionTitle}
                   onChange={(event) => setSessionTitle(event.target.value)}
                   placeholder="Ex.: Sessão de abril - turma A"
-                  className="mt-1 w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
+                  className={styles.input}
+                  autoFocus
                 />
-              </label>
+              </div>
 
-              <div>
-                <div className="text-xs text-[var(--text2)] mb-2">Cor da sessão</div>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className={styles.field}>
+                <div className={styles.fieldLabel}>Cor da sessão</div>
+                <div className={styles.colorGrid}>
                   {SESSION_COLORS.map((color) => {
                     const active = sessionColor.toLowerCase() === color.toLowerCase();
                     return (
@@ -599,112 +714,87 @@ export default function AdminMAVFPage() {
                         key={color}
                         type="button"
                         onClick={() => setSessionColor(color)}
-                        className={`h-8 w-8 rounded-full border-2 ${active ? 'border-[var(--green)]' : 'border-[var(--border)]'}`}
+                        className={`${styles.colorButton} ${active ? styles.colorButtonActive : ''}`}
                         style={{ background: color }}
                         aria-label={`Selecionar cor ${color}`}
                       />
                     );
                   })}
                 </div>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={sessionColor} onChange={(event) => setSessionColor(event.target.value)} className="h-9 w-12 rounded border border-[var(--border)] bg-transparent" />
+                <div className={styles.customColor}>
+                  <input type="color" value={sessionColor} onChange={(event) => setSessionColor(event.target.value)} aria-label="Escolher cor personalizada" />
                   <input
                     type="text"
                     value={sessionColor}
                     onChange={(event) => setSessionColor(event.target.value)}
-                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
+                    className={styles.input}
+                    aria-label="Código hexadecimal da cor"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-[var(--border)]">
-              {sessionFormError ? <div className="mb-3 text-sm text-[#ff9f9f]">{sessionFormError}</div> : null}
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={closeSessionModal}
-                  disabled={sessionSubmitting}
-                  className="px-3 py-2 text-xs border border-[#3a4a5e] rounded-[8px] text-[#afbbc9] disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={saveSession}
-                  disabled={sessionSubmitting}
-                  className="px-4 py-2 text-xs rounded-[8px] bg-[var(--green)] text-[var(--text-on-green)] font-bold disabled:opacity-60"
-                >
-                  {sessionSubmitting ? 'Salvando...' : sessionModal.mode === 'edit' ? 'Salvar Alterações' : 'Criar Sessão'}
+            <footer className={styles.modalFooter}>
+              <div>{sessionFormError ? <div className={styles.errorNotice}>{sessionFormError}</div> : null}</div>
+              <div className={styles.modalActions}>
+                <button type="button" onClick={closeSessionModal} disabled={sessionSubmitting} className={styles.button}>Cancelar</button>
+                <button type="button" onClick={saveSession} disabled={sessionSubmitting} className={styles.buttonPrimary}>
+                  {sessionSubmitting ? 'Salvando...' : sessionModal.mode === 'edit' ? 'Salvar alterações' : 'Criar sessão'}
                 </button>
               </div>
-            </div>
-          </div>
+            </footer>
+          </section>
         </div>
       ) : null}
 
       {participantsModalSession ? (
-        <div className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.5)] flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-[var(--bg-card)] border border-[var(--border)] rounded-[14px] overflow-hidden shadow-[var(--shadow-lg)]">
-            <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between gap-3">
+        <div className={`${styles.overlay} ${styles.overlayFront}`} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeParticipantsModal()}>
+          <section className={styles.modalWide} role="dialog" aria-modal="true" aria-labelledby="participants-title">
+            <header className={styles.modalHeader}>
               <div>
-                <h3 className="text-lg font-semibold">Participantes da Sessão</h3>
-                <p className="text-xs text-[var(--text2)] mt-1">
-                  {participantsModalSession.title} • {formatDateBR(participantsModalSession.created_at)}
-                </p>
+                <p className={styles.eyebrow}>Controle de acesso</p>
+                <h2 id="participants-title">Participantes da sessão</h2>
+                <p>{participantsModalSession.title} • {formatDateBR(participantsModalSession.created_at)}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeParticipantsModal}
-                disabled={participantsSaving}
-                className="px-3 py-2 text-xs border border-[var(--border)] rounded-[8px] text-[var(--text2)] disabled:opacity-50"
-              >
-                Fechar
-              </button>
-            </div>
+              <button type="button" className={styles.closeButton} onClick={closeParticipantsModal} disabled={participantsSaving} aria-label="Fechar">×</button>
+            </header>
 
-            <div className="px-5 py-4 border-b border-[var(--border)]">
-              <div className="text-xs text-[var(--text2)] mb-2">
-                Selecione quem pode visualizar e responder esta sessão. Apenas perfis `active` com tier MOVIMENTO+ aparecem aqui.
+            <div className={styles.modalBody}>
+              <div className={styles.field}>
+                <label htmlFor="participants-search">Buscar participantes elegíveis</label>
+                <input
+                  id="participants-search"
+                  type="text"
+                  value={participantsQuery}
+                  onChange={(event) => setParticipantsQuery(event.target.value)}
+                  placeholder="Buscar por nome ou e-mail"
+                  className={styles.input}
+                  autoFocus
+                />
+                <span className={styles.sessionMeta}>Apenas usuários ativos com tier MOVIMENTO ou superior.</span>
               </div>
-              <input
-                type="text"
-                value={participantsQuery}
-                onChange={(event) => setParticipantsQuery(event.target.value)}
-                placeholder="Buscar por nome ou e-mail"
-                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-[8px] px-3 py-2 text-sm outline-none focus:border-[var(--green)]"
-              />
-            </div>
 
-            <div className="px-5 py-4 max-h-[52vh] overflow-y-auto">
               {usersLoading || participantsLoading ? (
-                <div className="text-sm text-[var(--text3)]">Carregando participantes...</div>
+                <div className={styles.empty}>Carregando participantes...</div>
               ) : filteredEligibleUsers.length === 0 ? (
-                <div className="text-sm text-[var(--text3)]">Nenhum usuário elegível encontrado.</div>
+                <div className={styles.empty}>Nenhum usuário elegível encontrado.</div>
               ) : (
-                <div className="space-y-2">
+                <div className={styles.participantsList}>
                   {filteredEligibleUsers.map((user) => {
                     const checked = selectedParticipantIds.includes(user.id);
                     return (
                       <label
                         key={user.id}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-[10px] border cursor-pointer ${
-                          checked ? 'border-[var(--green)] bg-[var(--green-dim)]' : 'border-[var(--border)] bg-[var(--bg-input)]'
-                        }`}
+                        className={`${styles.participant} ${checked ? styles.participantSelected : ''}`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleParticipant(user.id)}
-                            className="accent-[#64b4ff]"
-                          />
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold truncate">{user.full_name || 'Sem nome'}</div>
-                            <div className="text-xs text-[#98a0ad] truncate">{user.email || 'sem e-mail'}</div>
+                        <div className={styles.participantInfo}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleParticipant(user.id)} />
+                          <div className={styles.participantText}>
+                            <strong>{user.full_name || 'Sem nome'}</strong>
+                            <span>{user.email || 'sem e-mail'}</span>
                           </div>
                         </div>
-                        <div className="text-[10px] uppercase tracking-[0.6px] text-[#7f8fa3]">{user.tier}</div>
+                        <div className={styles.tier}>{user.tier}</div>
                       </label>
                     );
                   })}
@@ -712,31 +802,19 @@ export default function AdminMAVFPage() {
               )}
             </div>
 
-            <div className="px-5 py-4 border-t border-[#2c2c2c]">
-              {participantsError ? <div className="mb-3 text-sm text-[#ff8e8e]">{participantsError}</div> : null}
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-xs text-[#9aa1ad]">{selectedParticipantIds.length} participante(s) selecionado(s)</div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={closeParticipantsModal}
-                    disabled={participantsSaving}
-                    className="px-3 py-2 text-xs border border-[#444] rounded-[8px] text-[#bbb] disabled:opacity-50"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveParticipants}
-                    disabled={participantsSaving}
-                    className="px-4 py-2 text-xs rounded-[8px] bg-[#64b4ff] text-[#06263f] font-bold disabled:opacity-60"
-                  >
-                    {participantsSaving ? 'Salvando...' : 'Salvar Participantes'}
-                  </button>
-                </div>
+            <footer className={styles.modalFooter}>
+              <div>
+                <div className={styles.footerCount}>{selectedParticipantIds.length} participante(s) selecionado(s)</div>
+                {participantsError ? <div className={styles.errorNotice}>{participantsError}</div> : null}
               </div>
-            </div>
-          </div>
+              <div className={styles.modalActions}>
+                <button type="button" onClick={closeParticipantsModal} disabled={participantsSaving} className={styles.button}>Cancelar</button>
+                <button type="button" onClick={saveParticipants} disabled={participantsSaving} className={styles.buttonPrimary}>
+                  {participantsSaving ? 'Salvando...' : 'Salvar participantes'}
+                </button>
+              </div>
+            </footer>
+          </section>
         </div>
       ) : null}
     </div>

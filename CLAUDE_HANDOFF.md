@@ -6,6 +6,16 @@ Status funcional: Central de Atividade administrativa e primeira rodada de perfo
 
 ## Atualizacao 2026-08-01 — MAVF ao vivo e experiencia de pontuacao
 
+### Redesign administrativo em tabela
+- `/admin/mavf` deixou de renderizar cartoes longos e passou a seguir o padrao visual da gestao de usuarios.
+- As sessoes aparecem em tabela com colunas para sessao, status, data, participantes, pilar atual, respostas e acoes.
+- Filtros `Ao vivo`, `Preparacao` e `Historico` mantem cada contexto separado sem empilhar todas as sessoes na pagina.
+- As acoes `Operar/Configurar/Detalhes`, `Participantes`, `Editar` e `Excluir` ficam agrupadas na coluna de acoes.
+- O painel de operacao abre em modal centralizado e concentra progresso ao vivo, pilar atual, liberacao de pilares, participantes, edicao e encerramento.
+- A criacao nao aparece mais no fim da lista: `Nova sessao` abre um modal visual com as etapas `Criar`, `Participantes` e `Liberar pilar`.
+- Depois de criar, o fluxo abre automaticamente a selecao de participantes; ao salvar, abre o painel de operacao para liberar o primeiro pilar.
+- Os modais de sessao e participantes receberam CSS Module proprio, corrigindo a tela sem estilos e impedindo que formularios sejam renderizados no fluxo normal da pagina.
+
 ### Painel do mentor
 - `/admin/mavf` foi reorganizado em tres ambientes separados: `Ao vivo`, `Preparacao` e `Historico`.
 - A area aberta inicialmente prioriza sessoes ativas; sem sessao ativa, abre os rascunhos ou o historico conforme a disponibilidade.
