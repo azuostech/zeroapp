@@ -7,7 +7,7 @@
 3. Configure:
 
 ```env
-KIWIFY_IRC_PRODUCT_IDS=id-do-produto
+KIWIFY_IRC_PRODUCT_IDS=2041b3f0-732f-11f1-b130-814cfe6ecd0e
 KIWIFY_IRC_WEBHOOK_TOKEN=segredo-exclusivo
 NEXT_PUBLIC_IRC_CHECKOUT_URL=https://pay.kiwify.com.br/ukTsTso
 ANTHROPIC_IRC_MODEL=claude-sonnet-4-5
@@ -26,6 +26,7 @@ chargeback e cancelamento. Envie o segredo no header `x-kiwify-token`.
 
 - Compra aprovada cria ou localiza a conta pelo e-mail normalizado.
 - Conta nova recebe convite para definir senha.
+- O e-mail pós-compra abre primeiro `/obrigadoquiz`, onde ficam todos os próximos passos.
 - A tag `ChatQuiz` e o entitlement `diagnostico_completo` são idempotentes.
 - Reembolso e chargeback revogam o entitlement sem apagar respostas ou relatório.
 - A página `/diagnostico-completo` exige sessão e entitlement ativo.

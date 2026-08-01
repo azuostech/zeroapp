@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '@/src/lib/email/email-service';
-import { workshopAccessGrantedTemplate } from '@/src/lib/email/templates/workshop-access-granted';
-import { WORKSHOP_TIER, WORKSHOP_TURMA } from '@/src/lib/commerce/access-offer';
+import { zeroAppAccessEmail } from '@/src/lib/email/templates/zeroapp-access';
+import {
+  WORKSHOP_TIER,
+  WORKSHOP_TURMA,
+  ZEROAPP_KIWIFY_PRODUCT_ID
+} from '@/src/lib/commerce/access-offer';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 
 export const runtime = 'nodejs';
@@ -214,6 +218,56 @@ function resolveTransactionId(payload) {
   ).trim();
 }
 
+function resolveProductId(payload) {
+  return String(
+    payload?.product_id ||
+      payload?.product?.id ||
+      payload?.Product?.id ||
+      payload?.data?.product_id ||
+      payload?.data?.product?.id ||
+      findByKey(payload, new Set(['product_id']), Boolean)
+  ).trim();
+}
+
+function allowedProductIds() {
+  const configured = String(process.env.KIWIFY_ZEROAPP_PRODUCT_IDS || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return new Set(configured.length ? configured : [ZEROAPP_KIWIFY_PRODUCT_ID]);
+}
+
+function siteUrl() {
+  return String(process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.tech').replace(/\/+$/, '');
+}
+
+async function createInvitedUser(service, { email, name }) {
+  const { data, error } = await service.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: {
+      redirectTo: `${siteUrl()}/auth/reset-password`,
+      data: { full_name: name || null, signup_source: 'kiwify_zeroapp' }
+    }
+  });
+  if (error || !data?.user?.id) throw error || new Error('invite_generation_failed');
+  return {
+    userId: data.user.id,
+    passwordSetupUrl: data.properties?.action_link || '',
+    isNewUser: true
+  };
+}
+
+async function createPasswordSetupLink(service, email) {
+  const { data, error } = await service.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo: `${siteUrl()}/auth/reset-password` }
+  });
+  if (error) throw error;
+  return data?.properties?.action_link || '';
+}
+
 function splitTurmas(value) {
   return String(value || '')
     .split(/[;,]/)
@@ -266,6 +320,10 @@ export async function POST(request) {
 
     const buyerName = resolveBuyerName(body);
     const transactionId = resolveTransactionId(body);
+    const productId = resolveProductId(body);
+    if (!productId || !allowedProductIds().has(productId)) {
+      return NextResponse.json({ received: true, ignored: true, reason: 'unexpected_product' });
+    }
     const supabase = getServiceSupabase();
 
     const { data: profile, error: profileError } = await supabase
@@ -279,22 +337,32 @@ export async function POST(request) {
       return NextResponse.json({ received: true, warning: 'profile_lookup_failed' }, { status: 500 });
     }
 
-    if (!profile) {
-      return NextResponse.json({ received: true, warning: 'user_not_found', email }, { status: 202 });
-    }
+    let account = { userId: profile?.id, passwordSetupUrl: '', isNewUser: false };
+    if (!profile) account = await createInvitedUser(supabase, { email, name: buyerName });
 
-    const alreadyActive = isWorkshopActive(profile);
-    let updatedProfile = profile;
+    const currentProfile = profile || {
+      id: account.userId,
+      email,
+      full_name: buyerName,
+      status: null,
+      tier: null,
+      turma: null
+    };
+
+    const alreadyActive = isWorkshopActive(currentProfile);
+    let updatedProfile = currentProfile;
 
     if (!alreadyActive) {
       const { data, error } = await supabase
         .from('profiles')
         .update({
           status: 'active',
-          turma: addWorkshopTurma(profile.turma),
-          tier: profile.tier || WORKSHOP_TIER
+          email,
+          full_name: currentProfile.full_name || buyerName || null,
+          turma: addWorkshopTurma(currentProfile.turma),
+          tier: currentProfile.tier || WORKSHOP_TIER
         })
-        .eq('id', profile.id)
+        .eq('id', currentProfile.id)
         .select('id,email,full_name,status,tier,turma')
         .maybeSingle();
 
@@ -303,38 +371,67 @@ export async function POST(request) {
         return NextResponse.json({ received: true, warning: 'profile_update_failed' }, { status: 500 });
       }
 
-      updatedProfile = data || profile;
+      updatedProfile = data || currentProfile;
     }
 
-    if (!alreadyActive) {
-      const template = workshopAccessGrantedTemplate({
-        profile: {
-          ...updatedProfile,
-          full_name: updatedProfile.full_name || buyerName
-        }
+    let existingEmail = null;
+    let previousInviteFailure = null;
+    if (transactionId) {
+      const { data, error } = await supabase
+        .from('email_logs')
+        .select('id,status,email_type')
+        .eq('user_id', updatedProfile.id)
+        .in('email_type', ['zeroapp_access_invite', 'zeroapp_access_granted'])
+        .contains('email_snapshot', { transaction_id: transactionId })
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      existingEmail = (data || []).find((item) => item.status === 'sent') || null;
+      previousInviteFailure = (data || []).find(
+        (item) => item.status === 'failed' && item.email_type === 'zeroapp_access_invite'
+      ) || null;
+    }
+
+    if (!account.isNewUser && previousInviteFailure) {
+      account = {
+        ...account,
+        passwordSetupUrl: await createPasswordSetupLink(supabase, email),
+        isNewUser: true
+      };
+    }
+
+    if (!existingEmail) {
+      const emailType = account.isNewUser ? 'zeroapp_access_invite' : 'zeroapp_access_granted';
+      const template = zeroAppAccessEmail({
+        name: updatedProfile.full_name || buyerName,
+        email: updatedProfile.email || email,
+        passwordSetupUrl: account.passwordSetupUrl
       });
 
-      await sendEmail({
+      const emailResult = await sendEmail({
         userId: updatedProfile.id,
         to: updatedProfile.email || email,
         subject: template.subject,
         html: template.html,
-        emailType: 'workshop_access_granted',
+        emailType,
         emailSnapshot: {
-          kind: 'workshop_access_granted',
+          kind: emailType,
           transaction_id: transactionId || null,
+          product_id: productId,
           buyer_email: email,
           buyer_name: buyerName || null,
           turma: WORKSHOP_TURMA,
           tier: updatedProfile.tier || WORKSHOP_TIER
         }
       });
+      if (!emailResult.success) throw new Error(`access_email_failed:${emailResult.error}`);
     }
 
     return NextResponse.json({
       received: true,
       updated: !alreadyActive,
       already_active: alreadyActive,
+      invited: account.isNewUser,
       user_id: updatedProfile.id,
       turma: updatedProfile.turma || WORKSHOP_TURMA,
       tier: updatedProfile.tier || WORKSHOP_TIER

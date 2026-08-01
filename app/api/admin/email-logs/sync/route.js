@@ -19,6 +19,8 @@ function inferEmailType(subject) {
   if (normalized.includes('seja bem-vindo')) return 'welcome_lead';
   if (normalized.includes('aporte shamar')) return 'shamar_contribution_registered';
   if (normalized.includes('convidou voce') || normalized.includes('convidou você')) return 'shamar_invite';
+  if (normalized.includes('dados de acesso ao zeroapp')) return 'zeroapp_access_granted';
+  if (normalized.includes('diagnóstico completo') || normalized.includes('diagnostico completo')) return 'irc_access_granted';
   if (normalized.includes('workshop') || normalized.includes('acesso liberado')) return 'workshop_access_granted';
   if (normalized.includes('reconex')) return 'reconnect';
   if (normalized.includes('marco') || normalized.includes('fase')) return 'phase_milestone';

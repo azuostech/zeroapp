@@ -16,10 +16,9 @@ function firstName(value) {
 export function ircAccessEmail({ name, inviteUrl, isNewUser }) {
   const nome = escapeHtml(firstName(name));
   const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.tech').replace(/\/+$/, '');
-  const targetUrl = inviteUrl || `${siteUrl}/diagnostico-completo`;
-  const button = isNewUser ? 'DEFINIR MINHA SENHA' : 'ACESSAR MEU DIAGNÓSTICO';
+  const onboardingUrl = `${siteUrl}/obrigadoquiz`;
   const intro = isNewUser
-    ? 'Seu pagamento foi confirmado e sua conta no ZeroApp foi criada. Defina sua senha para começar.'
+    ? 'Seu pagamento foi confirmado e sua conta no ZeroApp foi criada. Veja agora todos os próximos passos.'
     : 'Seu pagamento foi confirmado e o Diagnóstico Completo foi liberado na sua conta ZeroApp.';
 
   const content = `
@@ -31,10 +30,16 @@ export function ircAccessEmail({ name, inviteUrl, isNewUser }) {
       <div class="hl-sub">Acesso confirmado com segurança.</div>
     </div>
     <div class="cta-box">
-      <p class="cta-text">Você não precisará preencher novamente nome, e-mail ou telefone.</p>
-      <a class="cta-btn" href="${escapeHtml(targetUrl)}">${button}</a>
+      <p class="cta-text">A página abaixo reúne as instruções para acessar o ZeroApp e fazer seu diagnóstico.</p>
+      <a class="cta-btn" href="${escapeHtml(onboardingUrl)}">VER MEUS PRÓXIMOS PASSOS</a>
     </div>
-    <p class="intro">Se o link de definição de senha expirar, use “Esqueci minha senha” na tela de login.</p>
+    ${isNewUser && inviteUrl ? `
+      <div class="cta-box">
+        <p class="cta-text">Como este é seu primeiro acesso, crie também sua senha pessoal:</p>
+        <a class="cta-btn" href="${escapeHtml(inviteUrl)}">DEFINIR MINHA SENHA</a>
+      </div>
+    ` : ''}
+    <p class="intro">Você não precisará preencher novamente nome, e-mail ou telefone. Se o link de senha expirar, use “Esqueci minha senha” na tela de entrada.</p>
     <div class="assinatura">
       Até já,<br>
       <strong>Jackson Souza</strong><br>
@@ -43,9 +48,9 @@ export function ircAccessEmail({ name, inviteUrl, isNewUser }) {
   `;
 
   return {
-    subject: `${nome}, seu Diagnóstico Completo foi liberado`,
+    subject: `${nome}, próximos passos do seu Diagnóstico Completo`,
     html: baseTemplate({
-      preheader: 'Pagamento confirmado. Acesse seu Diagnóstico Completo no ZeroApp.',
+      preheader: 'Pagamento confirmado. Veja como acessar o ZeroApp e fazer seu diagnóstico.',
       content,
       footerText: 'Você recebe este e-mail porque adquiriu o Diagnóstico Completo + ZeroApp.'
     })

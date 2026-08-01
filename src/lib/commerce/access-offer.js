@@ -1,5 +1,6 @@
 export const WORKSHOP_TURMA = 'Workshop';
 export const WORKSHOP_TIER = 'DESPERTAR';
+export const ZEROAPP_KIWIFY_PRODUCT_ID = '8d2b1220-8b0a-11f1-9df5-316416da37e1';
 export const BASIC_ACCESS_PRICE_LABEL = 'R$ 29,90';
 export const BASIC_ACCESS_CHECKOUT_URL =
   process.env.NEXT_PUBLIC_BASIC_ACCESS_CHECKOUT_URL || 'https://pay.kiwify.com.br/mioXCpq';
