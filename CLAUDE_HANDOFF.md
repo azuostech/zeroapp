@@ -36,6 +36,16 @@ Status funcional: Central de Atividade administrativa e primeira rodada de perfo
 - Os 11 pilares agora aparecem em tabela responsiva com colunas `Pilar`, `Status` e `Nota`.
 - A tabela diferencia visualmente o pilar atual, os pilares respondidos e os que ainda aguardam liberacao.
 
+### Historico e grafico MAVF
+- `/mavf/historico` recebeu CSS Module proprio e foi alinhado ao Design System claro do ZeroApp.
+- A selecao de ate tres sessoes passou para uma coluna organizada, com contador, cores e estados selecionado/desabilitado.
+- O grafico e a legenda ocupam um painel de comparacao responsivo; no mobile, selecao e grafico sao empilhados.
+- A roda agora mostra eixos solidos para os 11 pilares, cinco aneis correspondentes a 2, 4, 6, 8 e 10 e o centro identificado como 0.
+- Cada eixo possui marcadores nos intervalos da escala e cada linha de sessao possui pontos nas intersecoes com os pilares.
+- A escala tambem aparece em legenda textual abaixo do grafico para reduzir ambiguidade.
+- Foi adicionada a tabela `Notas por pilar`, exibindo os valores exatos de cada sessao selecionada que formam as linhas do grafico.
+- O canvas recebeu descricao acessivel informando as sessoes comparadas e a escala de zero a dez.
+
 ### Validacao
 - Nenhuma alteracao de banco foi necessaria; o fluxo continua usando as APIs e regras de permissao existentes.
 - `git diff --check`, `npm run lint`, `npm test` (20 testes em 7 arquivos) e `npm run build` passaram.
