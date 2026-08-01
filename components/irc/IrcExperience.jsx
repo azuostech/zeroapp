@@ -1,9 +1,16 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import IrcReport from './IrcReport';
 import styles from '@/app/diagnostico-completo/styles.module.css';
+import {
+  IRC_APP_PATH,
+  IRC_NEXT_STEPS_TEXT,
+  IRC_NEXT_STEPS_TITLE,
+  IRC_ZEROAPP_LESSON_PATH
+} from '@/src/modules/irc/domain/irc-next-steps';
 
 const opening = [
   'Este diagnóstico vai além do que aparece no seu extrato. Vamos identificar as crenças, emoções e comportamentos que influenciam a sua relação com o dinheiro.',
@@ -211,10 +218,12 @@ export default function IrcExperience() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Image src="/logo-zeroapp-light.png" alt="ZeroApp" width={42} height={42} priority />
+        <Link className={styles.logoLink} href={IRC_APP_PATH} aria-label="Voltar ao início do ZeroApp">
+          <Image src="/logo-zeroapp-light.png" alt="ZeroApp" width={42} height={42} priority />
+        </Link>
         <div>
           <strong>Diagnóstico Completo</strong>
-          <span>IRC · Finanças do Zero</span>
+          <span>Dentro do ZeroApp · Finanças do Zero</span>
         </div>
         <div className={styles.progressLabel}>{Math.min(payload.total_steps, completedSteps + (phase === 'questions' ? 1 : 0))} de {payload.total_steps}</div>
         <div className={styles.progressTrack}><div style={{ width: `${(completedSteps / payload.total_steps) * 100}%` }} /></div>
@@ -283,6 +292,19 @@ export default function IrcExperience() {
               ) : null}
             </div>
             {deliveryError ? <p className={styles.deliveryError} role="alert">{deliveryError}</p> : null}
+            <section className={styles.reportNextSteps} aria-labelledby="irc-next-steps-title">
+              <span>SEU PRÓXIMO PASSO</span>
+              <h2 id="irc-next-steps-title">{IRC_NEXT_STEPS_TITLE}</h2>
+              <p>{IRC_NEXT_STEPS_TEXT}</p>
+              <div className={styles.nextStepActions}>
+                <Link className={styles.lessonButton} href={IRC_ZEROAPP_LESSON_PATH}>
+                  ASSISTIR À AULA DA PLANILHA
+                </Link>
+                <Link className={styles.appButton} href={IRC_APP_PATH}>
+                  IR PARA O MEU ZEROAPP
+                </Link>
+              </div>
+            </section>
           </section>
         ) : null}
 

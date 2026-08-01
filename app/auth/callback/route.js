@@ -19,7 +19,7 @@ export async function GET(request) {
   const tokenHash = requestUrl.searchParams.get('token_hash');
   const type = requestUrl.searchParams.get('type');
   const next = getSafeNext(requestUrl.searchParams.get('next'));
-  const isRecovery = next === '/auth/reset-password' || type === 'recovery';
+  const isRecovery = next.startsWith('/auth/reset-password') || type === 'recovery';
 
   const supabase = await createServerSupabase();
   let verificationError = null;

@@ -77,6 +77,7 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [diagnosticFlow, setDiagnosticFlow] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -104,7 +105,17 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get('tab');
+    const isDiagnostic = params.get('next') === '/diagnostico-completo';
+    setDiagnosticFlow(isDiagnostic);
+    if (isDiagnostic) {
+      setTab('login');
+      if (params.get('mode') === 'recover') {
+        setForgotMode(true);
+      }
+      return;
+    }
     if (requestedTab === 'signup' || requestedTab === 'login') {
       setTab(requestedTab);
     }
@@ -304,7 +315,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/reset-password-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail.trim() })
+        body: JSON.stringify({ email: forgotEmail.trim(), next: safeNextPath() })
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -333,14 +344,21 @@ export default function LoginPage() {
         </div>
 
         <div className="form-box">
-          <div className="tabs">
-            <div className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => switchTab('login')}>
-              Entrar
+          {diagnosticFlow ? (
+            <div className="diagnostic-access-note">
+              <strong>Sua conta já foi criada</strong>
+              <span>Não faça um novo cadastro. Entre com o mesmo e-mail usado na compra.</span>
             </div>
-            <div className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => switchTab('signup')}>
-              Criar conta
+          ) : (
+            <div className="tabs">
+              <div className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => switchTab('login')}>
+                Entrar
+              </div>
+              <div className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => switchTab('signup')}>
+                Criar conta
+              </div>
             </div>
-          </div>
+          )}
 
           <div className={`msg ${message.type}`} style={{ display: message.text ? 'block' : 'none' }}>
             {message.text}
@@ -371,7 +389,7 @@ export default function LoginPage() {
                 />
               </div>
               <button type="button" className="forgot-link" onClick={openForgotPassword}>
-                Esqueci minha senha
+                {diagnosticFlow ? 'Primeiro acesso ou não sei minha senha' : 'Esqueci minha senha'}
               </button>
               <button type="submit" className="btn-main" disabled={loginLoading}>
                 {loginLoading ? (
@@ -385,11 +403,13 @@ export default function LoginPage() {
             </form>
 
             <form style={{ display: forgotMode ? 'block' : 'none' }} onSubmit={handleForgotPassword}>
-              <div className="forgot-head">{forgotSent ? 'E-mail enviado!' : 'Recuperar senha'}</div>
+              <div className="forgot-head">{forgotSent ? 'E-mail enviado!' : diagnosticFlow ? 'Criar ou redefinir minha senha' : 'Recuperar senha'}</div>
               <div className="forgot-sub">
                 {forgotSent
                   ? 'Se o e-mail estiver cadastrado, você receberá um link para criar nova senha.'
-                  : 'Digite seu e-mail para receber o link de recuperação.'}
+                  : diagnosticFlow
+                    ? 'Digite o mesmo e-mail da compra. Enviaremos um link para você registrar uma nova senha e voltar ao diagnóstico.'
+                    : 'Digite seu e-mail para receber o link de recuperação.'}
               </div>
               <div className="form-group">
                 <label>E-mail</label>
@@ -570,6 +590,28 @@ export default function LoginPage() {
           border-radius: var(--radius-md);
           padding: 4px;
           margin-bottom: 28px;
+        }
+
+        .diagnostic-access-note {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          margin-bottom: 24px;
+          padding: 15px 16px;
+          border: 1px solid rgba(0, 200, 83, 0.3);
+          border-radius: var(--radius-md);
+          background: var(--green-dim);
+        }
+
+        .diagnostic-access-note strong {
+          color: var(--green-dark);
+          font-size: 15px;
+        }
+
+        .diagnostic-access-note span {
+          color: var(--text-2);
+          font-size: 12px;
+          line-height: 1.55;
         }
 
         .tab {

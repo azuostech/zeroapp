@@ -18,8 +18,8 @@ export function ircAccessEmail({ name, inviteUrl, isNewUser }) {
   const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.tech').replace(/\/+$/, '');
   const onboardingUrl = `${siteUrl}/obrigadoquiz`;
   const intro = isNewUser
-    ? 'Seu pagamento foi confirmado e sua conta no ZeroApp foi criada. Veja agora todos os próximos passos.'
-    : 'Seu pagamento foi confirmado e o Diagnóstico Completo foi liberado na sua conta ZeroApp.';
+    ? 'Seu pagamento foi confirmado e sua conta no ZeroApp já foi criada automaticamente. Você não precisa fazer outro cadastro.'
+    : 'Seu pagamento foi confirmado e o Diagnóstico Completo foi liberado na conta ZeroApp que você já possui.';
 
   const content = `
     <p class="greeting">${nome}, seu Diagnóstico Completo está liberado.</p>
@@ -30,7 +30,7 @@ export function ircAccessEmail({ name, inviteUrl, isNewUser }) {
       <div class="hl-sub">Acesso confirmado com segurança.</div>
     </div>
     <div class="cta-box">
-      <p class="cta-text">A página abaixo reúne as instruções para acessar o ZeroApp e fazer seu diagnóstico.</p>
+      <p class="cta-text">Veja como entrar, registrar ou redefinir sua senha e fazer o diagnóstico sem criar outra conta.</p>
       <a class="cta-btn" href="${escapeHtml(onboardingUrl)}">VER MEUS PRÓXIMOS PASSOS</a>
     </div>
     ${isNewUser && inviteUrl ? `

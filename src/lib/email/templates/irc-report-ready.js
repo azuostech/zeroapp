@@ -1,4 +1,8 @@
 import { baseTemplate } from './base-template';
+import {
+  IRC_NEXT_STEPS_TEXT,
+  IRC_ZEROAPP_LESSON_PATH
+} from '../../../modules/irc/domain/irc-next-steps';
 
 function escapeHtml(value) {
   return String(value || '')
@@ -19,12 +23,18 @@ export function ircReportReadyEmail({ name }) {
       e continuará disponível com segurança na sua conta ZeroApp.
     </p>
     <div class="cta-box">
-      <p class="cta-text">Acesse o relatório completo e continue sua jornada.</p>
+      <p class="cta-text">Seu relatório permanece dentro da sua conta ZeroApp.</p>
       <a class="cta-btn" href="${siteUrl}/diagnostico-completo">VISUALIZAR NO ZEROAPP</a>
     </div>
-    <p class="intro">
-      Ler o relatório é o primeiro passo. A mudança acontece quando essa consciência vira prática.
-    </p>
+    <div class="highlight">
+      <div class="hl-label">Seu próximo passo</div>
+      <div class="hl-value" style="font-size:20px;font-family:inherit">Organize seu mês no ZeroApp</div>
+      <div class="hl-sub" style="font-size:13px;line-height:1.6">${escapeHtml(IRC_NEXT_STEPS_TEXT)}</div>
+    </div>
+    <div class="cta-box">
+      <p class="cta-text">Comece pela aula prática que mostra como usar a planilha.</p>
+      <a class="cta-btn" href="${siteUrl}${IRC_ZEROAPP_LESSON_PATH}">ASSISTIR À AULA DA PLANILHA</a>
+    </div>
     <div class="assinatura">
       Com você nessa jornada,<br>
       <strong>Jackson Souza</strong><br>

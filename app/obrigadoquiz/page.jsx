@@ -1,13 +1,15 @@
 import Link from 'next/link';
-import { ArrowRight, Check, FileText, LockKeyhole, Mail } from 'lucide-react';
+import { ArrowRight, Check, FileText, KeyRound, LockKeyhole } from 'lucide-react';
 import styles from './styles.module.css';
+import { IRC_DIAGNOSTIC_PATH } from '@/src/modules/irc/domain/irc-next-steps';
 
 export const metadata = {
   title: 'Próximos passos | Finanças do Zero',
   description: 'Seu acesso ao Diagnóstico Completo e ao ZeroApp está sendo preparado.'
 };
 
-const DIAGNOSTIC_PATH = '/diagnostico-completo';
+const LOGIN_PATH = `/?next=${encodeURIComponent(IRC_DIAGNOSTIC_PATH)}`;
+const PASSWORD_PATH = `/?next=${encodeURIComponent(IRC_DIAGNOSTIC_PATH)}&mode=recover`;
 
 function JacksonMessage({ children, highlight = false }) {
   return (
@@ -68,18 +70,26 @@ export default function ObrigadoQuizPage() {
                   <span className={styles.stepNumber}>1</span>
                   <div className={styles.stepContent}>
                     <span className={styles.stepLabel}>Comece por aqui</span>
-                    <h2>Ative seu acesso ao ZeroApp</h2>
+                    <h2>Sua conta já foi criada</h2>
                     <p>
-                      Se este é seu primeiro acesso, procure pelo convite que enviamos ao e-mail usado
-                      na compra e defina sua senha. Se você já usa o ZeroApp, sua compra será vinculada
-                      à mesma conta.
+                      Não faça um novo cadastro. Sua compra já foi vinculada ao e-mail informado no pagamento.
+                      Agora você só precisa entrar com sua senha ou registrar uma nova senha.
                     </p>
                     <div className={styles.infoBox}>
-                      <Mail size={20} aria-hidden="true" />
+                      <KeyRound size={20} aria-hidden="true" />
                       <p>
-                        O e-mail pode levar alguns minutos. Confira também as pastas Spam, Promoções
-                        e Lixo eletrônico.
+                        Se você já usa o ZeroApp, mantenha sua senha atual. Se é seu primeiro acesso ou
+                        não sabe a senha, use “Criar ou redefinir minha senha”.
                       </p>
+                    </div>
+                    <div className={styles.accessActions}>
+                      <Link className={styles.primaryButton} href={LOGIN_PATH}>
+                        JÁ TENHO SENHA — ENTRAR
+                        <ArrowRight size={22} aria-hidden="true" />
+                      </Link>
+                      <Link className={styles.secondaryButton} href={PASSWORD_PATH}>
+                        CRIAR OU REDEFINIR MINHA SENHA
+                      </Link>
                     </div>
                   </div>
                 </li>
@@ -100,8 +110,8 @@ export default function ObrigadoQuizPage() {
                         Você não precisará preencher seus dados novamente.
                       </p>
                     </div>
-                    <Link className={styles.primaryButton} href={DIAGNOSTIC_PATH}>
-                      ACESSAR MEU DIAGNÓSTICO
+                    <Link className={styles.primaryButton} href={IRC_DIAGNOSTIC_PATH}>
+                      ENTRAR E FAZER MEU DIAGNÓSTICO
                       <ArrowRight size={22} aria-hidden="true" />
                     </Link>
                   </div>
@@ -114,11 +124,12 @@ export default function ObrigadoQuizPage() {
                     <h2>Receba sua análise e continue no ZeroApp</h2>
                     <p>
                       Depois da última resposta, sua análise personalizada será gerada e ficará
-                      disponível na sua conta. Você também receberá o relatório em PDF por e-mail.
+                      disponível dentro do ZeroApp. Em seguida, você será direcionado para a aula de
+                      uso da Planilha Financeira e começará a organizar o mês.
                     </p>
                     <div className={styles.reportSummary}>
                       <FileText size={22} aria-hidden="true" />
-                      <span>Relatório personalizado, PDF privado e próximos movimentos.</span>
+                      <span>Relatório, ZeroApp e aula prática da Planilha Financeira no mesmo fluxo.</span>
                     </div>
                   </div>
                 </li>

@@ -314,6 +314,30 @@
   outline-offset: 4px;
 }
 
+.accessActions {
+  display: grid;
+  gap: 11px;
+}
+
+.secondaryButton {
+  min-height: 54px;
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--thanks-green);
+  border-radius: 16px;
+  color: var(--thanks-green-dark);
+  font-size: clamp(12px, 1.8vw, 16px);
+  font-weight: 900;
+  text-align: center;
+}
+
+.secondaryButton:focus-visible {
+  outline: 4px solid rgba(0, 173, 88, 0.2);
+  outline-offset: 3px;
+}
+
 .footer {
   padding: 26px 28px;
   display: flex;

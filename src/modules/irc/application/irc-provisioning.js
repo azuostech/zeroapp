@@ -10,12 +10,16 @@ function siteUrl() {
   return String(process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.tech').replace(/\/+$/, '');
 }
 
+function passwordRedirectUrl() {
+  return `${siteUrl()}/auth/reset-password?next=${encodeURIComponent('/diagnostico-completo')}`;
+}
+
 async function createInvitedUser(service, event) {
   const { data, error } = await service.auth.admin.generateLink({
     type: 'invite',
     email: event.email,
     options: {
-      redirectTo: `${siteUrl()}/auth/reset-password`,
+      redirectTo: passwordRedirectUrl(),
       data: {
         full_name: event.name,
         phone: event.phone,
@@ -35,7 +39,7 @@ async function createPasswordSetupLink(service, email) {
   const { data, error } = await service.auth.admin.generateLink({
     type: 'recovery',
     email,
-    options: { redirectTo: `${siteUrl()}/auth/reset-password` }
+    options: { redirectTo: passwordRedirectUrl() }
   });
   if (error) throw error;
   return data?.properties?.action_link || '';

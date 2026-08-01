@@ -14,6 +14,12 @@ function getSiteOrigin(requestUrl) {
   }
 }
 
+function getSafeNext(value) {
+  const next = String(value || '').trim();
+  if (!next.startsWith('/') || next.startsWith('//')) return '';
+  return next;
+}
+
 export async function POST(request) {
   let body;
   try {
@@ -29,7 +35,12 @@ export async function POST(request) {
 
   const supabase = await createServerSupabase();
   const origin = getSiteOrigin(request.url);
-  const redirectTo = new URL('/auth/callback?next=/auth/reset-password', origin).toString();
+  const finalNext = getSafeNext(body?.next);
+  const resetPath = new URL('/auth/reset-password', origin);
+  if (finalNext) resetPath.searchParams.set('next', finalNext);
+  const callbackPath = new URL('/auth/callback', origin);
+  callbackPath.searchParams.set('next', `${resetPath.pathname}${resetPath.search}`);
+  const redirectTo = callbackPath.toString();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) {

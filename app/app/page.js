@@ -94,6 +94,7 @@ export default function HomeHubPage() {
   const navigationCards = [
     { icon: '💰', label: 'Finanças', href: '/financas' },
     { icon: '📚', label: 'Educação', href: '/conteudo' },
+    { icon: '📋', label: 'Meu Diagnóstico', href: '/diagnostico-completo' },
     { icon: '👥', label: 'Comunidade', href: '/turma', locked: !canUseStudentAreas },
     { icon: '🛡️', label: 'SHAMAR', href: '/shamar', locked: !canUseStudentAreas }
   ];

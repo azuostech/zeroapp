@@ -1,4 +1,9 @@
 import PDFDocument from 'pdfkit';
+import {
+  IRC_NEXT_STEPS_TEXT,
+  IRC_NEXT_STEPS_TITLE,
+  IRC_ZEROAPP_LESSON_PATH
+} from '../domain/irc-next-steps';
 
 function parseReport(report) {
   return String(report || '')
@@ -67,6 +72,23 @@ export function buildIrcPdf({ name, report, generatedAt }) {
         });
       }
     }
+
+    const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || 'https://zeroapp.tech').replace(/\/+$/, '');
+    const requiredHeight = 145;
+    if (doc.y > doc.page.height - doc.page.margins.bottom - requiredHeight) doc.addPage();
+    doc.moveDown(1.2);
+    const nextStepsY = doc.y;
+    doc.roundedRect(doc.page.margins.left, nextStepsY, 479, 118, 9).fill('#E8F8EF');
+    doc.fillColor('#087D3D').font('Helvetica-Bold').fontSize(9).text('SEU PRÓXIMO PASSO', 72, nextStepsY + 15);
+    doc.fillColor('#17231C').font('Helvetica-Bold').fontSize(15).text(IRC_NEXT_STEPS_TITLE, 72, nextStepsY + 32, { width: 450 });
+    doc.fillColor('#415249').font('Helvetica').fontSize(9.5).text(IRC_NEXT_STEPS_TEXT, 72, nextStepsY + 54, { width: 450, lineGap: 1.5 });
+    doc.fillColor('#087D3D').font('Helvetica-Bold').fontSize(9.5).text(
+      'Assistir à aula da Planilha Financeira no ZeroApp',
+      72,
+      nextStepsY + 94,
+      { width: 450, link: `${siteUrl}${IRC_ZEROAPP_LESSON_PATH}`, underline: true }
+    );
+    doc.y = nextStepsY + 128;
 
     const range = doc.bufferedPageRange();
     for (let index = range.start; index < range.start + range.count; index += 1) {

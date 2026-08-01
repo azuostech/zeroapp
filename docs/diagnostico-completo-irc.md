@@ -27,12 +27,16 @@ chargeback e cancelamento. Envie o segredo no header `x-kiwify-token`.
 - Compra aprovada cria ou localiza a conta pelo e-mail normalizado.
 - Conta nova recebe convite para definir senha.
 - O e-mail pós-compra abre primeiro `/obrigadoquiz`, onde ficam todos os próximos passos.
+- A página de obrigado informa que a conta já foi criada e separa claramente “já tenho senha” de “criar ou redefinir senha”.
+- Depois da redefinição, o login preserva o destino e leva a pessoa de volta ao Diagnóstico.
 - A tag `ChatQuiz` e o entitlement `diagnostico_completo` são idempotentes.
 - Reembolso e chargeback revogam o entitlement sem apagar respostas ou relatório.
 - A página `/diagnostico-completo` exige sessão e entitlement ativo.
 - As respostas são persistidas após cada escolha.
 - A geração usa apenas IDs canônicos e dados da sessão.
 - O PDF fica no bucket privado `irc-reports` e o download exige autenticação.
+- O relatório permanece acessível pelo card **Meu Diagnóstico** no início do ZeroApp.
+- A tela, o PDF e o e-mail do relatório direcionam para a aula **Como usar a Planilha Financeira**.
 
 ## Rollback
 

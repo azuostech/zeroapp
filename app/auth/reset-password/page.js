@@ -12,12 +12,19 @@ function readHashParams() {
 }
 
 function cleanRecoveryUrl() {
-  window.history.replaceState({}, '', '/auth/reset-password');
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next');
+  const cleanUrl = new URL('/auth/reset-password', window.location.origin);
+  if (next?.startsWith('/') && !next.startsWith('//')) cleanUrl.searchParams.set('next', next);
+  window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`);
 }
 
 function redirectToAuthCallbackWithNext() {
   const params = new URLSearchParams(window.location.search);
-  params.set('next', '/auth/reset-password');
+  const finalNext = params.get('next');
+  const resetUrl = new URL('/auth/reset-password', window.location.origin);
+  if (finalNext?.startsWith('/') && !finalNext.startsWith('//')) resetUrl.searchParams.set('next', finalNext);
+  params.set('next', `${resetUrl.pathname}${resetUrl.search}`);
   window.location.replace(`/auth/callback?${params.toString()}`);
 }
 
@@ -41,6 +48,7 @@ export default function ResetPasswordPage() {
   const [allowed, setAllowed] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [finalNext, setFinalNext] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +57,10 @@ export default function ResetPasswordPage() {
       try {
         const sb = getBrowserSupabase();
         const queryParams = new URLSearchParams(window.location.search);
+        const requestedNext = queryParams.get('next') || '';
+        if (requestedNext.startsWith('/') && !requestedNext.startsWith('//')) {
+          setFinalNext(requestedNext);
+        }
         const code = queryParams.get('code');
         const tokenHash = queryParams.get('token_hash');
         const queryType = queryParams.get('type');
@@ -143,7 +155,9 @@ export default function ResetPasswordPage() {
       setSuccess(true);
 
       setTimeout(() => {
-        router.replace('/?reset=success');
+        const params = new URLSearchParams({ reset: 'success' });
+        if (finalNext) params.set('next', finalNext);
+        router.replace(`/?${params.toString()}`);
       }, 1800);
     } catch (err) {
       setError(friendlyError(err?.message));
@@ -211,7 +225,7 @@ export default function ResetPasswordPage() {
           </button>
         </form>
 
-        <Link className={styles.backLink} href="/">
+        <Link className={styles.backLink} href={finalNext ? `/?next=${encodeURIComponent(finalNext)}` : '/'}>
           Voltar para o login
         </Link>
       </section>

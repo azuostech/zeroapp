@@ -40,8 +40,10 @@ Receita, Lucro, Impostos, Despesas Fixas, Investimentos e Reserva de Emergência
 Entregue 2 a 3 movimentos concretos, nomeando a crença contrariada.
 
 **8. Fechamento + convite**
-Reconheça que o relatório é o primeiro passo e convide suavemente para a Aula
-de Imersão ou Mentoria Finanças do Zero, sem urgência artificial.
+Reconheça que o relatório é o primeiro passo. Oriente explicitamente a pessoa a
+entrar no ZeroApp, assistir à aula "Como usar a Planilha Financeira" e lançar as
+contas previstas do mês. Depois disso, mencione a Aula de Imersão ou a Mentoria
+Finanças do Zero como continuidade opcional, sem urgência artificial.
 
 REGRAS INVIOLÁVEIS
 - Nunca inventar informação.
