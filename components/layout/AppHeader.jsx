@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { clearCurrentProfileCache, fetchCurrentProfile, primeCurrentProfile } from '@/src/lib/client/profile-cache';
 import { clearZeroAppClientStorage } from '@/src/lib/security/client-storage';
 
 function getAvatarInitial(profile) {
@@ -37,9 +38,9 @@ function getFirstName(profile) {
   return 'Você';
 }
 
-export default function AppHeader() {
+export default function AppHeader({ initialProfile = null }) {
   const router = useRouter();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(initialProfile);
   const [theme, setTheme] = useState('light');
   const [faseProgress, setFaseProgress] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -75,15 +76,13 @@ export default function AppHeader() {
 
     const loadHeaderData = async () => {
       try {
-        const [profileRes, historyRes] = await Promise.all([
-          fetch('/api/profile/me', { cache: 'no-store' }),
+        if (initialProfile) primeCurrentProfile(initialProfile);
+        const [resolvedProfile, historyRes] = await Promise.all([
+          initialProfile ? Promise.resolve(initialProfile) : fetchCurrentProfile(),
           fetch('/api/coins/history?limit=1', { cache: 'no-store' })
         ]);
 
-        if (profileRes.ok) {
-          const profilePayload = await profileRes.json().catch(() => ({}));
-          if (active) setProfile(profilePayload?.profile || null);
-        }
+        if (active && resolvedProfile) setProfile(resolvedProfile);
 
         if (historyRes.ok) {
           const historyPayload = await historyRes.json().catch(() => ({}));
@@ -116,7 +115,7 @@ export default function AppHeader() {
       active = false;
       window.removeEventListener('zero:coins-updated', handleCoinsUpdated);
     };
-  }, []);
+  }, [initialProfile]);
 
   const avatarInitial = useMemo(() => getAvatarInitial(profile), [profile]);
   const displayName = profile?.full_name || profile?.email || 'Usuário';
@@ -135,6 +134,7 @@ export default function AppHeader() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
+      clearCurrentProfileCache();
       clearZeroAppClientStorage();
       router.replace('/');
       router.refresh();
@@ -151,7 +151,7 @@ export default function AppHeader() {
 
         <div className="header-actions">
           <Link href={journeyShortcutHref} className="jornada-shortcut-link" aria-label="Abrir jornada (tier)">
-            <TierDisplay size="sm" showName={false} />
+            <TierDisplay size="sm" showName={false} tier={profile?.tier || 'DESPERTAR'} />
           </Link>
           <Link href={journeyShortcutHref} className="jornada-shortcut-link" aria-label="Abrir jornada (coins)">
             <CoinsDisplay size="sm" className="header-coins" clickable={false} />

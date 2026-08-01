@@ -2,6 +2,6 @@
 
 import BottomNav from '@/components/layout/BottomNav';
 
-export default function BottomNavHub() {
-  return <BottomNav activeTab="inicio" />;
+export default function BottomNavHub({ initialProfile = null }) {
+  return <BottomNav activeTab="inicio" initialProfile={initialProfile} />;
 }

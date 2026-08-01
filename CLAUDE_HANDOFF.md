@@ -1,8 +1,62 @@
 # CLAUDE Handoff - ZeroApp
 
-Data: 2026-07-14
+Data: 2026-08-01
 Branch atual: main
-Status funcional: portal publico dark neon e hardening de seguranca implementados; migracao critica pre-deploy aplicada; service role e migracao pos-deploy ainda precisam ser confirmadas no deploy
+Status funcional: Central de Atividade administrativa e primeira rodada de performance implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
+
+## Atualizacao 2026-08-01 — Observabilidade administrativa e desempenho
+
+### Central de Atividade
+- Criada a pagina `/admin/atividade`, acessivel pelo menu do painel administrativo.
+- A tela consolida oito fontes operacionais sem duplicar dados sensiveis:
+  - `profiles`: novos cadastros;
+  - `product_access`: compras e liberacoes de produto;
+  - `irc_diagnostics`: diagnosticos iniciados, parados, concluidos ou com falha;
+  - `email_logs`: envios, entregas e falhas de e-mail;
+  - `feed_events`: movimentacoes funcionais, como conteudo concluido e marcos;
+  - `commerce_webhook_events`: processamento dos webhooks de compra;
+  - `admin_action_logs`: movimentacoes administrativas;
+  - `platform_events`: erros e eventos operacionais persistentes.
+- A pagina possui indicadores, fila `Precisa de atencao`, linha do tempo, busca, filtros por categoria/severidade, periodos de 1/7/30/90 dias e atualizacao automatica a cada 60 segundos.
+- Fluxos incompletos detectados automaticamente:
+  - usuario novo sem compra registrada;
+  - compra do Diagnostico Completo sem inicio, inclusive quando a linha de diagnostico ainda nao foi criada;
+  - diagnostico em andamento parado ha mais de 48 horas;
+  - falha de webhook, relatorio, PDF ou e-mail.
+- Eventos persistentes podem ser marcados como resolvidos pelo admin; fatos derivados das tabelas de origem permanecem historicos e sao resolvidos corrigindo o fluxo de origem.
+- A API administrativa foi criada em `GET /api/admin/activity` e `PATCH /api/admin/activity/[id]`, sempre exigindo `profiles.role = 'admin'`.
+
+### Banco e instrumentacao
+- Criada e aplicada em producao a migracao `scripts/migrate-platform-events.sql`.
+- A tabela `platform_events` possui RLS, leitura/atualizacao apenas por admin, escrita apenas por `service_role`, indices por data/status/usuario/tipo e recomendacao de retencao de 180 dias.
+- `recordPlatformEvent` foi criado como registrador tolerante a falha: erro de observabilidade nunca bloqueia o fluxo principal.
+- O signup registra falhas do provedor e bloqueios por rate limit sem persistir e-mail, IP bruto ou senha.
+- O webhook comercial da Kiwify registra compra processada, ausencia de e-mail e falhas de localizacao/liberacao, mantendo somente IDs operacionais e codigos de erro nos metadados.
+- Auditoria somente leitura confirmou as oito fontes no Supabase. Nos 7 dias anteriores havia 2 cadastros, 3 acessos de produto, 3 diagnosticos, 8 e-mails, 3 webhooks e 28 acoes administrativas.
+
+### Melhorias de carregamento aplicadas
+- Criado cache de perfil em memoria no browser, com TTL de 30 segundos e deduplicacao de promessas concorrentes.
+- Na home, `HomeHubPage`, `AppHeader` e `BottomNav` deixaram de disparar tres chamadas simultaneas para `/api/profile/me`; agora compartilham uma unica requisicao.
+- O cache e limpo no logout para impedir reaproveitamento entre sessoes.
+- O modal Jackson IA passou a usar importacao dinamica e so baixa seu codigo quando o usuario abre a IA.
+- O tier do header reutiliza o perfil ja carregado e nao chama mais `/api/user/tier` nessa tela.
+- Em `/financas`, perfil e mes financeiro agora carregam em paralelo. A verificacao de sessao MAVF e a sugestao do mes anterior sairam do caminho critico e rodam em segundo plano.
+- Os cards e menus continuam usando `next/link`, preservando o prefetch automatico de rotas visiveis do Next.js.
+
+### Resultado e validacao
+- First Load JS de `/app` caiu de aproximadamente 138 kB para 135 kB no build comparavel.
+- A nova `/admin/atividade` ficou em 109 kB de First Load JS, isolada do painel legado de 175 kB.
+- `npm run lint` passou.
+- `npm test` passou com 20 testes em 7 arquivos, incluindo deduplicacao do perfil e regras da fila operacional.
+- `npm run build` passou e gerou 108 rotas/paginas.
+- A migracao de observabilidade foi executada com sucesso e validada com 5 indices e 2 policies RLS.
+
+### Gargalos remanescentes priorizados
+- `/financas` ainda tem cerca de 212 kB de First Load JS e um componente monolitico com mais de 4 mil linhas; proxima prioridade e separar editor, resumo, modais e estilos em chunks/componentes.
+- O painel `/admin` legado ainda tem cerca de 175 kB e usa renderizacao imperativa; novas ferramentas devem continuar em rotas separadas, como foi feito com `/admin/atividade`.
+- Muitas telas ainda carregam dados somente depois da hidratacao com `cache: no-store`; a proxima rodada deve mover dados iniciais para Server Components ou endpoints bootstrap e adotar cache com revalidacao para catalogos estaveis.
+- Middleware e algumas APIs repetem validacao de sessao/perfil; otimizar isso exige auditoria rota a rota para preservar autorizacao e RLS.
+- As tres fontes Google globais ainda usam stylesheet externo bloqueante; avaliar migracao para `next/font` auto-hospedado em uma rodada dedicada.
 
 ## Resumo atual
 - Hardening de seguranca fecha autoelevacao de perfil e acesso publico a `award_coins`, adiciona rate limit no signup, assinatura Resend, upload SHAMAR validado e headers HTTP.

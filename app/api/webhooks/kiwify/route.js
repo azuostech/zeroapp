@@ -7,6 +7,7 @@ import {
   ZEROAPP_KIWIFY_PRODUCT_ID
 } from '@/src/lib/commerce/access-offer';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
+import { recordPlatformEvent } from '@/src/lib/observability/platform-events';
 
 export const runtime = 'nodejs';
 
@@ -292,6 +293,7 @@ function isWorkshopActive(profile) {
 }
 
 export async function POST(request) {
+  let eventContext = {};
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== 'object') {
@@ -315,12 +317,20 @@ export async function POST(request) {
 
     const email = resolveBuyerEmail(body);
     if (!email) {
+      await recordPlatformEvent({
+        eventType: 'commerce.purchase_missing_email',
+        category: 'commerce',
+        severity: 'warning',
+        source: 'api/webhooks/kiwify',
+        title: 'Compra aprovada sem e-mail do comprador'
+      });
       return NextResponse.json({ received: true, warning: 'missing_buyer_email' }, { status: 202 });
     }
 
     const buyerName = resolveBuyerName(body);
     const transactionId = resolveTransactionId(body);
     const productId = resolveProductId(body);
+    eventContext = { transaction_id: transactionId || null, product_id: productId || null };
     if (!productId || !allowedProductIds().has(productId)) {
       return NextResponse.json({ received: true, ignored: true, reason: 'unexpected_product' });
     }
@@ -334,6 +344,15 @@ export async function POST(request) {
 
     if (profileError) {
       console.error('[Kiwify webhook] profile lookup failed:', profileError.message || profileError);
+      await recordPlatformEvent({
+        eventType: 'commerce.profile_lookup_failed',
+        category: 'commerce',
+        severity: 'error',
+        source: 'api/webhooks/kiwify',
+        title: 'Falha ao localizar comprador',
+        message: profileError.code || 'profile_lookup_failed',
+        metadata: eventContext
+      });
       return NextResponse.json({ received: true, warning: 'profile_lookup_failed' }, { status: 500 });
     }
 
@@ -368,6 +387,16 @@ export async function POST(request) {
 
       if (error) {
         console.error('[Kiwify webhook] profile update failed:', error.message || error);
+        await recordPlatformEvent({
+          eventType: 'commerce.access_update_failed',
+          category: 'commerce',
+          severity: 'error',
+          userId: currentProfile.id,
+          source: 'api/webhooks/kiwify',
+          title: 'Falha ao liberar acesso da compra',
+          message: error.code || 'profile_update_failed',
+          metadata: eventContext
+        });
         return NextResponse.json({ received: true, warning: 'profile_update_failed' }, { status: 500 });
       }
 
@@ -427,6 +456,16 @@ export async function POST(request) {
       if (!emailResult.success) throw new Error(`access_email_failed:${emailResult.error}`);
     }
 
+    await recordPlatformEvent({
+      eventType: 'commerce.purchase_processed',
+      category: 'commerce',
+      severity: 'success',
+      userId: updatedProfile.id,
+      source: 'api/webhooks/kiwify',
+      title: 'Compra e acesso processados',
+      metadata: { ...eventContext, invited: account.isNewUser, already_active: alreadyActive }
+    });
+
     return NextResponse.json({
       received: true,
       updated: !alreadyActive,
@@ -438,6 +477,15 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error('[Kiwify webhook]', error);
+    await recordPlatformEvent({
+      eventType: 'commerce.purchase_processing_failed',
+      category: 'commerce',
+      severity: 'error',
+      source: 'api/webhooks/kiwify',
+      title: 'Falha ao processar compra',
+      message: String(error?.code || error?.name || 'processing_error').slice(0, 120),
+      metadata: eventContext
+    });
     return NextResponse.json({ received: true, warning: 'processing_error' }, { status: 500 });
   }
 }

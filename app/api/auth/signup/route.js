@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServerSupabase } from '@/src/lib/supabase/server';
+import { recordPlatformEvent } from '@/src/lib/observability/platform-events';
 import { consumeSignupRateLimit } from '@/src/lib/security/signup-rate-limit';
 
 const signupSchema = z.object({
@@ -43,6 +44,14 @@ export async function POST(request) {
   }
 
   if (rateLimit && !rateLimit.allowed) {
+    await recordPlatformEvent({
+      eventType: 'auth.signup_rate_limited',
+      category: 'auth',
+      severity: 'warning',
+      source: 'api/auth/signup',
+      title: 'Cadastro bloqueado por excesso de tentativas',
+      metadata: { retry_after_seconds: rateLimit.retryAfter }
+    });
     return NextResponse.json(
       { error: 'Muitas tentativas de cadastro. Tente novamente mais tarde.' },
       {
@@ -74,11 +83,27 @@ export async function POST(request) {
   });
 
   if (error) {
+    await recordPlatformEvent({
+      eventType: 'user.signup_failed',
+      category: 'user',
+      severity: 'error',
+      source: 'api/auth/signup',
+      title: 'Falha ao criar cadastro',
+      message: error.code || 'signup_provider_error'
+    });
     return NextResponse.json({ error: error.message || 'Nao foi possivel criar a conta.' }, { status: 400 });
   }
 
   const userId = data?.user?.id;
   if (!userId) {
+    await recordPlatformEvent({
+      eventType: 'user.signup_failed',
+      category: 'user',
+      severity: 'error',
+      source: 'api/auth/signup',
+      title: 'Cadastro sem usuário retornado',
+      message: 'missing_user_id'
+    });
     return NextResponse.json({ error: 'Nao foi possivel concluir o cadastro.' }, { status: 500 });
   }
 

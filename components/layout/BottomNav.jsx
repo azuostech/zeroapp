@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { fetchCurrentProfile, primeCurrentProfile } from '@/src/lib/client/profile-cache';
 
 const STUDENT_TABS = [
   { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
@@ -31,20 +32,18 @@ function getBasicAutoActiveTab(pathname) {
   return '';
 }
 
-export default function BottomNav({ activeTab = '' }) {
+export default function BottomNav({ activeTab = '', initialProfile = null }) {
   const pathname = usePathname();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(initialProfile);
 
   useEffect(() => {
     let active = true;
 
     const loadProfile = async () => {
       try {
-        const response = await fetch('/api/profile/me', { cache: 'no-store' });
-        const payload = await response.json().catch(() => ({}));
-        if (active && response.ok) {
-          setProfile(payload?.profile || null);
-        }
+        if (initialProfile) primeCurrentProfile(initialProfile);
+        const nextProfile = initialProfile || await fetchCurrentProfile();
+        if (active) setProfile(nextProfile);
       } catch (_) {
         if (active) setProfile(null);
       }
@@ -55,7 +54,7 @@ export default function BottomNav({ activeTab = '' }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialProfile]);
 
   const canUseStudentAreas = hasStudentAccess(profile);
   const tabs = useMemo(() => (canUseStudentAreas ? STUDENT_TABS : BASIC_TABS), [canUseStudentAreas]);

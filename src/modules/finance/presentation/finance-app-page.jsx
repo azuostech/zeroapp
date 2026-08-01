@@ -1204,7 +1204,7 @@ export default function FinanceAppPage({
       const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${mes}&year=${ano}`));
       dados = normalizeFinancialData(payload?.data && Object.keys(payload.data).length > 0 ? payload.data : cloneDefaultFinancialData());
       renderTudo();
-      await avaliarPlanejamentoAnterior(mes, ano);
+      void avaliarPlanejamentoAnterior(mes, ano);
     };
 
     const trocarMes = async () => {
@@ -1642,7 +1642,16 @@ export default function FinanceAppPage({
 
     const init = async () => {
       try {
-        const payload = await apiRequest(targetFinancePath('/api/profile/me'));
+        const now = new Date();
+        const mesSelect = document.getElementById('mesSelect');
+        const anoSelect = document.getElementById('anoSelect');
+        if (mesSelect) mesSelect.value = String(now.getMonth() + 1).padStart(2, '0');
+        if (anoSelect) anoSelect.value = String(now.getFullYear());
+
+        const [payload] = await Promise.all([
+          apiRequest(targetFinancePath('/api/profile/me')),
+          carregarDados()
+        ]);
         if (!mounted) return;
 
         if (!payload?.profile) {
@@ -1667,21 +1676,9 @@ export default function FinanceAppPage({
 
         const tier = payload.profile.tier || 'DESPERTAR';
         const canAccess = adminMode ? true : ALLOWED_MAVF_TIERS.includes(tier) && hasStudentAccess(payload.profile);
-        let hasActiveSession = false;
-
-        if (canAccess) {
-          try {
-            const sessionsPayload = await apiRequest(targetFinancePath('/api/mavf/sessions'));
-            const sessions = Array.isArray(sessionsPayload?.sessions) ? sessionsPayload.sessions : [];
-            hasActiveSession = sessions.some((session) => session?.status === 'active');
-          } catch (_) {
-            hasActiveSession = false;
-          }
-        }
 
         if (mounted) {
           setCanAccessMavf(canAccess);
-          setHasActiveMavfSession(hasActiveSession);
           setImpersonationLabel(
             adminMode ? `Atendendo: ${payload.profile.full_name || payload.profile.email || 'Cliente'}` : ''
           );
@@ -1690,14 +1687,6 @@ export default function FinanceAppPage({
         currentUser = payload.user;
         setText('user-name-label', payload.profile.full_name || currentUser.email);
 
-        const now = new Date();
-        const mesSelect = document.getElementById('mesSelect');
-        const anoSelect = document.getElementById('anoSelect');
-        if (mesSelect) mesSelect.value = String(now.getMonth() + 1).padStart(2, '0');
-        if (anoSelect) anoSelect.value = String(now.getFullYear());
-
-        await carregarDados();
-
         const loading = document.getElementById('loading-screen');
         const header = document.getElementById('app-header');
         const main = document.getElementById('app-main');
@@ -1705,6 +1694,18 @@ export default function FinanceAppPage({
         if (loading) loading.style.display = 'none';
         if (header) header.style.display = '';
         if (main) main.style.display = '';
+
+        if (canAccess) {
+          void apiRequest(targetFinancePath('/api/mavf/sessions'))
+            .then((sessionsPayload) => {
+              if (!mounted) return;
+              const sessions = Array.isArray(sessionsPayload?.sessions) ? sessionsPayload.sessions : [];
+              setHasActiveMavfSession(sessions.some((session) => session?.status === 'active'));
+            })
+            .catch(() => {
+              if (mounted) setHasActiveMavfSession(false);
+            });
+        }
       } catch (_) {
         window.location.href = adminMode ? '/admin' : '/';
       }

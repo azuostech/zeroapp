@@ -3,14 +3,19 @@
 import { useEffect, useState } from 'react';
 import { TierBadge } from '@/components/gamification/TierBadge';
 
-export function TierDisplay({ size = 'md', showName = false, className = '', userId = null }) {
-  const [tier, setTier] = useState('DESPERTAR');
-  const [loading, setLoading] = useState(true);
+export function TierDisplay({ size = 'md', showName = false, className = '', userId = null, tier: providedTier = '' }) {
+  const [tier, setTier] = useState(() => String(providedTier || 'DESPERTAR').toUpperCase());
+  const [loading, setLoading] = useState(!providedTier);
 
   useEffect(() => {
     let active = true;
 
     const loadTier = async () => {
+      if (providedTier) {
+        setTier(String(providedTier).toUpperCase());
+        setLoading(false);
+        return;
+      }
       try {
         const query = userId ? `?user_id=${encodeURIComponent(userId)}` : '';
         const response = await fetch(`/api/user/tier${query}`, { cache: 'no-store' });
@@ -32,7 +37,7 @@ export function TierDisplay({ size = 'md', showName = false, className = '', use
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [providedTier, userId]);
 
   if (loading) {
     return (

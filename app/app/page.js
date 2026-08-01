@@ -1,14 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import FinanceSummaryCard from '@/components/finance/FinanceSummaryCard';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNavHub from '@/components/layout/BottomNavHub';
 import FAB from '@/components/layout/FAB';
-import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import NavigationCard from '@/components/layout/NavigationCard';
 import RestrictedAccessModal from '@/components/layout/RestrictedAccessModal';
+import { fetchCurrentProfile } from '@/src/lib/client/profile-cache';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+
+const JacksonAIModal = dynamic(() => import('@/components/layout/JacksonAIModal'), {
+  ssr: false,
+  loading: () => null
+});
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -73,11 +79,8 @@ export default function HomeHubPage() {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch('/api/profile/me', { cache: 'no-store' });
-        const payload = await response.json().catch(() => ({}));
-        if (active && response.ok) {
-          setProfile(payload?.profile || null);
-        }
+        const nextProfile = await fetchCurrentProfile();
+        if (active) setProfile(nextProfile);
       } catch (_) {
         if (active) setProfile(null);
       }
@@ -125,7 +128,7 @@ export default function HomeHubPage() {
 
       <FAB onClick={() => setIsIAOpen(true)} />
       <BottomNavHub />
-      <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
+      {isIAOpen ? <JacksonAIModal isOpen onClose={() => setIsIAOpen(false)} /> : null}
       <RestrictedAccessModal isOpen={restrictedModalOpen} onClose={() => setRestrictedModalOpen(false)} />
     </div>
   );

@@ -712,6 +712,9 @@ export default function AdminPage() {
           <a className="nav-item nav-item-link" href="/admin/emails" id="nav-emails">
             <span className="nav-icon">📧</span> Emails
           </a>
+          <a className="nav-item nav-item-link" href="/admin/atividade" id="nav-activity">
+            <span className="nav-icon">◉</span> Atividade
+          </a>
           <div className="nav-sep" />
           <div className="nav-item" onClick={() => window.showView?.('stats')} id="nav-stats">
             <span className="nav-icon">📊</span> Visão geral
