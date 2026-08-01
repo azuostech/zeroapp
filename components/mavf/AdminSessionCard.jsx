@@ -9,6 +9,7 @@ export default function AdminSessionCard({
   responseStats,
   onStartPillar,
   onComplete,
+  onRefresh,
   onManageParticipants,
   onEditSession,
   onDeleteSession
@@ -22,6 +23,12 @@ export default function AdminSessionCard({
     return responseStats?.countsByPillar?.[session.current_pillar] || 0;
   }, [responseStats, session.current_pillar]);
 
+  const currentPillarIndex = MAVF_PILLARS.findIndex((pillar) => pillar.id === session.current_pillar);
+  const currentPillar = currentPillarIndex >= 0 ? MAVF_PILLARS[currentPillarIndex] : null;
+  const nextPillar = currentPillarIndex >= 0 ? MAVF_PILLARS[currentPillarIndex + 1] || null : MAVF_PILLARS[0];
+
+  const statusLabel = session.status === 'active' ? 'Ao vivo' : session.status === 'completed' ? 'Finalizada' : 'Em preparação';
+
   const statusClass =
     session.status === 'active'
       ? 'bg-[var(--green-dim)] text-[var(--green)]'
@@ -31,22 +38,22 @@ export default function AdminSessionCard({
 
   return (
     <div
-      className={`bg-[var(--bg2)] border rounded-[12px] p-5 mb-4 ${
+      className={`bg-[var(--bg2)] border rounded-[14px] p-4 md:p-5 mb-4 ${
         session.status === 'active' ? 'border-[var(--green)]' : 'border-[var(--border)]'
       }`}
     >
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-4 h-4 rounded-full border border-[var(--border)]" style={{ background: session.color_hex }} />
-          <div>
-            <h3 className="text-lg font-semibold">{session.title}</h3>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold break-words">{session.title}</h3>
             <div className={`inline-flex mt-1 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.5px] ${statusClass}`}>
-              {session.status}
+              {statusLabel}
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {typeof onManageParticipants === 'function' ? (
             <button
               onClick={() => onManageParticipants(session)}
@@ -70,12 +77,22 @@ export default function AdminSessionCard({
             {expanded ? 'Recolher' : 'Expandir'}
           </button>
           {session.status === 'active' ? (
-            <button
-              onClick={() => onComplete(session.id)}
-              className="px-3 py-2 rounded-[8px] border border-[var(--red)] text-[var(--red)] text-xs font-semibold"
-            >
-              Finalizar
-            </button>
+            <>
+              {typeof onRefresh === 'function' ? (
+                <button
+                  onClick={onRefresh}
+                  className="px-3 py-2 rounded-[8px] border border-[var(--blue)] text-[var(--blue)] text-xs font-semibold"
+                >
+                  ↻ Atualizar respostas
+                </button>
+              ) : null}
+              <button
+                onClick={() => onComplete(session.id)}
+                className="px-3 py-2 rounded-[8px] border border-[var(--red)] text-[var(--red)] text-xs font-semibold"
+              >
+                Finalizar
+              </button>
+            </>
           ) : null}
           {typeof onDeleteSession === 'function' ? (
             <button
@@ -89,9 +106,30 @@ export default function AdminSessionCard({
       </div>
 
       {session.status === 'active' ? (
-        <div className="bg-[var(--bg)] border border-[var(--border)] rounded-[10px] p-4 mb-4">
-          <div className="text-sm text-[var(--text-2)] mb-2">
-            Pilar atual: <span className="text-[var(--text)] font-semibold">{session.current_pillar || 'nenhum'}</span>
+        <div className="bg-[var(--bg)] border border-[var(--green)] rounded-[12px] p-4 mb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.8px] font-bold text-[var(--green)] mb-1">Pilar liberado agora</div>
+              <div className="text-xl font-black text-[var(--text)]">
+                {currentPillar ? `${currentPillar.emoji} ${currentPillar.label}` : 'Nenhum pilar liberado'}
+              </div>
+              <div className="text-xs text-[var(--text-2)] mt-1">
+                {currentPillarResponses} de {totalParticipants || 0} participantes responderam
+              </div>
+            </div>
+            {nextPillar ? (
+              <button
+                type="button"
+                onClick={() => onStartPillar(session.id, nextPillar.id)}
+                className="rounded-[10px] bg-[var(--green)] px-4 py-3 text-sm font-black text-[var(--text-on-green)]"
+              >
+                Liberar próximo: {nextPillar.emoji} {nextPillar.label} →
+              </button>
+            ) : (
+              <div className="rounded-[10px] border border-[var(--border)] px-4 py-3 text-xs text-[var(--text-2)]">
+                Último pilar em andamento
+              </div>
+            )}
           </div>
           <ProgressIndicator value={currentPillarResponses} max={totalParticipants || currentPillarResponses || 1} />
         </div>
@@ -102,9 +140,16 @@ export default function AdminSessionCard({
       </div>
 
       {session.status === 'draft' ? (
-        <div className="bg-[var(--gold-dim)] border border-[var(--gold)] rounded-[10px] p-3 mb-4 text-xs text-[var(--gold)]">
-          Esta sessão ainda está em rascunho e não aparece para os mentorados.
-          Libere o primeiro pilar para ativar.
+        <div className="bg-[var(--gold-dim)] border border-[var(--gold)] rounded-[10px] p-4 mb-4 text-xs text-[var(--gold)]">
+          <div className="font-bold mb-2">Checklist para iniciar</div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-current px-3 py-1">✓ Sessão criada</span>
+            <span className="rounded-full border border-current px-3 py-1">
+              {totalParticipants > 0 ? '✓' : '2.'} {totalParticipants} participante(s)
+            </span>
+            <span className="rounded-full border border-current px-3 py-1">3. Liberar primeiro pilar</span>
+          </div>
+          {totalParticipants === 0 ? <div className="mt-3">Adicione participantes antes de iniciar a sessão.</div> : null}
         </div>
       ) : null}
 

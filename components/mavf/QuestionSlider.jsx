@@ -1,12 +1,26 @@
 // components/mavf/QuestionSlider.jsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const SCORE_LABELS = [
+  'Muito insatisfeito',
+  'Muito baixo',
+  'Baixo',
+  'Precisa de atenção',
+  'Abaixo do esperado',
+  'Regular',
+  'Razoável',
+  'Bom',
+  'Muito bom',
+  'Excelente',
+  'Plenamente satisfeito'
+];
 
 export default function QuestionSlider({ 
   pillar, 
   sessionId, 
-  initialScore = 5,
+  initialScore = null,
   onSubmit,
   disabled = false,
   targetUserId = null
@@ -15,7 +29,13 @@ export default function QuestionSlider({
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    setScore(initialScore);
+    setSaved(false);
+  }, [initialScore, pillar.id, sessionId]);
+
   const handleSubmit = async () => {
+    if (score === null) return;
     setLoading(true);
     setSaved(false);
 
@@ -37,8 +57,6 @@ export default function QuestionSlider({
         setSaved(true);
         onSubmit?.(score, data.progress);
         
-        // Reset saved state após 3 segundos
-        setTimeout(() => setSaved(false), 3000);
       } else {
         alert(data.error || 'Erro ao salvar resposta');
       }
@@ -51,7 +69,7 @@ export default function QuestionSlider({
   };
 
   return (
-    <div className="bg-[var(--bg2)] border border-[var(--border)] rounded-2xl p-8">
+    <div className="bg-[var(--bg2)] border border-[var(--border)] rounded-2xl p-4 md:p-8">
       
       {/* Emoji + Título */}
       <div className="text-center mb-8">
@@ -60,28 +78,49 @@ export default function QuestionSlider({
         <p className="text-[var(--muted)]">Avalie de 0 a 10</p>
       </div>
 
-      {/* Slider */}
+      {/* Seletor de pontuação */}
       <div className="mb-8">
-        <div className="flex justify-between text-sm text-[var(--muted)] mb-2">
-          <span>0</span>
-          <span className="text-[var(--green)] text-4xl font-bold">{score}</span>
-          <span>10</span>
+        <div className="rounded-[14px] border border-[var(--border)] bg-[var(--bg)] p-4 text-center mb-4">
+          <div className="text-[11px] uppercase tracking-[0.8px] text-[var(--muted)] mb-1">Sua pontuação</div>
+          <div className="text-[var(--green)] text-5xl font-black leading-none">{score ?? '—'}</div>
+          <div className="text-sm font-semibold text-[var(--text-2)] mt-2">
+            {score === null ? 'Toque em uma nota abaixo' : SCORE_LABELS[score]}
+          </div>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="10"
-          step="1"
-          value={score}
-          onChange={(e) => setScore(parseInt(e.target.value))}
-          disabled={disabled || loading}
-          className="w-full h-3 rounded-full appearance-none cursor-pointer
-            bg-[var(--border)] accent-[var(--green)] 
-            disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{
-            background: `linear-gradient(to right, var(--green) 0%, var(--green) ${score * 10}%, var(--border) ${score * 10}%, var(--border) 100%)`
-          }}
-        />
+
+        <fieldset disabled={disabled || loading}>
+          <legend className="sr-only">Escolha uma pontuação de zero a dez</legend>
+          <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Pontuação de zero a dez">
+            {Array.from({ length: 11 }, (_, value) => {
+              const selected = score === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={`${value}: ${SCORE_LABELS[value]}`}
+                  onClick={() => {
+                    setScore(value);
+                    setSaved(false);
+                  }}
+                  className={`min-h-12 rounded-[10px] border text-base font-black transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--green)] ${
+                    selected
+                      ? 'border-[var(--green)] bg-[var(--green)] text-[var(--text-on-green)] shadow-[var(--shadow-green)] scale-[1.04]'
+                      : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-2)] hover:border-[var(--green)]'
+                  }`}
+                >
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="flex justify-between text-[11px] text-[var(--muted)] mt-2 px-1">
+          <span>0 · Muito baixo</span>
+          <span>10 · Excelente</span>
+        </div>
       </div>
 
       {/* Perguntas de Reflexão */}
@@ -103,7 +142,7 @@ export default function QuestionSlider({
       {/* Botão Confirmar */}
       <button
         onClick={handleSubmit}
-        disabled={disabled || loading || saved}
+        disabled={disabled || loading || saved || score === null}
         className={`
           w-full font-bold py-4 rounded-xl text-base
           transition-all duration-200
@@ -112,7 +151,7 @@ export default function QuestionSlider({
             : 'bg-gradient-to-r from-[var(--green)] to-[var(--gold)] text-[var(--bg)]'
           }
           disabled:opacity-50 disabled:cursor-not-allowed
-          hover:scale-105 active:scale-95
+          hover:brightness-105 active:scale-[0.99]
         `}
       >
         {loading ? 'Salvando...' : saved ? '✓ Resposta Salva!' : 'Confirmar Resposta'}
@@ -127,9 +166,7 @@ export default function QuestionSlider({
             <div className="text-sm font-semibold text-[var(--green)]">
               Resposta salva com sucesso!
             </div>
-            <div className="text-xs text-[var(--muted)]">
-              Continue para o próximo pilar
-            </div>
+            <div className="text-xs text-[var(--muted)]">Aguarde a liberação do próximo pilar.</div>
           </div>
         </div>
       )}

@@ -4,6 +4,30 @@ Data: 2026-08-01
 Branch atual: main
 Status funcional: Central de Atividade administrativa e primeira rodada de performance implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
 
+## Atualizacao 2026-08-01 — MAVF ao vivo e experiencia de pontuacao
+
+### Painel do mentor
+- `/admin/mavf` foi reorganizado em tres ambientes separados: `Ao vivo`, `Preparacao` e `Historico`.
+- A area aberta inicialmente prioriza sessoes ativas; sem sessao ativa, abre os rascunhos ou o historico conforme a disponibilidade.
+- A sessao ao vivo agora destaca o pilar liberado, total de respostas recebidas, progresso dos participantes e o comando direto para liberar o proximo pilar.
+- Mentor pode atualizar manualmente as estatisticas de resposta e ve o horario da ultima sincronizacao.
+- Rascunhos ganharam checklist visual: sessao criada, participantes definidos e primeiro pilar a liberar.
+- Depois de criar, iniciar ou finalizar uma sessao, o painel muda automaticamente para a area correspondente.
+- Sessoes concluidas ficam isoladas no historico, sem disputar espaco com o controle da sessao em andamento.
+
+### Experiencia do participante
+- O slider pequeno foi substituido por 11 botoes grandes de 0 a 10, adequados para toque e com descricao textual de cada nota.
+- Nenhuma pontuacao vem pre-selecionada; confirmar so e habilitado depois de uma escolha consciente.
+- A troca de pilar reinicia corretamente o seletor, sem carregar a nota do pilar anterior.
+- Apos confirmar, o formulario da lugar a um estado persistente de `Resposta confirmada`, mostrando pilar e nota salvos.
+- Esse estado orienta o participante a aguardar o mentor e oferece `Atualizar sessao`, que busca os dados novamente sem recarregar toda a aplicacao.
+- O botao de atualizacao tambem aparece no topo, quando nao ha sessao e ao concluir todos os pilares; o retorno informa se houve mudanca e mostra o horario da ultima consulta.
+
+### Validacao
+- Nenhuma alteracao de banco foi necessaria; o fluxo continua usando as APIs e regras de permissao existentes.
+- `git diff --check`, `npm run lint`, `npm test` (20 testes em 7 arquivos) e `npm run build` passaram.
+- Build gerou 108 rotas/paginas com Next.js 15.5.15.
+
 ## Atualizacao 2026-08-01 — Responsividade mobile e zoom de formularios
 
 ### Problema corrigido

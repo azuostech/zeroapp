@@ -22,6 +22,28 @@ function withUserQuery(path, userId) {
   return `${path}${joiner}user_id=${encodeURIComponent(userId)}`;
 }
 
+function SessionRefreshButton({ onRefresh, loading, message, lastChecked, compact = false }) {
+  return (
+    <div className={compact ? 'mt-4' : 'mt-5'}>
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={loading}
+        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-[10px] border border-[var(--green)] bg-[var(--green)] px-5 py-3 text-sm font-black text-[var(--text-on-green)] transition hover:brightness-105 disabled:cursor-wait disabled:opacity-65"
+      >
+        <span aria-hidden="true" className={loading ? 'animate-spin' : ''}>↻</span>
+        {loading ? 'Buscando atualização...' : 'Atualizar sessão'}
+      </button>
+      {message ? <p className="mt-3 text-sm text-[var(--text-2)]" role="status">{message}</p> : null}
+      {lastChecked ? (
+        <p className="mt-1 text-[11px] text-[var(--text-3)]">
+          Última consulta às {lastChecked.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function MAVFPage({ adminViewUserId = null, adminClientLabel = '' }) {
   const [activeTab, setActiveTab] = useState('mapa');
   const [expandedPractice, setExpandedPractice] = useState(null);
@@ -32,6 +54,9 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   const [lastCompletedSession, setLastCompletedSession] = useState(null);
   const [responsesBySession, setResponsesBySession] = useState({});
   const [progress, setProgress] = useState({ completed: 0, total: 11, percentage: 0, all_completed: false });
+  const [refreshingSession, setRefreshingSession] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState('');
+  const [lastSessionCheck, setLastSessionCheck] = useState(null);
   const [isIAOpen, setIsIAOpen] = useState(false);
   const adminMode = Boolean(adminViewUserId);
   const targetUserId = adminMode ? adminViewUserId : null;
@@ -98,8 +123,11 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
       }
 
       setResponsesBySession(nextResponsesMap);
+      return { activeSession: active, sessions };
     } catch (error) {
       console.error('Erro ao carregar dados MAVF:', error);
+      setRefreshMessage('Não foi possível atualizar agora. Verifique sua conexão e tente novamente.');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -108,6 +136,29 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   const handleResponseSubmit = async (_, nextProgress) => {
     setProgress(nextProgress);
     await fetchData();
+  };
+
+  const handleRefreshSession = async () => {
+    setRefreshingSession(true);
+    setRefreshMessage('');
+
+    const previousSessionId = activeSession?.id || null;
+    const previousPillar = activeSession?.current_pillar || null;
+
+    try {
+      const result = await fetchData();
+      if (!result) {
+        setLastSessionCheck(new Date());
+        return;
+      }
+      const nextSession = result?.activeSession || null;
+      const changed = nextSession?.id !== previousSessionId || nextSession?.current_pillar !== previousPillar;
+
+      setRefreshMessage(changed ? 'Atualização encontrada! A sessão foi sincronizada.' : 'Tudo certo. O mentor ainda não liberou o próximo pilar.');
+      setLastSessionCheck(new Date());
+    } finally {
+      setRefreshingSession(false);
+    }
   };
 
   if (loading) {
@@ -144,6 +195,9 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
   }
 
   const activeResponses = activeSession ? responsesBySession[activeSession.id] || [] : [];
+  const currentResponse = currentPillar
+    ? activeResponses.find((item) => item.pillar === currentPillar.id) || null
+    : null;
   const mapTitle = 'Minha Jornada 🌱';
 
   let mapContent = null;
@@ -154,6 +208,14 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         <div className="text-6xl mb-6">💤</div>
         <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
         <p className="text-[var(--text-2)]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
+        {!adminMode ? (
+          <SessionRefreshButton
+            onRefresh={handleRefreshSession}
+            loading={refreshingSession}
+            message={refreshMessage}
+            lastChecked={lastSessionCheck}
+          />
+        ) : null}
       </div>
     );
   } else if (!activeSession && lastCompletedSession) {
@@ -185,15 +247,37 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
           </div>
         </div>
 
-        {!progress.all_completed && currentPillar ? (
+        {!progress.all_completed && currentPillar && !currentResponse ? (
           <div className="mb-10">
             <QuestionSlider
+              key={`${activeSession.id}:${currentPillar.id}`}
               pillar={currentPillar}
               sessionId={activeSession.id}
-              initialScore={activeResponses.find((item) => item.pillar === currentPillar.id)?.score || 5}
+              initialScore={null}
               onSubmit={handleResponseSubmit}
               targetUserId={targetUserId}
             />
+          </div>
+        ) : null}
+
+        {!progress.all_completed && currentPillar && currentResponse ? (
+          <div className="mb-10 card card-green rounded-[18px] p-5 md:p-7 text-center">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[var(--green-dim)] text-3xl text-[var(--green)]">✓</div>
+            <div className="text-[11px] uppercase tracking-[0.8px] text-[var(--green)] font-bold mb-2">Resposta confirmada</div>
+            <h2 className="text-xl md:text-2xl font-bold mb-2">
+              {currentPillar.emoji} {currentPillar.label}: {currentResponse.score}
+            </h2>
+            <p className="text-[var(--text-2)] max-w-lg mx-auto">
+              Sua resposta está salva. Quando o mentor liberar o próximo pilar, toque no botão abaixo para continuar.
+            </p>
+            {!adminMode ? (
+              <SessionRefreshButton
+                onRefresh={handleRefreshSession}
+                loading={refreshingSession}
+                message={refreshMessage}
+                lastChecked={lastSessionCheck}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -202,6 +286,15 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             <div className="text-4xl mb-2">🎯</div>
             <h2 className="text-xl font-semibold mb-2">Aguardando próximo pilar</h2>
             <p className="text-[var(--text-2)]">O mentor ainda vai liberar o próximo passo da sessão.</p>
+            {!adminMode ? (
+              <SessionRefreshButton
+                onRefresh={handleRefreshSession}
+                loading={refreshingSession}
+                message={refreshMessage}
+                lastChecked={lastSessionCheck}
+                compact
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -210,6 +303,15 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             <div className="text-5xl mb-3">✅</div>
             <h2 className="text-2xl font-bold mb-2">Respostas concluídas</h2>
             <p className="text-[var(--text-2)]">Aguarde o mentor finalizar a sessão para revelar a roda.</p>
+            {!adminMode ? (
+              <SessionRefreshButton
+                onRefresh={handleRefreshSession}
+                loading={refreshingSession}
+                message={refreshMessage}
+                lastChecked={lastSessionCheck}
+                compact
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -250,11 +352,24 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
               </Link>
             </div>
           ) : null}
-          <div className="mb-6">
-            <h1 className="text-[22px] md:text-[30px] font-black leading-[1.1] mb-1" style={{ fontFamily: 'var(--font-body)' }}>
-              {mapTitle}
-            </h1>
-            <p className="text-[13px] text-[var(--muted)]">Seus objetivos, práticas e evolução pessoal</p>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-[22px] md:text-[30px] font-black leading-[1.1] mb-1" style={{ fontFamily: 'var(--font-body)' }}>
+                {mapTitle}
+              </h1>
+              <p className="text-[13px] text-[var(--muted)]">Seus objetivos, práticas e evolução pessoal</p>
+            </div>
+            {!adminMode && activeTab === 'mapa' ? (
+              <button
+                type="button"
+                onClick={handleRefreshSession}
+                disabled={refreshingSession}
+                className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5 text-xs font-bold text-[var(--text-2)] hover:border-[var(--green)] hover:text-[var(--green)] disabled:opacity-60"
+              >
+                <span aria-hidden="true" className={refreshingSession ? 'animate-spin' : ''}>↻</span>
+                {refreshingSession ? 'Atualizando...' : 'Atualizar sessão'}
+              </button>
+            ) : null}
           </div>
 
           <MAVFTabs activeTab={activeTab} onChange={setActiveTab} />

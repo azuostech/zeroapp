@@ -25,6 +25,9 @@ export default function AdminMAVFPage() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [responseStats, setResponseStats] = useState({});
+  const [activeSection, setActiveSection] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -93,7 +96,7 @@ export default function AdminMAVFPage() {
       if (res.status === 403) {
         setAccessDenied(true);
         setLoading(false);
-        return;
+        return false;
       }
 
       if (!res.ok) {
@@ -138,11 +141,25 @@ export default function AdminMAVFPage() {
       );
 
       setResponseStats(Object.fromEntries(statsEntries));
+      setLastRefresh(new Date());
+      return true;
     } catch (error) {
       console.error('Erro ao buscar sessões:', error);
       setFeedback(error?.message || 'Erro ao carregar sessões.');
+      return false;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshLiveData = async () => {
+    setRefreshing(true);
+    setFeedback('');
+    try {
+      const refreshed = await fetchSessions();
+      if (refreshed) setFeedback('Dados da sessão atualizados.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -208,6 +225,7 @@ export default function AdminMAVFPage() {
           ? data?.message || 'Sessão atualizada com sucesso.'
           : data?.message || 'Sessão criada como rascunho. Defina participantes e libere o pilar.'
       );
+      if (!isEditing) setActiveSection('setup');
       closeSessionModal();
       await fetchSessions();
     } catch (error) {
@@ -235,6 +253,7 @@ export default function AdminMAVFPage() {
       const data = await res.json();
       if (res.ok) {
         setFeedback(data.message || 'Pilar liberado com sucesso.');
+        setActiveSection('live');
         await fetchSessions();
       } else {
         alert(data.error || 'Erro ao liberar pilar');
@@ -256,6 +275,7 @@ export default function AdminMAVFPage() {
       const data = await res.json();
       if (res.ok) {
         setFeedback(data.message || 'Sessão finalizada com sucesso.');
+        setActiveSection('history');
         await fetchSessions();
       } else {
         alert(data.error || 'Erro ao finalizar sessão');
@@ -410,6 +430,7 @@ export default function AdminMAVFPage() {
             responseStats={responseStats[session.id]}
             onStartPillar={startPillar}
             onComplete={completeSession}
+            onRefresh={refreshLiveData}
             onManageParticipants={openParticipantsModal}
             onEditSession={openEditSessionModal}
             onDeleteSession={deleteSession}
@@ -418,6 +439,14 @@ export default function AdminMAVFPage() {
       )}
     </section>
   );
+
+  const selectedSection = activeSection || (activeSessions.length > 0 ? 'live' : draftSessions.length > 0 ? 'setup' : 'history');
+
+  const sectionTabs = [
+    { id: 'live', label: 'Ao vivo', icon: '●', count: activeSessions.length },
+    { id: 'setup', label: 'Preparação', icon: '⚙', count: draftSessions.length },
+    { id: 'history', label: 'Histórico', icon: '✓', count: completedSessions.length }
+  ];
 
   return (
     <div className="min-h-screen bg-[var(--bg)] p-4 md:p-8 text-[var(--text)]">
@@ -428,16 +457,26 @@ export default function AdminMAVFPage() {
               <p className="text-xs uppercase tracking-[0.9px] text-white/80 mb-2">Painel Operacional</p>
               <h1 className="text-2xl md:text-3xl font-bold mb-2">MAVF Admin</h1>
               <p className="text-sm text-white/85 max-w-2xl">
-                Gerencie sessões, participantes e pilares em um único fluxo. Reative sessões finalizadas quando necessário.
+                Prepare novas sessões, conduza a dinâmica ao vivo e consulte o histórico em ambientes separados.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openCreateSessionModal}
-              className="px-5 py-3 rounded-[10px] bg-white/20 text-white border border-white/35 font-bold text-sm hover:bg-white/25"
-            >
-              + Nova Sessão
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={refreshLiveData}
+                disabled={refreshing}
+                className="px-4 py-3 rounded-[10px] bg-white/10 text-white border border-white/25 font-bold text-sm hover:bg-white/20 disabled:opacity-60"
+              >
+                {refreshing ? 'Atualizando...' : '↻ Atualizar painel'}
+              </button>
+              <button
+                type="button"
+                onClick={openCreateSessionModal}
+                className="px-5 py-3 rounded-[10px] bg-white/20 text-white border border-white/35 font-bold text-sm hover:bg-white/25"
+              >
+                + Nova Sessão
+              </button>
+            </div>
           </div>
         </header>
 
@@ -472,25 +511,57 @@ export default function AdminMAVFPage() {
           </div>
         </div>
 
+        <nav className="grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Áreas de gestão MAVF">
+          {sectionTabs.map((tab) => {
+            const selected = selectedSection === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveSection(tab.id)}
+                className={`flex items-center justify-between rounded-[12px] border px-4 py-4 text-left transition ${
+                  selected
+                    ? 'border-[var(--green)] bg-[var(--green-dim)] text-[var(--green-dark)] shadow-[var(--shadow-sm)]'
+                    : 'border-[var(--border)] bg-[var(--bg-card)] text-[var(--text2)] hover:border-[var(--border-green)]'
+                }`}
+                aria-current={selected ? 'page' : undefined}
+              >
+                <span className="flex items-center gap-2 font-bold"><span aria-hidden="true">{tab.icon}</span>{tab.label}</span>
+                <span className="grid h-7 min-w-7 place-items-center rounded-full bg-[var(--bg-input)] px-2 text-xs font-black">{tab.count}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="text-right text-[11px] text-[var(--text3)]">
+          {lastRefresh ? `Última atualização às ${lastRefresh.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : null}
+        </div>
+
         <div className="space-y-5">
-          {renderSessionSection(
-            'Sessões Ativas',
-            'Responder em tempo real e acompanhar volume de respostas por pilar.',
-            activeSessions,
-            'text-[#5fe5ad]'
-          )}
-          {renderSessionSection(
-            'Rascunhos',
-            'Defina participantes e configure os pilares antes de ativar.',
-            draftSessions,
-            'text-[#ffd166]'
-          )}
-          {renderSessionSection(
-            'Sessões Finalizadas',
-            'Você pode editar, excluir ou reativar selecionando um novo pilar.',
-            completedSessions,
-            'text-[#c4cfde]'
-          )}
+          {selectedSection === 'live'
+            ? renderSessionSection(
+                'Sala ao vivo',
+                'Acompanhe respostas e libere o próximo pilar durante a sessão.',
+                activeSessions,
+                'text-[#5fe5ad]'
+              )
+            : null}
+          {selectedSection === 'setup'
+            ? renderSessionSection(
+                'Preparação das próximas sessões',
+                'Configure nome e participantes; depois libere o primeiro pilar para iniciar.',
+                draftSessions,
+                'text-[#ffd166]'
+              )
+            : null}
+          {selectedSection === 'history'
+            ? renderSessionSection(
+                'Sessões já realizadas',
+                'Consulte, edite ou, excepcionalmente, reative uma sessão concluída.',
+                completedSessions,
+                'text-[#c4cfde]'
+              )
+            : null}
         </div>
       </div>
 
