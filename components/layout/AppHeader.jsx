@@ -200,6 +200,7 @@ export default function AppHeader({ initialProfile = null }) {
         .header-content {
           width: 100%;
           max-width: 1100px;
+          min-width: 0;
           margin: 0 auto;
           padding: 14px 16px;
           display: flex;
@@ -231,6 +232,7 @@ export default function AppHeader({ initialProfile = null }) {
           display: flex;
           align-items: center;
           gap: 10px;
+          min-width: 0;
         }
 
         :global(.header-coins) {
@@ -344,6 +346,15 @@ export default function AppHeader({ initialProfile = null }) {
         }
 
         @media (max-width: 768px) {
+          .header-content {
+            padding-right: max(12px, env(safe-area-inset-right));
+            padding-left: max(12px, env(safe-area-inset-left));
+          }
+
+          .header-actions {
+            gap: 6px;
+          }
+
           .fase-progress-mobile {
             display: flex;
             align-items: center;

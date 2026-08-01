@@ -123,11 +123,21 @@
 }
 
 @media (max-width: 640px) {
+  .shell {
+    min-height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+  }
+
   .card {
-    padding: 24px;
+    max-width: 100%;
+    padding: 24px 18px;
   }
 
   .title {
     font-size: 24px;
+  }
+
+  .input {
+    font-size: 16px;
   }
 }

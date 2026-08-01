@@ -821,6 +821,40 @@ export default function LoginPage() {
           font-size: 11px;
           color: var(--text-3);
         }
+
+        @media (max-width: 480px) {
+          .login-shell {
+            align-items: flex-start;
+            min-height: 100dvh;
+            padding: max(12px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
+            overflow-x: hidden;
+            overflow-y: auto;
+          }
+
+          .bg-glow {
+            width: min(520px, 140vw);
+            height: min(520px, 140vw);
+          }
+
+          .card {
+            max-width: 100%;
+            padding: 8px 4px 20px;
+          }
+
+          .brand {
+            margin-bottom: 20px;
+          }
+
+          .brand-logo {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+          }
+
+          .form-box {
+            padding: 24px 18px;
+          }
+        }
       `}</style>
     </div>
   );

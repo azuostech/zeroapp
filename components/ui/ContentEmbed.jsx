@@ -253,7 +253,8 @@ export function ContentEmbed({ url, contentType, title, poster }) {
             position: fixed;
             inset: 0;
             z-index: 1000;
-            width: 100vw;
+            width: 100%;
+            max-width: 100%;
             height: 100dvh;
             aspect-ratio: auto;
             border-radius: 0;

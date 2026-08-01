@@ -4,6 +4,29 @@ Data: 2026-08-01
 Branch atual: main
 Status funcional: Central de Atividade administrativa e primeira rodada de performance implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
 
+## Atualizacao 2026-08-01 — Responsividade mobile e zoom de formularios
+
+### Problema corrigido
+- O Safari no iPhone ampliava a pagina ao focar inputs, selects e textareas com fonte menor que 16px. Isso fazia login e formularios internos aparentarem sair da tela depois da edicao.
+- Alguns elementos de tela cheia usavam `width: 100vw`, medida que pode ultrapassar a largura util em navegadores moveis por causa das barras e areas seguras.
+
+### Correcoes aplicadas
+- Campos editaveis usam fonte minima de 16px em viewports de ate 768px, sem desabilitar o zoom manual de acessibilidade.
+- `html` e `body` foram limitados a largura da viewport e elementos de midia agora respeitam `max-width: 100%`.
+- O viewport passou a declarar `viewport-fit=cover` e redimensionamento pelo teclado virtual.
+- Login e redefinicao de senha ganharam altura dinamica (`100dvh`), espacamento para safe areas e cards contidos na largura disponivel.
+- Header do app ganhou limites de flexbox e espacamento lateral para as safe areas.
+- Modal Jackson IA e player em tela cheia deixaram de depender de `100vw`, evitando largura adicional no celular.
+
+### Acessibilidade preservada
+- `userScalable` continua habilitado. O usuario ainda pode aplicar zoom manual; somente o zoom involuntario causado pelo foco em campos pequenos foi evitado.
+
+### Validacao desta correcao
+- `git diff --check` passou.
+- `npm run lint` passou.
+- `npm test` passou com 20 testes em 7 arquivos.
+- `npm run build` passou e gerou 108 rotas/paginas com Next.js 15.5.15.
+
 ## Atualizacao 2026-08-01 — Observabilidade administrativa e desempenho
 
 ### Central de Atividade

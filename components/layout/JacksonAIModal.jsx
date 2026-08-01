@@ -171,9 +171,9 @@ export default function JacksonAIModal({ isOpen, onClose }) {
 const styles = `
   .ia-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
+    inset: 0;
+    width: auto;
+    max-width: 100%;
     height: var(--ia-visual-height, 100dvh);
     background: rgba(0, 0, 0, 0.5);
     z-index: 200;
