@@ -26,12 +26,15 @@ Status funcional: Central de Atividade administrativa e primeira rodada de perfo
 - Sessoes concluidas ficam isoladas no historico, sem disputar espaco com o controle da sessao em andamento.
 
 ### Experiencia do participante
-- O slider pequeno foi substituido por 11 botoes grandes de 0 a 10, adequados para toque e com descricao textual de cada nota.
-- Nenhuma pontuacao vem pre-selecionada; confirmar so e habilitado depois de uma escolha consciente.
+- A selecao voltou a usar um slider de 0 a 10, conforme validacao de experiencia, agora com trilho largo, marcador proprio, nota em destaque e descricao textual.
+- O slider inicia visualmente no centro, mas confirmar so e habilitado depois que o usuario interage com o controle.
 - A troca de pilar reinicia corretamente o seletor, sem carregar a nota do pilar anterior.
 - Apos confirmar, o formulario da lugar a um estado persistente de `Resposta confirmada`, mostrando pilar e nota salvos.
 - Esse estado orienta o participante a aguardar o mentor e oferece `Atualizar sessao`, que busca os dados novamente sem recarregar toda a aplicacao.
 - O botao de atualizacao tambem aparece no topo, quando nao ha sessao e ao concluir todos os pilares; o retorno informa se houve mudanca e mostra o horario da ultima consulta.
+- Progresso, cabecalho, estados de espera/conclusao e area de praticas passaram a usar CSS Modules alinhados ao Design System do ZeroApp, sem depender das classes utilitarias que nao eram aplicadas no mobile.
+- Os 11 pilares agora aparecem em tabela responsiva com colunas `Pilar`, `Status` e `Nota`.
+- A tabela diferencia visualmente o pilar atual, os pilares respondidos e os que ainda aguardam liberacao.
 
 ### Validacao
 - Nenhuma alteracao de banco foi necessaria; o fluxo continua usando as APIs e regras de permissao existentes.

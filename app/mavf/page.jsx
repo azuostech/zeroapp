@@ -15,6 +15,7 @@ import IdentidadeCard from '@/components/mavf/IdentidadeCard';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { useMavfSummary } from '@/hooks/useMavfSummary';
+import styles from './mavf.module.css';
 
 function withUserQuery(path, userId) {
   if (!userId) return path;
@@ -24,19 +25,19 @@ function withUserQuery(path, userId) {
 
 function SessionRefreshButton({ onRefresh, loading, message, lastChecked, compact = false }) {
   return (
-    <div className={compact ? 'mt-4' : 'mt-5'}>
+    <div className={styles.refreshWrap} data-compact={compact || undefined}>
       <button
         type="button"
         onClick={onRefresh}
         disabled={loading}
-        className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-[10px] border border-[var(--green)] bg-[var(--green)] px-5 py-3 text-sm font-black text-[var(--text-on-green)] transition hover:brightness-105 disabled:cursor-wait disabled:opacity-65"
+        className={styles.primaryButton}
       >
-        <span aria-hidden="true" className={loading ? 'animate-spin' : ''}>↻</span>
+        <span aria-hidden="true">↻</span>{' '}
         {loading ? 'Buscando atualização...' : 'Atualizar sessão'}
       </button>
-      {message ? <p className="mt-3 text-sm text-[var(--text-2)]" role="status">{message}</p> : null}
+      {message ? <p className={styles.refreshMessage} role="status">{message}</p> : null}
       {lastChecked ? (
-        <p className="mt-1 text-[11px] text-[var(--text-3)]">
+        <p className={styles.lastChecked}>
           Última consulta às {lastChecked.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </p>
       ) : null}
@@ -165,11 +166,11 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
     return (
       <>
         <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-          <div className="max-w-5xl mx-auto">
-            <div className="min-h-[50vh] flex items-center justify-center text-[var(--text)]">
-              <div className="text-center">
-                <div className="text-4xl mb-3">⏳</div>
-                <p className="text-[var(--text-2)]">Carregando Minha Jornada...</p>
+          <div className={styles.page}>
+            <div className={styles.loading}>
+              <div>
+                <span className={styles.loadingIcon}>⏳</span>
+                <p>Carregando Minha Jornada...</p>
               </div>
             </div>
           </div>
@@ -184,7 +185,7 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
     return (
       <>
         <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-          <div className="max-w-5xl mx-auto">
+          <div className={styles.page}>
             <MAVFPaywall currentTier={currentTier} />
           </div>
         </MAVFAppShell>
@@ -204,10 +205,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
 
   if (!activeSession && !lastCompletedSession) {
     mapContent = (
-      <div className="max-w-lg text-center card card-green rounded-[18px] p-4 mx-auto">
-        <div className="text-6xl mb-6">💤</div>
-        <h2 className="text-2xl font-bold mb-3">Nenhuma sessão MAVF ativa no momento</h2>
-        <p className="text-[var(--text-2)]">Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
+      <div className={styles.stateCard}>
+        <div className={styles.stateIcon}>💤</div>
+        <h2>Nenhuma sessão MAVF ativa</h2>
+        <p>Aguarde o mentor iniciar a próxima sessão de autoavaliação.</p>
         {!adminMode ? (
           <SessionRefreshButton
             onRefresh={handleRefreshSession}
@@ -220,54 +221,52 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
     );
   } else if (!activeSession && lastCompletedSession) {
     mapContent = (
-      <>
-        <div className="card card-green rounded-[18px] p-4 mb-6">
+      <div className={styles.mapStack}>
+        <div className={styles.chartCard}>
           <WheelChart sessions={[lastCompletedSession]} responsesMap={responsesBySession} />
         </div>
-        <div className="text-center">
-          <Link href={mavfHistoryHref} className="inline-flex bg-[var(--green)] text-[var(--bg)] font-bold px-5 py-3 rounded-[8px]">
+        <div className={styles.centerActions}>
+          <Link href={mavfHistoryHref} className={styles.primaryButton}>
             Comparar sessões anteriores
           </Link>
         </div>
-      </>
+      </div>
     );
   } else {
     mapContent = (
-      <>
-        <div className="mb-8 card card-green rounded-[18px] p-4">
-          <div className="flex justify-between text-xs text-[var(--text-3)] uppercase tracking-[0.5px] mb-2">
-            <span>Progresso</span>
-            <span>{progress.completed}/11 pilares</span>
+      <div className={styles.mapStack}>
+        <div className={styles.progressCard}>
+          <div className={styles.progressHeader}>
+            <div>
+              <span>Sessão em andamento</span>
+              <strong>{activeSession.title}</strong>
+            </div>
+            <div className={styles.progressCount}>{progress.completed}/11 pilares</div>
           </div>
-          <div className="bg-[var(--bg-surface)] h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-[var(--green)] to-[var(--green-2)] h-full transition-all duration-500"
-              style={{ width: `${progress.percentage}%` }}
-            />
+          <div className={styles.progressTrack}>
+            <div className={styles.progressFill} style={{ width: `${progress.percentage}%` }} />
           </div>
         </div>
 
         {!progress.all_completed && currentPillar && !currentResponse ? (
-          <div className="mb-10">
-            <QuestionSlider
-              key={`${activeSession.id}:${currentPillar.id}`}
-              pillar={currentPillar}
-              sessionId={activeSession.id}
-              initialScore={null}
-              onSubmit={handleResponseSubmit}
-              targetUserId={targetUserId}
-            />
-          </div>
+          <QuestionSlider
+            key={`${activeSession.id}:${currentPillar.id}`}
+            pillar={currentPillar}
+            sessionId={activeSession.id}
+            initialScore={null}
+            onSubmit={handleResponseSubmit}
+            targetUserId={targetUserId}
+          />
         ) : null}
 
         {!progress.all_completed && currentPillar && currentResponse ? (
-          <div className="mb-10 card card-green rounded-[18px] p-5 md:p-7 text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-[var(--green-dim)] text-3xl text-[var(--green)]">✓</div>
-            <div className="text-[11px] uppercase tracking-[0.8px] text-[var(--green)] font-bold mb-2">Resposta confirmada</div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2">
+          <div className={styles.stateCard}>
+            <div className={styles.successIcon}>✓</div>
+            <p className={styles.stateEyebrow}>Resposta confirmada</p>
+            <h2>
               {currentPillar.emoji} {currentPillar.label}: {currentResponse.score}
             </h2>
-            <p className="text-[var(--text-2)] max-w-lg mx-auto">
+            <p>
               Sua resposta está salva. Quando o mentor liberar o próximo pilar, toque no botão abaixo para continuar.
             </p>
             {!adminMode ? (
@@ -282,10 +281,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         ) : null}
 
         {!progress.all_completed && !currentPillar ? (
-          <div className="mb-10 card card-green rounded-[18px] p-4 text-center">
-            <div className="text-4xl mb-2">🎯</div>
-            <h2 className="text-xl font-semibold mb-2">Aguardando próximo pilar</h2>
-            <p className="text-[var(--text-2)]">O mentor ainda vai liberar o próximo passo da sessão.</p>
+          <div className={styles.stateCard}>
+            <div className={styles.stateIcon}>🎯</div>
+            <h2>Aguardando próximo pilar</h2>
+            <p>O mentor ainda vai liberar o próximo passo da sessão.</p>
             {!adminMode ? (
               <SessionRefreshButton
                 onRefresh={handleRefreshSession}
@@ -299,10 +298,10 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
         ) : null}
 
         {progress.all_completed ? (
-          <div className="mb-10 card card-green rounded-[18px] p-4 text-center">
-            <div className="text-5xl mb-3">✅</div>
-            <h2 className="text-2xl font-bold mb-2">Respostas concluídas</h2>
-            <p className="text-[var(--text-2)]">Aguarde o mentor finalizar a sessão para revelar a roda.</p>
+          <div className={styles.stateCard}>
+            <div className={styles.stateIcon}>✅</div>
+            <h2>Respostas concluídas</h2>
+            <p>Aguarde o mentor finalizar a sessão para revelar a roda.</p>
             {!adminMode ? (
               <SessionRefreshButton
                 onRefresh={handleRefreshSession}
@@ -315,58 +314,67 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {MAVF_PILLARS.map((pillar) => {
-            const response = activeResponses.find((item) => item.pillar === pillar.id);
-            const isCurrent = currentPillar?.id === pillar.id;
-            return (
-              <div
-                key={pillar.id}
-                className={`bg-[var(--bg-card)] border rounded-[10px] p-3 text-center ${
-                  isCurrent ? 'border-[var(--green)]' : 'border-[var(--border-2)]'
-                }`}
-              >
-                <div className="text-2xl mb-1">{pillar.emoji}</div>
-                <div className="text-[11px] text-[var(--text-3)] uppercase tracking-[0.5px] mb-1">{pillar.label}</div>
-                <div className={`text-lg font-bold ${response ? 'text-[var(--green)]' : 'text-[var(--text-3)]'}`}>
-                  {response?.score ?? '—'}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </>
+        <section className={styles.pillarsPanel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>Mapa dos pilares</h2>
+              <p>Acompanhe o que já foi respondido e o que ainda será liberado.</p>
+            </div>
+          </div>
+          <div className={styles.tableWrap}>
+            <table className={styles.pillarTable}>
+              <thead><tr><th>Pilar</th><th>Status</th><th>Nota</th></tr></thead>
+              <tbody>
+                {MAVF_PILLARS.map((pillar) => {
+                  const response = activeResponses.find((item) => item.pillar === pillar.id);
+                  const isCurrent = currentPillar?.id === pillar.id;
+                  const statusClass = isCurrent
+                    ? `${styles.statusChip} ${styles.statusCurrent}`
+                    : response
+                      ? `${styles.statusChip} ${styles.statusAnswered}`
+                      : styles.statusChip;
+                  return (
+                    <tr key={pillar.id} className={isCurrent ? styles.currentRow : ''}>
+                      <td><div className={styles.pillarName}><span className={styles.pillarEmoji}>{pillar.emoji}</span>{pillar.label}</div></td>
+                      <td><span className={statusClass}>{isCurrent ? 'Atual' : response ? 'Respondido' : 'Aguardando'}</span></td>
+                      <td><span className={response ? styles.score : ''}>{response?.score ?? '—'}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     );
   }
 
   return (
     <>
       <MAVFAppShell activeTab="mavf" hideNavigation={adminMode}>
-        <div className="max-w-5xl mx-auto text-[var(--text)]">
+        <div className={styles.page}>
           {adminMode ? (
-            <div className="mb-4 rounded-[10px] border border-[var(--blue)] bg-[var(--blue-dim)] px-4 py-3 text-sm">
-              <span className="font-semibold text-[var(--blue)]">Modo admin:</span>{' '}
+            <div className={styles.adminBanner}>
+              <strong>Modo admin:</strong>{' '}
               {adminClientLabel || 'visualizando MAVF do cliente'}.
-              <Link href="/admin" className="ml-3 underline text-[var(--blue)]">
+              <Link href="/admin">
                 Voltar ao painel
               </Link>
             </div>
           ) : null}
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className={styles.pageHeader}>
             <div>
-              <h1 className="text-[22px] md:text-[30px] font-black leading-[1.1] mb-1" style={{ fontFamily: 'var(--font-body)' }}>
-                {mapTitle}
-              </h1>
-              <p className="text-[13px] text-[var(--muted)]">Seus objetivos, práticas e evolução pessoal</p>
+              <h1>{mapTitle}</h1>
+              <p>Seus objetivos, práticas e evolução pessoal</p>
             </div>
             {!adminMode && activeTab === 'mapa' ? (
               <button
                 type="button"
                 onClick={handleRefreshSession}
                 disabled={refreshingSession}
-                className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--bg-card)] px-4 py-2.5 text-xs font-bold text-[var(--text-2)] hover:border-[var(--green)] hover:text-[var(--green)] disabled:opacity-60"
+                className={styles.refreshButton}
               >
-                <span aria-hidden="true" className={refreshingSession ? 'animate-spin' : ''}>↻</span>
+                <span aria-hidden="true">↻</span>{' '}
                 {refreshingSession ? 'Atualizando...' : 'Atualizar sessão'}
               </button>
             ) : null}
@@ -384,25 +392,19 @@ export default function MAVFPage({ adminViewUserId = null, adminClientLabel = ''
             />
           )}
 
-          <div className="mt-10">
-            <div className="text-[10px] uppercase tracking-[1px] text-[var(--muted)] mb-2">Práticas Diárias</div>
-            <h2 className="text-[22px] md:text-[26px] font-black mb-2" style={{ fontFamily: 'var(--font-body)' }}>
-              Consistência que transforma
-            </h2>
-            <p className="text-[var(--text-2)] text-sm mb-5">
+          <div className={styles.practiceSection}>
+            <p className={styles.sectionEyebrow}>Práticas diárias</p>
+            <h2>Consistência que transforma</h2>
+            <p className={styles.sectionDescription}>
               Ganhos, gratidão e identidade. Três hábitos para consolidar sua evolução financeira no dia a dia.
             </p>
 
             {summaryError ? (
-              <div className="mb-3 rounded-[10px] border border-[var(--red)] bg-[var(--red-dim)] px-4 py-3 text-sm text-[var(--red)]">
-                {summaryError}
-              </div>
+              <div className={styles.errorNotice}>{summaryError}</div>
             ) : null}
 
             {isSummaryLoading && !summary ? (
-              <div className="mb-3 rounded-[10px] border border-[var(--border-2)] bg-[var(--bg-elevated)] px-4 py-3 text-sm text-[var(--text-2)]">
-                Carregando resumo das práticas...
-              </div>
+              <div className={styles.notice}>Carregando resumo das práticas...</div>
             ) : null}
 
             <GanhosCard
