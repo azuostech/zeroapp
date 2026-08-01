@@ -2,7 +2,27 @@
 
 Data: 2026-08-01
 Branch atual: main
-Status funcional: Central de Atividade administrativa e primeira rodada de performance implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
+Status funcional: Central de Atividade, performance, MAVF e experiencia PWA mobile implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
+
+## Atualizacao 2026-08-01 — PWA mobile, area segura e instalacao pela tela de login
+
+### Cabecalho em iPhone instalado
+- O cabecalho principal agora respeita `env(safe-area-inset-top)` e posiciona logo, nome e indicadores abaixo da barra de status e da Dynamic Island.
+- O fundo verde continua cobrindo toda a area superior no modo instalado, sem deixar os controles da aplicacao sob o relogio, sinal ou bateria do iOS.
+- O espacamento interno mobile foi compactado e as laterais continuam respeitando as safe areas do aparelho.
+
+### Instalacao sem App Store ou Google Play
+- A tela de login ganhou o bloco `Use como aplicativo`, exibido somente em celulares nos quais o ZeroApp ainda nao esta instalado.
+- Em Android/Chrome, o evento `beforeinstallprompt` e capturado e o botao `Instalar agora` abre a confirmacao nativa do navegador.
+- Em iPhone/iPad, onde o Safari nao oferece disparo programatico, o botao mostra o passo a passo `Compartilhar` > `Adicionar a Tela de Inicio` > `Adicionar`.
+- Quando o app ja esta em modo `standalone`, o bloco de instalacao fica oculto automaticamente.
+- O manifesto existente continua usando icones `any` e `maskable`, modo `standalone`, orientacao retrato e agora utiliza fundo claro no splash para combinar com o Design System atual.
+
+### Validacao desta correcao
+- `git diff --check` passou.
+- `npm run lint` passou.
+- `npm test` passou com 20 testes em 7 arquivos.
+- `npm run build` passou e gerou 108 rotas/paginas com Next.js 15.5.15.
 
 ## Atualizacao 2026-08-01 — MAVF ao vivo e experiencia de pontuacao
 

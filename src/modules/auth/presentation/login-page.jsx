@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
+import InstallAppPrompt from '@/components/pwa/InstallAppPrompt';
 
 const THEME_KEY = 'zeroapp-theme';
 
@@ -488,6 +489,8 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
+        <InstallAppPrompt />
 
         <div className="footer-note">Plataforma exclusiva · Jackson Souza · Método Finanças do Zero</div>
       </div>

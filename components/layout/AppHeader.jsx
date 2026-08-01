@@ -190,6 +190,7 @@ export default function AppHeader({ initialProfile = null }) {
           position: sticky;
           top: 0;
           z-index: 140;
+          padding-top: env(safe-area-inset-top, 0px);
           background: var(--bg-header);
           border-bottom: 1px solid rgba(255, 255, 255, 0.35);
           box-shadow: var(--shadow-green);
@@ -347,6 +348,8 @@ export default function AppHeader({ initialProfile = null }) {
 
         @media (max-width: 768px) {
           .header-content {
+            padding-top: 10px;
+            padding-bottom: 10px;
             padding-right: max(12px, env(safe-area-inset-right));
             padding-left: max(12px, env(safe-area-inset-left));
           }
