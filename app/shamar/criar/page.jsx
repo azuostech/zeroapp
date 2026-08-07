@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   ShamarHeader,
   ShamarLoading,
@@ -11,17 +10,8 @@ import {
 import { ShamarModeCreator } from '@/components/shamar/ShamarModeCreator';
 import { useShamar } from '@/hooks/useShamar';
 
-const ALLOWED_MODES = new Set(['individual', 'dupla', 'tribo']);
-
 export default function ShamarCreatePage() {
-  const [initialMode, setInitialMode] = useState('individual');
   const { seasons, locked, unlockProgress, error, isLoading, refresh } = useShamar();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedMode = params.get('mode');
-    if (ALLOWED_MODES.has(requestedMode)) setInitialMode(requestedMode);
-  }, []);
 
   if (isLoading) return <ShamarLoading />;
   if (locked) return <ShamarLockedState unlockProgress={unlockProgress} />;
@@ -33,14 +23,14 @@ export default function ShamarCreatePage() {
         hrefBack="/shamar"
         label="Nova jornada"
         title="Criar SHAMAR"
-        subtitle="Escolha Individual, Dupla ou Tribo. Cada pessoa acompanha os próprios quadrinhos."
+        subtitle="Escolha uma meta que traga mais segurança para suas decisões."
         stats={[
-          { label: 'Individual', value: '1' },
-          { label: 'Dupla', value: '2' },
-          { label: 'Tribo', value: '3+' }
+          { label: 'Foco', value: 'Poupar' },
+          { label: 'Ritmo', value: 'Seu' },
+          { label: 'Próximo passo', value: 'Meta' }
         ]}
       />
-      <ShamarModeCreator seasons={seasons} initialMode={initialMode} onCreated={refresh} />
+      <ShamarModeCreator seasons={seasons} onCreated={refresh} />
     </ShamarShell>
   );
 }

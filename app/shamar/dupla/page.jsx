@@ -1,3 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-export { default } from '../nos/page';
+export default function LegacyShamarDuplaPage() {
+  redirect('/shamar');
+}

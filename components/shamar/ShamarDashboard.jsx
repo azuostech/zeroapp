@@ -1,13 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  BoardGrid,
-  CategoryLegend,
-  IndexCard,
-  ProgressSummary,
   ShamarCard,
   ShamarHeader,
   ShamarLoading,
@@ -16,66 +11,45 @@ import {
   ShamarShell
 } from '@/components/shamar/ShamarUI';
 import { useShamar } from '@/hooks/useShamar';
-import { useShamarBoard } from '@/hooks/useShamarBoard';
-import { formatMoney, identityLabel, seasonDay } from '@/src/lib/shamar/formatters';
-import { modePath, modeTitle } from '@/components/shamar/ShamarModeCreator';
+import { clampPercent, formatMoney } from '@/src/lib/shamar/formatters';
 
-function currentStreakFromIndex(indexData) {
-  const score = Number(indexData?.score_constancia || 0);
-  return Math.max(0, Math.round(score / 60));
+function goalName(config) {
+  const name = String(config?.turma || '').split('·').slice(1).join('·').trim();
+  return name || 'Minha reserva de segurança';
 }
 
-function emotionalTrigger(progress, indexData) {
-  const total = Number(progress?.contributions_total || 0);
-  const identity = identityLabel(indexData?.identity_level);
-
-  if (total <= 0) return 'O primeiro quadrinho é uma decisão pequena que começa a mudar sua identidade.';
-  if (Number(indexData?.index_total || 0) >= 700) return `${identity}: você já está construindo patrimônio como prioridade, não como sobra.`;
-  return 'Cada quadrinho marcado é uma prova de que você escolheu guardar antes de gastar.';
+function formatDate(value) {
+  if (!value) return '—';
+  const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-export function ShamarDashboard({ mode = 'individual' }) {
-  const router = useRouter();
-  const { season, config, progress, indexData, locked, unlockProgress, error, isLoading } = useShamar(mode);
-  const { squares, stats: boardStats, isLoading: isBoardLoading } = useShamarBoard(season?.id);
-  const [recentContributions, setRecentContributions] = useState([]);
-  const [closedNotice, setClosedNotice] = useState('');
-  const title = modeTitle(mode);
-  const modeQuery = `mode=${encodeURIComponent(mode)}`;
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.get('shamar_closed')) return;
-    setClosedNotice('Temporada encerrada. Você já pode criar um novo SHAMAR nesta modalidade.');
-    window.history.replaceState({}, '', window.location.pathname);
-  }, []);
+export function ShamarDashboard() {
+  const { season, config, progress, locked, unlockProgress, error, isLoading } = useShamar();
+  const [contributions, setContributions] = useState([]);
 
   useEffect(() => {
     let active = true;
-
-    const loadRecent = async () => {
-      if (!season?.id) {
-        setRecentContributions([]);
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/shamar/contributions?season_id=${encodeURIComponent(season.id)}`, { cache: 'no-store' });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || 'contributions_fetch_failed');
-        if (active) setRecentContributions((data?.contributions || []).slice(0, 3));
-      } catch (_) {
-        if (active) setRecentContributions([]);
-      }
-    };
-
-    loadRecent();
-    return () => {
-      active = false;
-    };
+    if (!season?.id) {
+      setContributions([]);
+      return () => { active = false; };
+    }
+    fetch(`/api/shamar/contributions?season_id=${encodeURIComponent(season.id)}`, { cache: 'no-store' })
+      .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+      .then(({ ok, data }) => { if (active && ok) setContributions(data?.contributions || []); })
+      .catch(() => { if (active) setContributions([]); });
+    return () => { active = false; };
   }, [season?.id]);
 
-  const day = useMemo(() => seasonDay(config), [config]);
+  const monthTotal = useMemo(() => {
+    const now = new Date();
+    return contributions.reduce((total, item) => {
+      const date = new Date(`${String(item.contributed_at).slice(0, 10)}T12:00:00`);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
+        ? total + Number(item.amount || 0)
+        : total;
+    }, 0);
+  }, [contributions]);
 
   if (isLoading) return <ShamarLoading />;
   if (locked) return <ShamarLockedState unlockProgress={unlockProgress} />;
@@ -83,247 +57,118 @@ export function ShamarDashboard({ mode = 'individual' }) {
 
   if (!season || !config) {
     return (
-      <ShamarShell activeTab="shamar">
-        <ShamarHeader
-          hrefBack="/shamar"
-          label="Jornada SHAMAR"
-          title={`SHAMAR ${title}`}
-          subtitle="Você ainda não tem um SHAMAR ativo nessa modalidade."
-          stats={[
-            { label: 'Status', value: 'Livre' },
-            { label: 'Modalidade', value: title },
-            { label: 'Próximo passo', value: 'Criar' }
-          ]}
-        />
-        {closedNotice ? <p className="dashboard-notice">{closedNotice}</p> : null}
-        <ShamarCard title="Começar modalidade">
-          <div className="dashboard-empty">
-            <p>Crie essa modalidade para abrir seu tabuleiro e registrar aportes. Se for Dupla ou Tribo, os convidados entram apenas depois de aceitar.</p>
-            <Link href={`/shamar/criar?mode=${encodeURIComponent(mode)}`}>Criar SHAMAR {title}</Link>
+      <ShamarShell activeTab="overview">
+        <ShamarHeader label="SHAMAR" title="Guardar hoje. Respirar amanhã." subtitle="Uma ferramenta simples para transformar intenção em reserva." />
+        <section className="shamar-story">
+          <span>🛡️</span>
+          <div>
+            <h2>O que é o SHAMAR?</h2>
+            <p>No ZeroApp, SHAMAR é o compromisso de guardar uma parte do presente para proteger suas escolhas futuras. Um passo de cada vez, no seu ritmo.</p>
+          </div>
+        </section>
+        <ShamarCard title="Como funciona">
+          <div className="shamar-steps">
+            <div><b>1</b><span><strong>Defina sua meta</strong><small>Escolha quanto deseja guardar.</small></span></div>
+            <div><b>2</b><span><strong>Faça seus aportes</strong><small>Registre cada valor reservado.</small></span></div>
+            <div><b>3</b><span><strong>Veja sua segurança crescer</strong><small>Acompanhe sua evolução até a meta.</small></span></div>
           </div>
         </ShamarCard>
-        <ShamarDashboardStyles />
+        <Link className="shamar-primary-action" href="/shamar/criar">CRIAR MINHA META</Link>
+        <DashboardStyles />
       </ShamarShell>
     );
   }
 
-  const markedSquares = Number(progress?.squares_marked || boardStats?.marked || 0);
-  const totalSquares = Number(progress?.squares_total || boardStats?.total || 0);
-  const accumulated = Number(progress?.contributions_total || boardStats?.sum_marked || 0);
-  const streak = currentStreakFromIndex(indexData);
+  const accumulated = Number(progress?.contributions_total || 0);
+  const meta = Number(config?.meta_total || progress?.meta_total || 0);
+  const pct = meta > 0 ? clampPercent((accumulated / meta) * 100) : 0;
+  const milestoneStep = 25;
+  const nextPct = Math.min(100, Math.max(milestoneStep, Math.ceil((pct + 0.01) / milestoneStep) * milestoneStep));
+  const nextAmount = meta * (nextPct / 100);
+  const remainingToMilestone = Math.max(0, nextAmount - accumulated);
 
   return (
-    <ShamarShell activeTab="shamar">
-      <ShamarHeader
-        hrefBack="/shamar"
-        label={`Jornada SHAMAR · ${title}`}
-        title={`SHAMAR ${title}`}
-        subtitle={`Temporada ${config.duration_days} dias · Dia ${day.current} de ${day.total} · Meta ${formatMoney(config.meta_total)}`}
-        identity={indexData?.identity_level || season.identity_level}
-        stats={[
-          { label: 'Patrimônio', value: formatMoney(accumulated, { compact: true }) },
-          { label: 'Quadrinhos', value: `${markedSquares}/${totalSquares || '—'}` },
-          { label: 'Sequência', value: `${streak}🔥` }
-        ]}
-      />
+    <ShamarShell activeTab="overview">
+      <ShamarHeader label="Meu SHAMAR" title={goalName(config)} subtitle="Sua reserva cresce a cada escolha de guardar." />
 
-      <IndexCard indexData={indexData} />
-      <ProgressSummary progress={progress} config={config} />
-
-      <ShamarCard
-        title="Progresso do Tabuleiro"
-        action={<Link className="shamar-card-link" href={`/shamar/tabuleiro?${modeQuery}`}>Ver completo</Link>}
-      >
-        {isBoardLoading ? (
-          <p className="shamar-inline-muted">Carregando tabuleiro...</p>
-        ) : squares.length > 0 ? (
-          <>
-            <CategoryLegend compact />
-            <BoardGrid squares={squares} preview onSquareClick={() => router.push(`/shamar/tabuleiro?${modeQuery}`)} />
-          </>
-        ) : (
-          <p className="shamar-inline-muted">O tabuleiro ainda não foi gerado.</p>
-        )}
-      </ShamarCard>
-
-      <section className="shamar-emotional-card">
-        <strong>{identityLabel(indexData?.identity_level || season.identity_level)}</strong>
-        <p>{emotionalTrigger(progress, indexData)}</p>
+      <section className="savings-card">
+        <span>Você já guardou</span>
+        <strong>{formatMoney(accumulated)}</strong>
+        <div className="savings-meta"><span>Meta: {formatMoney(meta)}</span><b>{Math.round(pct)}%</b></div>
+        <div className="savings-track"><div style={{ width: `${pct}%` }} /></div>
+        <Link href="/shamar/aporte/novo">+ FAZER UM APORTE</Link>
       </section>
 
-      <div className="shamar-action-row">
-        <Link href={`/shamar/aporte/novo?${modeQuery}`} className="shamar-cta">
-          Registrar Aporte
-        </Link>
-        <Link href={`/shamar/encerramento?${modeQuery}`} className="shamar-closing-link">
-          Encerrar SHAMAR
-        </Link>
+      <div className="savings-metrics">
+        <div><span>Guardado este mês</span><strong>{formatMoney(monthTotal)}</strong></div>
+        <div><span>Aportes realizados</span><strong>{contributions.length}</strong></div>
       </div>
 
-      <ShamarCard title="Aportes recentes">
-        {recentContributions.length > 0 ? (
-          <div className="shamar-recent-list">
-            {recentContributions.map((item) => (
-              <div className="shamar-recent-item" key={item.id}>
-                <div>
-                  <strong>{formatMoney(item.amount)}</strong>
-                  <span>{item.observation || 'Aporte registrado'}</span>
-                </div>
-                <time>{item.contributed_at}</time>
+      <section className="milestone-card">
+        <div><span>Próximo marco</span><strong>{nextPct}% da sua meta</strong></div>
+        <b>{remainingToMilestone > 0 ? `Faltam ${formatMoney(remainingToMilestone)}` : 'Meta alcançada'}</b>
+      </section>
+
+      <ShamarCard title="Últimos aportes" action={<Link className="history-link" href="/shamar/historico">Ver histórico</Link>}>
+        {contributions.length ? (
+          <div className="contribution-list">
+            {contributions.slice(0, 3).map((item) => (
+              <div key={item.id}>
+                <span><b>↗</b><span><strong>{item.observation || 'Aporte realizado'}</strong><small>{formatDate(item.contributed_at)}</small></span></span>
+                <strong>{formatMoney(item.amount)}</strong>
               </div>
             ))}
           </div>
-        ) : (
-          <p className="shamar-inline-muted">Nenhum aporte registrado ainda.</p>
-        )}
+        ) : <p className="empty-contributions">Seu primeiro aporte vai aparecer aqui.</p>}
       </ShamarCard>
-
-      <ShamarDashboardStyles />
+      <DashboardStyles />
     </ShamarShell>
   );
 }
 
 export function ShamarDashboardStyles() {
-  return (
-    <style jsx global>{`
-      .dashboard-empty {
-        display: grid;
-        gap: 12px;
-      }
+  return <DashboardStyles />;
+}
 
-      .dashboard-notice {
-        border: 1px solid rgba(27, 94, 32, 0.18);
-        border-radius: var(--radius-md);
-        background: var(--shamar-dim);
-        color: var(--shamar-dark);
-        margin: 0 0 14px;
-        padding: 12px 14px;
-        font-size: 13px;
-        font-weight: 900;
-        line-height: 1.4;
-      }
-
-      .dashboard-empty p {
-        margin: 0;
-        color: var(--text2);
-        font-size: 13px;
-        line-height: 1.6;
-      }
-
-      .dashboard-empty a {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        border-radius: var(--radius-md);
-        background: var(--shamar-dark);
-        color: white;
-        font-weight: 900;
-        padding: 14px 18px;
-        box-shadow: 0 4px 16px rgba(27, 94, 32, 0.24);
-      }
-
-      .shamar-action-row {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        align-items: center;
-        margin-bottom: 14px;
-      }
-
-      .shamar-action-row a {
-        min-height: 46px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-md);
-        font-weight: 900;
-        padding: 12px 14px;
-        text-align: center;
-      }
-
-      .shamar-card-link {
-        color: var(--shamar-dark);
-        font-size: 12px;
-        font-weight: 800;
-      }
-
-      .shamar-emotional-card {
-        border: 1px solid rgba(27, 94, 32, 0.15);
-        background: var(--shamar-dim);
-        border-radius: var(--radius-xl);
-        padding: 16px;
-        margin-bottom: 14px;
-      }
-
-      .shamar-emotional-card strong {
-        display: block;
-        color: var(--shamar-dark);
-        font-size: 12px;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 4px;
-      }
-
-      .shamar-emotional-card p,
-      .shamar-inline-muted {
-        margin: 0;
-        color: var(--text2);
-        font-size: 13px;
-        line-height: 1.6;
-      }
-
-      .shamar-cta {
-        background: var(--shamar-dark);
-        color: white;
-        box-shadow: 0 4px 16px rgba(27, 94, 32, 0.24);
-      }
-
-      .shamar-closing-link {
-        border: 1px solid color-mix(in srgb, var(--shamar-gold) 55%, transparent);
-        background: color-mix(in srgb, var(--shamar-gold) 12%, transparent);
-        color: #7a5a00;
-      }
-
-      .shamar-recent-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .shamar-recent-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        border-bottom: 1px solid var(--border);
-        padding-bottom: 10px;
-      }
-
-      .shamar-recent-item:last-child {
-        border-bottom: 0;
-        padding-bottom: 0;
-      }
-
-      .shamar-recent-item strong {
-        display: block;
-        color: var(--shamar-dark);
-        font-family: var(--font-mono);
-        font-size: 14px;
-      }
-
-      .shamar-recent-item span,
-      .shamar-recent-item time {
-        display: block;
-        color: var(--text3);
-        font-size: 11px;
-      }
-
-      @media (max-width: 560px) {
-        .shamar-action-row {
-          grid-template-columns: 1fr;
-        }
-      }
-    `}</style>
-  );
+function DashboardStyles() {
+  return <style jsx global>{`
+    .shamar-story { display: grid; grid-template-columns: 56px 1fr; gap: 14px; align-items: start; border: 1px solid rgba(27,94,32,.16); border-radius: var(--radius-xl); background: var(--shamar-dim); padding: 18px; margin-bottom: 14px; }
+    .shamar-story > span { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: white; font-size: 24px; }
+    .shamar-story h2 { margin: 0 0 5px; color: var(--shamar-dark); font-size: 17px; }
+    .shamar-story p { margin: 0; color: var(--text2); font-size: 13px; line-height: 1.6; }
+    .shamar-steps { display: grid; gap: 15px; }
+    .shamar-steps > div { display: grid; grid-template-columns: 34px 1fr; gap: 11px; align-items: center; }
+    .shamar-steps b { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--shamar-dim); color: var(--shamar-dark); }
+    .shamar-steps span, .shamar-steps small { display: block; }
+    .shamar-steps strong { color: var(--text); font-size: 13px; }
+    .shamar-steps small { color: var(--text3); margin-top: 2px; }
+    .shamar-primary-action { display: flex; justify-content: center; border-radius: var(--radius-md); background: var(--shamar-dark); color: white; padding: 16px; font-weight: 900; box-shadow: 0 6px 20px rgba(27,94,32,.22); }
+    .savings-card { border-radius: 24px; background: linear-gradient(145deg, #174f31, #0d3822); color: white; padding: 22px; margin-bottom: 14px; box-shadow: 0 12px 32px rgba(13,56,34,.2); }
+    .savings-card > span { display: block; color: rgba(255,255,255,.72); font-size: 12px; font-weight: 800; }
+    .savings-card > strong { display: block; font-family: var(--font-mono); font-size: clamp(30px, 7vw, 44px); margin: 6px 0 15px; }
+    .savings-meta { display: flex; justify-content: space-between; font-size: 12px; }
+    .savings-track { height: 9px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.18); margin: 8px 0 18px; }
+    .savings-track div { height: 100%; border-radius: inherit; background: #d7b85b; }
+    .savings-card > a { display: flex; justify-content: center; border-radius: 12px; background: white; color: var(--shamar-dark); padding: 14px; font-weight: 900; }
+    .savings-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .savings-metrics > div { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-card); padding: 15px; }
+    .savings-metrics span { display: block; color: var(--text3); font-size: 11px; margin-bottom: 7px; }
+    .savings-metrics strong { color: var(--shamar-dark); font-size: 16px; }
+    .milestone-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid rgba(215,184,91,.35); border-radius: 16px; background: rgba(215,184,91,.1); padding: 15px; margin-bottom: 14px; }
+    .milestone-card span, .milestone-card strong { display: block; }
+    .milestone-card span { color: var(--text3); font-size: 11px; margin-bottom: 3px; }
+    .milestone-card strong { color: var(--text); font-size: 13px; }
+    .milestone-card > b { color: #7a5a00; font-size: 12px; }
+    .history-link { color: var(--shamar-dark); font-size: 12px; font-weight: 900; }
+    .contribution-list { display: grid; gap: 11px; }
+    .contribution-list > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    .contribution-list > div:last-child { border: 0; padding-bottom: 0; }
+    .contribution-list > div > span { display: flex; align-items: center; gap: 9px; }
+    .contribution-list > div > span > b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--shamar-dim); color: var(--shamar-dark); }
+    .contribution-list span span, .contribution-list small { display: block; }
+    .contribution-list strong { color: var(--shamar-dark); font-size: 13px; }
+    .contribution-list small, .empty-contributions { color: var(--text3); font-size: 11px; }
+    .empty-contributions { margin: 0; }
+    @media (max-width: 420px) { .savings-metrics { grid-template-columns: 1fr; } .milestone-card { align-items: flex-start; flex-direction: column; } }
+  `}</style>;
 }

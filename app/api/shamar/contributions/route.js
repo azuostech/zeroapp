@@ -25,9 +25,6 @@ import {
 const AMOUNT_TOLERANCE = 1;
 
 function inferMode(config) {
-  const turma = String(config?.turma || '').toLowerCase();
-  if (turma.includes('dupla')) return 'dupla';
-  if (turma.includes('tribo')) return 'tribo';
   return 'individual';
 }
 
@@ -137,7 +134,7 @@ async function sendContributionEmailSafely({
   const patrimonioTotal = toNumber(details.patrimonio_total);
   const progressPct = metaTotal > 0 ? Math.round(Math.min(1, patrimonioTotal / metaTotal) * 10000) / 100 : 0;
   const mode = inferMode(config);
-  const shamarUrl = new URL(`/shamar/${mode === 'individual' ? 'individual' : mode}`, getSiteOrigin(requestUrl)).toString();
+  const shamarUrl = new URL('/shamar', getSiteOrigin(requestUrl)).toString();
   const template = shamarContributionTemplate({
     userName: profileName(context.profile, context.user),
     mode,

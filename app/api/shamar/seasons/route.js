@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'node:crypto';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
-import { sendEmail } from '@/src/lib/email/email-service';
-import { shamarInviteTemplate } from '@/src/lib/email/templates/shamar-invite';
 import { awardZeroCoinsSafely } from '@/src/lib/shamar/awards';
 import {
   canAccessShamarConfig,
@@ -20,19 +17,15 @@ import {
 import { generateBoard, getBoardStats, getSequentialMetaTotal, validateBoard } from '@/src/lib/shamar/board-generator';
 
 const ALLOWED_DURATIONS = new Set([30, 90, 180, 365]);
-const SELF_SERVICE_MODES = new Set(['individual', 'dupla', 'tribo']);
+const SELF_SERVICE_MODES = new Set(['individual']);
 
 function normalizeMode(value) {
   const raw = String(value || '').trim().toLowerCase();
   if (raw === 'eu') return 'individual';
-  if (raw === 'nos' || raw === 'nós') return 'dupla';
   return SELF_SERVICE_MODES.has(raw) ? raw : null;
 }
 
 function inferMode(config) {
-  const turma = String(config?.turma || '').toLowerCase();
-  if (turma.includes('dupla')) return 'dupla';
-  if (turma.includes('tribo')) return 'tribo';
   return 'individual';
 }
 
@@ -43,62 +36,9 @@ function profileName(profile) {
   return email.includes('@') ? email.split('@')[0] : 'Guardiao';
 }
 
-function normalizeEmailList(value) {
-  const rows = Array.isArray(value) ? value : String(value || '').split(/[,;\n]/);
-  return [...new Set(
-    rows
-      .map((item) => String(item || '').trim().toLowerCase())
-      .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item))
-  )];
-}
-
-function modePrefix(mode) {
-  if (mode === 'dupla') return 'SHAMAR Dupla';
-  if (mode === 'tribo') return 'SHAMAR Tribo';
-  return 'SHAMAR Individual';
-}
-
-function buildSelfServiceTurma(mode, name, profile) {
+function buildSelfServiceTurma(name, profile) {
   const suffix = String(name || '').trim() || profileName(profile);
-  return `${modePrefix(mode)} · ${suffix}`;
-}
-
-function getSiteOrigin(requestUrl) {
-  const fallbackOrigin = new URL(requestUrl).origin;
-  const configured = String(process.env.NEXT_PUBLIC_SITE_URL || '').trim();
-  if (!configured) return fallbackOrigin;
-
-  try {
-    const normalized = configured.startsWith('http://') || configured.startsWith('https://') ? configured : `https://${configured}`;
-    return new URL(normalized).origin;
-  } catch (_) {
-    return fallbackOrigin;
-  }
-}
-
-function inviteToken() {
-  return randomBytes(24).toString('hex');
-}
-
-async function findProfilesByEmails(supabase, emails) {
-  const profiles = [];
-
-  for (const email of emails) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id,email,full_name,status,tier,turma,shamar_unlocked')
-      .ilike('email', email)
-      .maybeSingle();
-
-    if (error) return { profiles: [], missing: [], inactive: [], error };
-    if (data) profiles.push(data);
-  }
-
-  const foundEmails = new Set(profiles.map((profile) => String(profile.email || '').toLowerCase()));
-  const missing = emails.filter((email) => !foundEmails.has(email));
-  const inactive = profiles.filter((profile) => profile.status !== 'active');
-
-  return { profiles, missing, inactive, error: null };
+  return `SHAMAR · ${suffix}`;
 }
 
 async function loadConfig(supabase, triboConfigId) {
@@ -256,7 +196,7 @@ async function initializeSeasonArtifacts(supabase, userId, seasonId) {
   return warnings;
 }
 
-async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
+async function createSelfServiceSeason({ context, profile, body }) {
   const mode = normalizeMode(body?.mode);
   if (!mode) return NextResponse.json({ error: 'modo_shamar_invalido' }, { status: 422 });
 
@@ -264,7 +204,6 @@ async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
   const durationDays = Number(body?.duration_days || 180);
   const startedAt = normalizeIsoDate(body?.started_at || new Date().toISOString().slice(0, 10));
   const patrimonioInicial = body?.patrimonio_inicial === undefined ? 0 : normalizeMoney(body?.patrimonio_inicial);
-  const invitedEmails = normalizeEmailList(body?.invite_emails ?? body?.invites ?? body?.emails);
 
   if (requestedMetaTotal === null || requestedMetaTotal <= 0) return NextResponse.json({ error: 'meta_total_invalida' }, { status: 422 });
   if (!ALLOWED_DURATIONS.has(durationDays)) return NextResponse.json({ error: 'duration_days_invalido' }, { status: 422 });
@@ -272,39 +211,25 @@ async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
   if (patrimonioInicial === null || patrimonioInicial < 0) {
     return NextResponse.json({ error: 'patrimonio_inicial_invalido' }, { status: 422 });
   }
-  if (mode === 'dupla' && invitedEmails.length !== 1) {
-    return NextResponse.json({ error: 'dupla_exige_um_convite' }, { status: 422 });
-  }
-  if (mode === 'tribo' && invitedEmails.length < 2) {
-    return NextResponse.json({ error: 'tribo_exige_minimo_tres_participantes' }, { status: 422 });
-  }
 
   const supabase = getShamarWriterSupabase(context.supabase);
   const existingResult = await loadActiveSeasonsWithConfigs(supabase, context.user.id);
   if (existingResult.error) {
     return NextResponse.json({ error: resolveShamarDbError(existingResult.error, 'shamar_existing_modes_lookup_failed') }, { status: 500 });
   }
-  const existingMode = (existingResult.seasons || []).find((season) => (season.mode || season.config?.mode) === mode);
-  if (existingMode) {
+  const existingSeason = (existingResult.seasons || [])[0];
+  if (existingSeason) {
     return NextResponse.json(
       {
-        error: 'modalidade_shamar_ja_criada',
+        error: 'shamar_ja_criado',
         mode,
-        season_id: existingMode.id
+        season_id: existingSeason.id
       },
       { status: 409 }
     );
   }
 
   const currentEmail = String(profile?.email || context.user.email || '').toLowerCase();
-  if (invitedEmails.includes(currentEmail)) {
-    return NextResponse.json({ error: 'convite_para_si_mesmo_invalido' }, { status: 422 });
-  }
-
-  const inviteResult = await findProfilesByEmails(supabase, invitedEmails);
-  if (inviteResult.error) {
-    return NextResponse.json({ error: resolveShamarDbError(inviteResult.error, 'profiles_invite_lookup_failed') }, { status: 500 });
-  }
 
   const metaTotal = getSequentialMetaTotal(requestedMetaTotal);
   let squares;
@@ -319,7 +244,7 @@ async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
     return NextResponse.json({ error: 'validacao_do_tabuleiro_falhou', validation }, { status: 500 });
   }
 
-  const turma = buildSelfServiceTurma(mode, body?.name, profile);
+  const turma = buildSelfServiceTurma(body?.name, profile);
   const { data: config, error: configError } = await supabase
     .from('shamar_tribo_configs')
     .insert({
@@ -367,69 +292,6 @@ async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
   const warnings = [];
   warnings.push(...await initializeSeasonArtifacts(supabase, context.user.id, currentSeason.id));
 
-  const profilesByEmail = new Map(
-    (inviteResult.profiles || []).map((item) => [String(item.email || '').toLowerCase(), item])
-  );
-  const origin = getSiteOrigin(requestUrl);
-  const inviteRows = invitedEmails.map((email) => ({
-    tribo_config_id: config.id,
-    inviter_user_id: context.user.id,
-    invited_user_id: profilesByEmail.get(email)?.id || null,
-    invited_email: email,
-    mode,
-    token: inviteToken()
-  }));
-
-  let invites = [];
-  if (inviteRows.length > 0) {
-    const { data: insertedInvites, error: inviteError } = await supabase
-      .from('shamar_invites')
-      .insert(inviteRows)
-      .select('id,invited_email,mode,status,token,email_sent_at,email_error');
-
-    if (inviteError) {
-      await supabase.from('shamar_tribo_configs').delete().eq('id', config.id);
-      return NextResponse.json({ error: resolveShamarDbError(inviteError, 'shamar_invites_create_failed') }, { status: 500 });
-    }
-
-    invites = insertedInvites || [];
-    const inviterName = profileName(profile);
-
-    for (const invite of invites) {
-      const acceptUrl = new URL(`/shamar/convites?token=${encodeURIComponent(invite.token)}`, origin).toString();
-      const template = shamarInviteTemplate({ inviterName, mode, acceptUrl });
-      const emailResult = await sendEmail({
-        userId: context.user.id,
-        to: invite.invited_email,
-        subject: template.subject,
-        html: template.html,
-        emailType: 'shamar_invite',
-        emailSnapshot: {
-          mode,
-          invite_id: invite.id,
-          tribo_config_id: config.id,
-          accept_url: acceptUrl
-        }
-      });
-
-      const emailPatch = emailResult.success
-        ? { email_sent_at: new Date().toISOString(), email_error: null }
-        : { email_error: emailResult.error || 'email_send_failed' };
-
-      const { data: updatedInvite, error: emailUpdateError } = await supabase
-        .from('shamar_invites')
-        .update(emailPatch)
-        .eq('id', invite.id)
-        .select('id,invited_email,mode,status,email_sent_at,email_error')
-        .single();
-
-      if (emailUpdateError) warnings.push(resolveShamarDbError(emailUpdateError, 'shamar_invite_email_status_update_failed'));
-      if (!emailResult.success) warnings.push(`Email ${invite.invited_email}: ${emailResult.error || 'email_send_failed'}`);
-      Object.assign(invite, updatedInvite || emailPatch);
-      delete invite.token;
-    }
-  }
-
   const zeroCoins = await awardZeroCoinsSafely({
     userId: context.user.id,
     amount: 50,
@@ -465,13 +327,7 @@ async function createSelfServiceSeason({ context, profile, body, requestUrl }) {
           season_id: currentSeason.id
         }
       ],
-      invites: invites.map((invite) => ({
-        id: invite.id,
-        email: invite.invited_email,
-        status: invite.status,
-        email_sent: Boolean(invite.email_sent_at),
-        email_error: invite.email_error || null
-      })),
+      invites: [],
       zero_coins_awarded: zeroCoins.awarded,
       zero_coins_balance: zeroCoins.balance,
       validation,
@@ -491,16 +347,12 @@ export async function GET(request) {
   }
 
   const dataSupabase = getShamarWriterSupabase(context.supabase);
-  const { searchParams } = new URL(request.url);
-  const requestedMode = normalizeMode(searchParams.get('mode'));
   const { seasons, error: seasonsError } = await loadActiveSeasonsWithConfigs(dataSupabase, context.user.id);
   if (seasonsError) {
     return NextResponse.json({ error: resolveShamarDbError(seasonsError, 'shamar_seasons_lookup_failed') }, { status: 500 });
   }
 
-  const season = requestedMode
-    ? (seasons || []).find((item) => (item.mode || item.config?.mode) === requestedMode) || null
-    : seasons[0] || null;
+  const season = seasons[0] || null;
 
   if (!season) {
     return NextResponse.json({
@@ -576,8 +428,7 @@ export async function POST(request) {
     return createSelfServiceSeason({
       context,
       profile: shamarProfileResult.profile,
-      body: parsed.body,
-      requestUrl: request.url
+      body: parsed.body
     });
   }
 

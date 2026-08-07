@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { ShamarDashboard } from '@/components/shamar/ShamarDashboard';
-
-export default function ShamarIndividualPage() {
-  return <ShamarDashboard mode="individual" />;
+export default function LegacyShamarPage() {
+  redirect('/shamar');
 }

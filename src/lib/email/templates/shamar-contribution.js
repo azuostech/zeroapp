@@ -23,10 +23,8 @@ function formatPercent(value) {
   })}%`;
 }
 
-function modeLabel(mode) {
-  if (mode === 'dupla') return 'SHAMAR em Dupla';
-  if (mode === 'tribo') return 'SHAMAR Tribo';
-  return 'SHAMAR Individual';
+function modeLabel() {
+  return 'SHAMAR';
 }
 
 function identityLabel(identity) {

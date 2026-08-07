@@ -80,12 +80,11 @@ export function ShamarHeader({
 
 export function ShamarBottomNav({ activeTab = 'shamar' }) {
   const pathname = usePathname() || '';
-  const current = activeTab || (pathname.includes('/missoes') ? 'missoes' : pathname.includes('/tribo') ? 'tribo' : 'shamar');
+  const current = pathname.includes('/aporte/') ? 'aporte' : pathname.includes('/historico') ? 'historico' : activeTab;
   const tabs = [
-    { id: 'inicio', href: '/app', icon: '🏠', label: 'Início' },
-    { id: 'shamar', href: '/shamar', icon: '🛡️', label: 'SHAMAR' },
-    { id: 'missoes', href: '/shamar/missoes', icon: '🎯', label: 'Missões' },
-    { id: 'tribo', href: '/shamar/tribo', icon: '👥', label: 'TRIBO' }
+    { id: 'overview', href: '/shamar', icon: '▦', label: 'Visão geral' },
+    { id: 'aporte', href: '/shamar/aporte/novo', icon: '+', label: 'Aportar' },
+    { id: 'historico', href: '/shamar/historico', icon: '↻', label: 'Histórico' }
   ];
 
   return (
