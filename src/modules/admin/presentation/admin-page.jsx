@@ -712,6 +712,9 @@ export default function AdminPage() {
           <a className="nav-item nav-item-link" href="/admin/emails" id="nav-emails">
             <span className="nav-icon">📧</span> Emails
           </a>
+          <a className="nav-item nav-item-link" href="/admin/diagnosticos" id="nav-diagnostics">
+            <span className="nav-icon">📋</span> Diagnósticos
+          </a>
           <a className="nav-item nav-item-link" href="/admin/atividade" id="nav-activity">
             <span className="nav-icon">◉</span> Atividade
           </a>

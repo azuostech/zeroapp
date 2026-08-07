@@ -1,4 +1,5 @@
 export const IRC_PRODUCT_CODE = 'diagnostico_completo';
+export const IRC_TURMA = 'diagnostico';
 export const IRC_SOURCE = 'ChatQuiz';
 export const IRC_REPORT_VERSION = 'irc-report-v1';
 

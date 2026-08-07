@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
-import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { hasDiagnosticAccess, hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 const ROOT_PATH = '/';
 const FINANCE_TIERS = new Set(['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
@@ -142,7 +142,7 @@ export async function middleware(request) {
   }
 
   const profileTier = String(profile.tier || 'DESPERTAR').toUpperCase();
-  if (isFinanceArea && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+  if (isFinanceArea && !isAdmin && !FINANCE_TIERS.has(profileTier) && !hasDiagnosticAccess(profile)) {
     return redirect(request, '/upgrade');
   }
 

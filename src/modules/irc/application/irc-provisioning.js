@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { sendEmail } from '@/src/lib/email/email-service';
 import { ircAccessEmail } from '@/src/lib/email/templates/irc-access';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
-import { IRC_PRODUCT_CODE, IRC_SOURCE } from '@/src/modules/irc/domain/irc-domains';
+import { IRC_PRODUCT_CODE, IRC_SOURCE, IRC_TURMA } from '@/src/modules/irc/domain/irc-domains';
 import { parseKiwifyIrcEvent } from '@/src/modules/irc/domain/kiwify-event';
 
 function siteUrl() {
@@ -22,6 +22,19 @@ function checkoutCode(value) {
   } catch (_) {
     return raw.split('/').filter(Boolean).pop() || raw;
   }
+}
+
+function addTurma(value, requiredTurma) {
+  const current = String(value || '')
+    .split(/[;,]/)
+    .map((turma) => turma.trim())
+    .filter(Boolean);
+  const required = String(requiredTurma || '').trim();
+  if (!required) return current.join(', ');
+  if (current.some((turma) => turma.toLocaleLowerCase('pt-BR') === required.toLocaleLowerCase('pt-BR'))) {
+    return current.join(', ');
+  }
+  return [...current, required].join(', ');
 }
 
 async function createInvitedUser(service, event) {
@@ -194,7 +207,8 @@ export async function provisionIrcPurchase(payload) {
         full_name: account.profile?.full_name || event.name || null,
         phone: account.profile?.phone || event.phone || null,
         status: 'active',
-        tier: account.profile?.tier || 'DESPERTAR'
+        tier: account.profile?.tier || 'DESPERTAR',
+        turma: addTurma(account.profile?.turma, IRC_TURMA)
       })
       .eq('id', account.userId)
       .select('id,email,full_name,phone,status,tier,turma')
