@@ -1,8 +1,250 @@
 # CLAUDE Handoff - ZeroApp
 
-Data: 2026-08-01
+Data: 2026-08-06
 Branch atual: main
-Status funcional: Central de Atividade, performance, MAVF e experiencia PWA mobile implementadas; `platform_events` aplicada em producao com RLS; codigo validado para publicacao
+Status funcional: webhook Kiwify do Diagnostico corrigido; compradores do Diagnostico provisionados na turma correta; relatorios disponiveis ao mentor no admin; comunidade interna substituida pelo WhatsApp; SHAMAR simplificado para uma ferramenta unica de poupanca; migracoes aplicadas em producao; codigo publicado e validado
+
+## Atualizacao 2026-08-06 — Diagnostico Completo, comunidade WhatsApp e novo SHAMAR
+
+### Estado publicado
+- Branch: `main`.
+- Ultimo commit funcional desta rodada: `f15433f` (`fix: load selected Shamar before history`).
+- Sequencia principal de commits:
+  - `c4f39ef` — processa o payload real do webhook IRC/Kiwify;
+  - `73db57f` — mantem reenvios de webhooks processados idempotentes;
+  - `84f1fb7` — turma/acessos do Diagnostico e relatorios no admin;
+  - `d2b7ea3` — substitui a comunidade interna pelo grupo do WhatsApp;
+  - `a796b47` — redireciona diretamente a rota legada da comunidade;
+  - `f1b9e98` — transforma o SHAMAR em uma jornada unica de poupanca;
+  - `86ef15d` — mantem todas as metas antigas ativas e acessiveis;
+  - `f15433f` — corrige historico/aporte para respeitarem a meta selecionada.
+- Validacao final do SHAMAR:
+  - `git diff --check` passou;
+  - `npm test` passou com 24 testes em 8 arquivos;
+  - `npm run build` passou com Next.js 15.5.15 e 110 rotas/paginas.
+- O navegador integrado `iab` nao estava disponivel nesta sessao. A validacao foi feita por build, testes automatizados, consultas no banco e verificacao objetiva das rotas/dados.
+
+## Incidente resolvido — compra da Cleide nao criava acesso
+
+### Compra afetada
+- Cliente: Cleide Maria Santos Moura.
+- E-mail: `cleidemariasantosmoura@gmail.com`.
+- Pedido Kiwify: `b63b8386-4f52-47e8-81d8-08e920a4874c`.
+- Referencia: `ibV0JfR`.
+- Checkout: `ukTsTso`.
+- Evento: `order_approved` / compra aprovada via Pix.
+- O painel da Kiwify mostrava o webhook como `Falhou`, sem corpo de resposta, e a conta nao havia sido criada no ZeroApp.
+
+### Causa
+- O webhook exclusivo do Diagnostico recebe o envelope real da Kiwify em `payload.order`.
+- O tipo do evento vem em `order.webhook_event_type`; cliente, produto, checkout e pedido tambem ficam dentro de `order`.
+- A assinatura usada por essa integracao vem no campo `signature` do corpo. O endpoint antes dependia do formato/header esperado por integracoes anteriores.
+- A oferta combinada pode chegar com um `product_id` compartilhado com outro produto. Por isso, validar somente o produto rejeitava uma compra legitima do checkout `ukTsTso`.
+
+### Correcao do webhook
+- `app/api/webhooks/kiwify/irc/route.js` aceita a assinatura enviada no corpo para esse endpoint.
+- `src/modules/irc/domain/kiwify-event.js` passou a normalizar corretamente o envelope `order`, incluindo:
+  - `order_id` e `order_ref`;
+  - `webhook_event_type` e `order_status`;
+  - `Product.product_id` e `Product.product_name`;
+  - `Customer.email`, nome e telefone;
+  - `checkout_link`.
+- A compra e aceita quando corresponde ao produto configurado **ou** ao checkout permitido em `KIWIFY_IRC_CHECKOUT_LINKS`.
+- O identificador operacional e `${purchase_id}:${event_type}`.
+- A deduplicacao em `commerce_webhook_events` continua protegendo contra processamento duplicado.
+- Reenvio de evento ja `processed` ou `ignored` responde como idempotente sem criar nova conta, acesso ou e-mail.
+- Evento `failed` pode ser retomado; o contador `attempts` aumenta e `last_error` e limpo antes do novo processamento.
+- A correcao de retry preserva a informacao de que a conta foi criada pela compra e pode gerar um novo link de definicao de senha sem duplicar o provisionamento.
+
+### Estado confirmado da Cleide em producao
+- Perfil criado e ativo:
+  - `profiles.id = 43f4c6e9-d196-49c6-bb92-63eca78d3ff9`;
+  - `status = active`;
+  - `tier = DESPERTAR`;
+  - `turma = diagnostico`.
+- Acesso criado:
+  - `product_code = diagnostico_completo`;
+  - `status = active`;
+  - `source = ChatQuiz`;
+  - `purchase_id = b63b8386-4f52-47e8-81d8-08e920a4874c`.
+- Webhook confirmado:
+  - `event_id = b63b8386-4f52-47e8-81d8-08e920a4874c:order_approved`;
+  - `status = processed`;
+  - `attempts = 1`;
+  - sem `last_error`.
+- E-mail confirmado em `email_logs`:
+  - `email_type = irc_access_invite`;
+  - `status = sent`.
+
+### Configuracao relevante
+- Endpoint: `POST /api/webhooks/kiwify/irc`.
+- URL publicada: `https://www.zeroapp.tech/api/webhooks/kiwify/irc`.
+- `KIWIFY_IRC_CHECKOUT_LINKS` deve conter `ukTsTso`.
+- A documentacao operacional continua em:
+  - `docs/diagnostico-completo-irc.md`;
+  - `docs/kiwify-emails-pos-compra.md`.
+
+## Compradores do Diagnostico — turma e permissoes
+
+### Regra de provisionamento
+- Toda compra aprovada do produto combinado adiciona a turma `diagnostico` ao perfil.
+- Se o perfil ja possui outra turma, ela e preservada usando a convencao multiturma separada por virgula.
+- O provisionamento continua idempotente para perfil, tag `ChatQuiz`, entitlement e e-mail.
+- A migracao `scripts/migrate-diagnostico-turma-access.sql` foi aplicada para corrigir compradores existentes com acesso ativo.
+
+### Acessos concedidos
+- `hasDiagnosticAccess(profile)` libera admin ou perfil pertencente a `diagnostico`.
+- Comprador do Diagnostico pode acessar:
+  - `/diagnostico-completo` e o relatorio gerado;
+  - `/financas`, que corresponde a area da planilha, mesmo permanecendo no tier `DESPERTAR`;
+  - `/conteudo`, sujeito as regras de conteudos livres/publicados da area educacional.
+- Um perfil que possui apenas a turma `diagnostico` **nao** recebe automaticamente as areas regulares de mentorado:
+  - SHAMAR;
+  - MAVF/Minha Jornada;
+  - Conquistas.
+- Se o usuario ja pertence a outra turma, essa outra turma continua valendo e o acesso de aluno regular e preservado.
+
+## Relatorios do Diagnostico para o mentor
+
+### Nova area administrativa
+- Criada `/admin/diagnosticos`, com entrada no menu do painel administrativo.
+- A pagina e exclusiva para admin e usa service role somente depois de validar sessao e perfil administrativo.
+- O mentor pode:
+  - listar todos os diagnosticos;
+  - buscar por nome ou e-mail;
+  - filtrar por status;
+  - acompanhar total, prontos, em andamento e falhas;
+  - abrir os detalhes e o conteudo completo do relatorio;
+  - baixar o PDF privado quando `pdf_status = ready`.
+- Endpoints:
+  - `GET /api/admin/diagnostics`;
+  - `GET /api/admin/diagnostics/[id]`;
+  - `GET /api/admin/diagnostics/[id]/pdf`.
+- A listagem nao depende de o mentor conhecer o usuario previamente; ela cruza `irc_diagnostics` com `profiles`.
+- Arquivos principais:
+  - `app/admin/diagnosticos/page.jsx`;
+  - `src/modules/admin/presentation/admin-diagnostics-page.jsx`;
+  - `src/modules/admin/application/admin-diagnostics.js`;
+  - `app/api/admin/diagnostics/`.
+
+## Comunidade interna descontinuada
+
+### Decisao de produto
+- O modulo de comunidade/feed dentro do ZeroApp foi descontinuado.
+- O acesso `Comunidade` agora abre o grupo oficial do WhatsApp em nova aba:
+  - `https://chat.whatsapp.com/Joch5PH6StZ5UReLCbCPOr?mode=gi_t`.
+- O link fica centralizado em `src/lib/community/community-link.js` e pode ser substituido por `NEXT_PUBLIC_COMMUNITY_WHATSAPP_URL`.
+
+### Comportamento atual
+- O card Comunidade da home aponta diretamente para o WhatsApp.
+- Componentes de navegacao reconhecem links externos e usam `<a target="_blank" rel="noreferrer">`.
+- `/turma` e uma rota legada e redireciona diretamente para o grupo; o ajuste em middleware evita exigir login antes desse redirect.
+- APIs `/api/community/*` respondem `410 community_discontinued`.
+- `publishFeedEvent()` virou uma operacao neutra e nao grava novos eventos.
+- Dados antigos do feed, desafios e reacoes foram preservados no banco; nenhuma tabela historica foi apagada.
+
+## SHAMAR simplificado — ferramenta unica para poupar
+
+### Decisao de produto
+- A experiencia de modalidades foi removida.
+- O usuario ve apenas `SHAMAR`; os rotulos antigos nao aparecem na interface nem no e-mail de aporte.
+- O objetivo do modulo agora e ajudar o usuario a guardar dinheiro e acompanhar uma reserva/meta.
+- Abertura criada para quem nao conhece o conceito:
+  - titulo `Guardar hoje. Respirar amanha.`;
+  - explicacao: no ZeroApp, SHAMAR e o compromisso de guardar uma parte do presente para proteger escolhas futuras;
+  - fluxo em tres passos: definir meta, fazer aportes e acompanhar a seguranca crescer.
+
+### Nova experiencia
+- `/shamar` abre diretamente a jornada, sem hub de modalidades.
+- Sem temporada ativa:
+  - mostra historia e explicacao;
+  - mostra os tres passos;
+  - CTA `CRIAR MINHA META`.
+- Com temporada ativa:
+  - mostra nome da meta, acumulado, meta total e percentual;
+  - CTA `+ FAZER UM APORTE`;
+  - total guardado no mes;
+  - quantidade de aportes;
+  - proximo marco de 25%, 50%, 75% ou 100%;
+  - ultimos aportes;
+  - acesso ao historico completo.
+- Bottom navigation do modulo:
+  - `Visao geral`;
+  - `Aportar`;
+  - `Historico`.
+- Criacao aceita apenas a jornada pessoal unica e bloqueia uma nova criacao quando ja existe temporada ativa.
+- A estrutura de tabuleiro, quadrinhos, comprovantes, contribuicoes e pontuacao foi preservada por compatibilidade; ela continua sustentando o registro de aporte.
+
+### Compatibilidade com URLs antigas
+- As rotas abaixo redirecionam para `/shamar`:
+  - `/shamar/individual`;
+  - `/shamar/dupla`;
+  - `/shamar/nos`;
+  - `/shamar/tribo`;
+  - `/shamar/missoes`;
+  - `/shamar/convites`.
+- Os nomes fisicos legados do banco, como `shamar_tribo_configs` e `tribo_config_id`, foram mantidos para evitar uma migracao destrutiva. Eles nao representam mais modalidades na experiencia do usuario.
+
+### Auditoria antes da migracao
+- Foram encontrados 5 usuarios unicos com 8 temporadas ativas:
+  - 4 temporadas classificadas como antigas jornadas pessoais;
+  - 2 antigas Dupla;
+  - 2 antigas Tribo.
+- Usuarios identificados:
+  - Adriana de Faria Gomes (`adrianafg3marques@gmail.com`) — 1 meta ativa, sem aportes;
+  - azuos.tech (`azuos.tech@gmail.com`) — 1 antiga Dupla ativa, sem aportes;
+  - Jackson SZA (`sza.treinamentos@gmail.com`) — 3 metas ativas: R$ 250,00 na antiga Dupla, R$ 89,00 em 6 aportes na antiga Tribo e uma meta sem aportes;
+  - Nubia Luciene Cordeiro Rosa (`nubiacrosa@yahoo.com.br`) — 1 meta ativa, sem aportes;
+  - Reijane Tavares da Silva (`tavaresreijane2016@gmail.com`) — meta com 30 aportes e R$ 3.231,14, mais uma antiga Tribo ativa sem aportes.
+- Totais preservados: 37 aportes e R$ 3.570,14.
+
+### Migracao aplicada em producao
+- Script: `scripts/migrate-shamar-single-journey.sql`.
+- A migracao e idempotente e executa em transacao.
+- Resultado da execucao:
+  - 7 configuracoes ativas renomeadas para o prefixo neutro `SHAMAR`;
+  - as 8 temporadas permaneceram com `status = active`;
+  - todos os aportes e quadrinhos marcados permaneceram vinculados as temporadas originais;
+  - 11 convites pendentes de Dupla/Tribo foram cancelados;
+  - o banco passou a ter 15 convites cancelados no total;
+  - nenhuma parceria ativa/pending precisava ser encerrada;
+  - nenhuma temporada, contribuicao, comprovante ou historico foi apagado.
+
+### Usuarios com mais de uma meta
+- Jackson e Reijane possuem mais de uma temporada ativa herdada do modelo antigo.
+- Para nao ocultar nem fundir valores de metas diferentes, a tela ganhou um seletor `Meta ativa`.
+- `GET /api/shamar/seasons?season_id=<uuid>` valida que a temporada solicitada pertence ao usuario e retorna aquela meta.
+- Links para aporte e historico carregam o `season_id` escolhido.
+- O hook `useShamar(mode, seasonId, enabled)` permite aguardar a leitura da selecao antes de buscar dados.
+
+### Correcao do historico selecionado
+- Problema encontrado depois da primeira publicacao: `/shamar/historico` podia iniciar a busca da meta padrao antes de ler o `season_id` da URL.
+- Como as respostas eram assincronas, a meta padrao podia sobrescrever o historico da meta escolhida.
+- Correcao em `f15433f`:
+  - historico e aporte leem primeiro o `season_id`;
+  - somente depois habilitam `useShamar` e consultam a API;
+  - isso tambem impede registrar um aporte na meta errada.
+
+### Arquivos principais do novo SHAMAR
+- `app/shamar/page.jsx`;
+- `app/shamar/criar/page.jsx`;
+- `app/shamar/aporte/novo/page.jsx`;
+- `app/shamar/historico/page.jsx`;
+- `components/shamar/ShamarDashboard.jsx`;
+- `components/shamar/ShamarModeCreator.jsx`;
+- `components/shamar/ShamarUI.jsx`;
+- `hooks/useShamar.js`;
+- `app/api/shamar/seasons/route.js`;
+- `app/api/shamar/contributions/route.js`;
+- `scripts/migrate-shamar-single-journey.sql`.
+
+### Cuidados para manutencao
+- Nao reativar criacao de convites, Dupla ou Tribo nas APIs legadas sem uma nova decisao de produto.
+- Nao apagar temporadas duplicadas de Jackson/Reijane: cada uma possui identidade propria e pode conter aportes/quadrinhos diferentes.
+- Nao consolidar contribuicoes entre temporadas apenas somando valores; os aportes possuem relacao com quadrinhos e comprovantes.
+- Ao criar links para aporte ou historico, sempre propagar `season_id`.
+- Preservar o redirect das rotas antigas para bookmarks e links previamente enviados.
+- O admin SHAMAR e as tabelas antigas continuam disponiveis para auditoria tecnica, mesmo que a experiencia do aluno esteja simplificada.
 
 ## Atualizacao 2026-08-01 — PWA mobile, area segura e instalacao pela tela de login
 
@@ -155,17 +397,18 @@ Status funcional: Central de Atividade, performance, MAVF e experiencia PWA mobi
 - Portal publico em `/portal` lista o catalogo real de programas sem exigir login e sem expor URLs de aulas.
 - O portal usa o design system isolado PageBill Dark Neon e preserva blog interno, progresso de leitura, comentarios e thumbnails do admin.
 - Cadastros comuns agora passam pela API `/api/auth/signup` e ativam imediatamente apenas perfis do tier `DESPERTAR`.
-- `/financas` exige sessao ativa e tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`; `DESPERTAR` e redirecionado para `/upgrade`.
+- `/financas` exige sessao ativa e tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`; a excecao e a turma `diagnostico`, que recebe acesso a planilha mesmo no tier `DESPERTAR`.
 - A tela `/upgrade` usa o header/menu do app e direciona o usuario ao atendimento do Workshop.
 - Tela `/admin/conteudo` agora abre o formulario completo de programa ao clicar em `Editar`, em vez de usar `window.prompt` apenas para titulo.
 - Tela `/financas` agora sugere trazer os valores previstos do mes anterior quando o mes atual esta vazio, sem poluir a interface.
 - Tela `/financas` agora permite editar o nome/texto de linhas ja inseridas pelo proprio editor da linha, sem excluir e cadastrar novamente.
 - Resumo financeiro da home (`/app`) ganhou botao de olhinho para ocultar/mostrar valores, com preferencia salva localmente.
-- Telas SHAMAR agora renderizam o topo do app e menu inferior; o aporte da TRIBO tem confirmacao fixa acima do menu e tabuleiro contido em area rolavel no mobile.
+- SHAMAR agora e uma experiencia unica de poupanca, com metas, progresso, aportes e historico; formatos coletivos e convites foram descontinuados na interface.
+- A comunidade interna foi descontinuada e todos os acessos apontam para o grupo oficial do WhatsApp.
 - Links diretos para `/conteudo/[id]/[aulaId]` agora caem na autenticacao quando nao ha sessao e retornam ao destino original apos login via `?next=...`.
-- O foco mais recente foi SHAMAR: autonomia por modalidade, convites com aceite, gestao admin de jornadas, tabuleiro sequencial, tabuleiro individual tambem na Tribo, gestao de participantes da TRIBO pelo criador/admin, correcoes RLS/leitura da TRIBO e melhoria no encerramento de temporada.
-- Base publicada antes desta rodada: `9cffd19`.
-- `npm run build` passou apos o redesign completo do portal e gerou 98 paginas.
+- O foco mais recente foi a correcao do webhook Kiwify/Diagnostico, acessos da turma `diagnostico`, relatorios administrativos e simplificacao do SHAMAR.
+- Base funcional mais recente publicada: `f15433f`.
+- `npm run build` passou na validacao final e gerou 110 rotas/paginas.
 - `backup.dump` segue fora do versionamento e agora esta explicitamente ignorado pelo Git.
 
 ## Atualizacao 2026-07-14 — Design system PageBill Dark Neon no Portal
