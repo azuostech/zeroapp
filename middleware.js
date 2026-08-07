@@ -56,10 +56,14 @@ export async function middleware(request) {
   const isShamarApi = pathname.startsWith('/api/shamar');
   const isMavfApi = pathname.startsWith('/api/mavf');
   const isCommunityApi = pathname.startsWith('/api/community');
-  const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea || isTurmaArea;
+  const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea;
   const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
-  const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || isIrcArea || studentOnlyPage);
+  const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || isIrcArea || isTurmaArea || studentOnlyPage);
   const protectedApi = !isPortalApi && (isFinanceApi || isAdminApi || isIrcApi || studentOnlyApi);
+
+  if (isCommunityApi) {
+    return jsonError('community_discontinued', 410);
+  }
 
   if (!hasSupabaseEnv()) {
     return NextResponse.next({ request });

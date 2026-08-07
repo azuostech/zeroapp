@@ -16,6 +16,7 @@ import {
   createFinanceItem,
   normalizeFinancialData
 } from '@/src/modules/finance/domain/defaults';
+import { COMMUNITY_WHATSAPP_URL } from '@/src/lib/community/community-link';
 
 const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
@@ -2199,7 +2200,7 @@ export default function FinanceAppPage({
 
         {!adminMode && showJourneySections ? (
           <section className="home-quick-access">
-            <QuickAccessCard emoji="👥" title="Minha Turma" subtitle="Ver conquistas e desafios" href="/turma" />
+            <QuickAccessCard emoji="💬" title="Comunidade" subtitle="Entrar no grupo do WhatsApp" href={COMMUNITY_WHATSAPP_URL} />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
             <QuickAccessCard emoji="🛡️" title="SHAMAR" subtitle="Ferramenta da jornada" href="/shamar" />
           </section>

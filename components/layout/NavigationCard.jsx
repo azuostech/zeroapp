@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 export default function NavigationCard({ icon, label, onClick, onLockedClick, href, locked = false }) {
+  const isExternal = /^https?:\/\//i.test(String(href || ''));
   const handleClick = (event) => {
     if (locked) {
       event.preventDefault();
@@ -23,6 +24,13 @@ export default function NavigationCard({ icon, label, onClick, onLockedClick, hr
   );
 
   if (href && !locked) {
+    if (isExternal) {
+      return (
+        <a href={href} className="hub-nav-card" onClick={handleClick} target="_blank" rel="noreferrer">
+          {content}
+        </a>
+      );
+    }
     return (
       <Link href={href} className="hub-nav-card" onClick={handleClick}>
         {content}

@@ -3,13 +3,28 @@
 import Link from 'next/link';
 
 export default function QuickAccessCard({ emoji, title, subtitle, href }) {
-  return (
-    <Link className="quick-access-card card card-interactive" href={href}>
+  const isExternal = /^https?:\/\//i.test(String(href || ''));
+  const content = (
+    <>
       <div className="quick-access-emoji">{emoji}</div>
       <div>
         <h3>{title}</h3>
         <p>{subtitle}</p>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {isExternal ? (
+        <a className="quick-access-card card card-interactive" href={href} target="_blank" rel="noreferrer">
+          {content}
+        </a>
+      ) : (
+        <Link className="quick-access-card card card-interactive" href={href}>
+          {content}
+        </Link>
+      )}
 
       <style jsx>{`
         .quick-access-card {
@@ -57,6 +72,6 @@ export default function QuickAccessCard({ emoji, title, subtitle, href }) {
           font-size: 11px;
         }
       `}</style>
-    </Link>
+    </>
   );
 }

@@ -15,7 +15,7 @@ const BENEFITS = [
   '6 Blocos Financeiros',
   'Gamificação completa',
   'Jornada SHAMAR',
-  'Comunidade de alunos',
+  'Grupo da comunidade no WhatsApp',
   'Minha Jornada',
   'Conteúdos exclusivos'
 ];
