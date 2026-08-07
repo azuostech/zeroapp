@@ -92,6 +92,9 @@ async function claimEvent(service, event, payloadHash) {
     .eq('provider', 'kiwify')
     .eq('event_id', event.eventId)
     .maybeSingle();
+  if (['processed', 'ignored'].includes(existing?.status)) {
+    return { claimed: false, row: existing };
+  }
   if (existing?.payload_hash && existing.payload_hash !== payloadHash) {
     throw new Error('event_payload_mismatch');
   }
