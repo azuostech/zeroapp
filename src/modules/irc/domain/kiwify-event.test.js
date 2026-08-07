@@ -43,4 +43,38 @@ describe('eventos Kiwify do Diagnóstico Completo', () => {
     const refunded = parseKiwifyIrcEvent({ ...base, event: 'refunded' });
     expect(approved.eventId).not.toBe(refunded.eventId);
   });
+
+  it('aceita o payload real da Kiwify com dados dentro de order', () => {
+    const event = parseKiwifyIrcEvent({
+      signature: 'assinatura-omitida',
+      order: {
+        order_id: 'order-real-1',
+        order_ref: 'ABC123',
+        order_status: 'paid',
+        webhook_event_type: 'order_approved',
+        Product: {
+          product_id: 'shared-product-id',
+          product_name: 'Diagnóstico Financeiro Completo + ZeroApp'
+        },
+        Customer: {
+          full_name: 'Cliente Teste',
+          email: ' CLIENTE@EXAMPLE.COM ',
+          mobile: '+5511999999999'
+        },
+        checkout_link: 'ukTsTso'
+      }
+    });
+
+    expect(event).toMatchObject({
+      eventId: 'order-real-1:order_approved',
+      eventType: 'order_approved',
+      accessStatus: 'active',
+      purchaseId: 'order-real-1',
+      productId: 'shared-product-id',
+      checkoutLink: 'ukTsTso',
+      email: 'cliente@example.com',
+      name: 'Cliente Teste',
+      phone: '+5511999999999'
+    });
+  });
 });

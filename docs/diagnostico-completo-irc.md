@@ -8,6 +8,7 @@
 
 ```env
 KIWIFY_IRC_PRODUCT_IDS=2041b3f0-732f-11f1-b130-814cfe6ecd0e
+KIWIFY_IRC_CHECKOUT_LINKS=ukTsTso
 KIWIFY_IRC_WEBHOOK_TOKEN=segredo-exclusivo
 NEXT_PUBLIC_IRC_CHECKOUT_URL=https://pay.kiwify.com.br/ukTsTso
 ANTHROPIC_IRC_MODEL=claude-sonnet-4-5
@@ -20,7 +21,9 @@ POST https://zeroapp.tech/api/webhooks/kiwify/irc
 ```
 
 Use o mesmo segredo em `KIWIFY_IRC_WEBHOOK_TOKEN` e configure compra aprovada, reembolso,
-chargeback e cancelamento. Envie o segredo no header `x-kiwify-token`.
+chargeback e cancelamento. A Kiwify envia esse segredo no campo `signature` do corpo; o endpoint
+também aceita o header `x-kiwify-token` para integrações compatíveis. O checkout é validado por
+`KIWIFY_IRC_CHECKOUT_LINKS` porque ofertas diferentes podem compartilhar o mesmo produto na Kiwify.
 
 ## Fluxo
 

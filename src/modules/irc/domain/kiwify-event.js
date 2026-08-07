@@ -43,6 +43,9 @@ export function parseKiwifyIrcEvent(payload) {
       payload?.status ||
       payload?.order_status ||
       payload?.payment_status ||
+      payload?.order?.webhook_event_type ||
+      payload?.order?.order_status ||
+      payload?.order?.payment_status ||
       ''
   ).trim();
   const marker = normalize(eventType);
@@ -58,6 +61,7 @@ export function parseKiwifyIrcEvent(payload) {
       payload?.sale_id ||
       payload?.data?.transaction_id ||
       payload?.data?.order_id ||
+      payload?.order?.order_id ||
       findByKeys(payload, new Set(['transaction_id', 'order_id', 'sale_id', 'purchase_id']), Boolean)
   ).trim();
   const productId = String(
@@ -66,18 +70,24 @@ export function parseKiwifyIrcEvent(payload) {
       payload?.Product?.id ||
       payload?.data?.product_id ||
       payload?.data?.product?.id ||
+      payload?.order?.Product?.product_id ||
+      payload?.order?.product?.product_id ||
       findByKeys(payload, new Set(['product_id']), Boolean)
   ).trim();
   const email = normalize(
     payload?.customer?.email ||
       payload?.buyer?.email ||
       payload?.data?.customer?.email ||
+      payload?.order?.Customer?.email ||
+      payload?.order?.customer?.email ||
       findByKeys(payload, new Set(['customer_email', 'buyer_email', 'email']), (candidate) => String(candidate).includes('@'))
   );
   const name = String(
     payload?.customer?.name ||
       payload?.buyer?.name ||
       payload?.data?.customer?.name ||
+      payload?.order?.Customer?.full_name ||
+      payload?.order?.customer?.full_name ||
       findByKeys(payload, new Set(['customer_name', 'buyer_name', 'full_name', 'name']), (candidate) => String(candidate).trim().length > 1)
   ).trim();
   const phone = String(
@@ -85,6 +95,8 @@ export function parseKiwifyIrcEvent(payload) {
       payload?.customer?.phone ||
       payload?.buyer?.phone ||
       payload?.data?.customer?.phone ||
+      payload?.order?.Customer?.mobile ||
+      payload?.order?.customer?.mobile ||
       findByKeys(payload, new Set(['mobile', 'phone', 'whatsapp']), Boolean)
   ).trim();
   const rawEventId = String(
@@ -96,6 +108,11 @@ export function parseKiwifyIrcEvent(payload) {
       ''
   ).trim();
   const eventId = `${rawEventId || purchaseId}:${marker || 'unknown'}`;
+  const checkoutLink = String(
+    payload?.checkout_link ||
+      payload?.order?.checkout_link ||
+      findByKeys(payload, new Set(['checkout_link']), Boolean)
+  ).trim();
 
-  return { eventId, eventType: eventType || 'unknown', accessStatus, purchaseId, productId, email, name, phone };
+  return { eventId, eventType: eventType || 'unknown', accessStatus, purchaseId, productId, checkoutLink, email, name, phone };
 }

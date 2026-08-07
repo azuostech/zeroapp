@@ -14,6 +14,16 @@ function passwordRedirectUrl() {
   return `${siteUrl()}/auth/reset-password?next=${encodeURIComponent('/diagnostico-completo')}`;
 }
 
+function checkoutCode(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    return new URL(raw).pathname.split('/').filter(Boolean).pop() || '';
+  } catch (_) {
+    return raw.split('/').filter(Boolean).pop() || raw;
+  }
+}
+
 async function createInvitedUser(service, event) {
   const { data, error } = await service.auth.admin.generateLink({
     type: 'invite',
@@ -112,8 +122,18 @@ export async function provisionIrcPurchase(payload) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
-  if (!allowedProductIds.length) return { ok: false, status: 503, error: 'irc_product_not_configured' };
-  if (!event.productId || !allowedProductIds.includes(event.productId)) {
+  const allowedCheckoutLinks = String(
+    process.env.KIWIFY_IRC_CHECKOUT_LINKS || process.env.NEXT_PUBLIC_IRC_CHECKOUT_URL || ''
+  )
+    .split(',')
+    .map(checkoutCode)
+    .filter(Boolean);
+  if (!allowedProductIds.length && !allowedCheckoutLinks.length) {
+    return { ok: false, status: 503, error: 'irc_product_not_configured' };
+  }
+  const matchesProduct = Boolean(event.productId && allowedProductIds.includes(event.productId));
+  const matchesCheckout = Boolean(event.checkoutLink && allowedCheckoutLinks.includes(checkoutCode(event.checkoutLink)));
+  if (!matchesProduct && !matchesCheckout) {
     return { ok: false, status: 422, error: 'unexpected_product' };
   }
 

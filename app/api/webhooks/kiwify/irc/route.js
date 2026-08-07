@@ -17,6 +17,7 @@ function requestToken(request, body) {
     request.headers.get('x-zeroapp-token') ||
     String(request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim() ||
     body?.webhook_token ||
+    body?.signature ||
     ''
   );
 }
