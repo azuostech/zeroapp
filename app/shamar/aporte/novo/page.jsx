@@ -27,7 +27,8 @@ function parseAmount(value) {
 
 export default function NewShamarContributionPage() {
   const router = useRouter();
-  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar();
+  const [selectedSeasonId, setSelectedSeasonId] = useState('');
+  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar('', selectedSeasonId);
   const { squares, isLoading: isBoardLoading, refresh: refreshBoard } = useShamarBoard(season?.id);
   const [amountInput, setAmountInput] = useState('');
   const [contributedAt, setContributedAt] = useState(todayInputValue());
@@ -37,6 +38,10 @@ export default function NewShamarContributionPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coinAmount, setCoinAmount] = useState(0);
+
+  useEffect(() => {
+    setSelectedSeasonId(new URLSearchParams(window.location.search).get('season_id') || '');
+  }, []);
 
   const amount = parseAmount(amountInput);
   const availableSquares = useMemo(() => (squares || []).filter((square) => !square.marked), [squares]);

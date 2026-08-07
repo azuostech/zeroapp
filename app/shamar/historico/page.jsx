@@ -18,9 +18,14 @@ function formatDate(value) {
 }
 
 export default function ShamarHistoryPage() {
-  const { season, locked, unlockProgress, error, isLoading } = useShamar();
+  const [selectedSeasonId, setSelectedSeasonId] = useState('');
+  const { season, locked, unlockProgress, error, isLoading } = useShamar('', selectedSeasonId);
   const [contributions, setContributions] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    setSelectedSeasonId(new URLSearchParams(window.location.search).get('season_id') || '');
+  }, []);
 
   useEffect(() => {
     if (!season?.id) {

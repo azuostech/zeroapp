@@ -25,7 +25,8 @@ function formatDate(value) {
 }
 
 export function ShamarDashboard() {
-  const { season, config, progress, locked, unlockProgress, error, isLoading } = useShamar();
+  const [selectedSeasonId, setSelectedSeasonId] = useState('');
+  const { season, seasons, config, progress, locked, unlockProgress, error, isLoading } = useShamar('', selectedSeasonId);
   const [contributions, setContributions] = useState([]);
 
   useEffect(() => {
@@ -86,17 +87,27 @@ export function ShamarDashboard() {
   const nextPct = Math.min(100, Math.max(milestoneStep, Math.ceil((pct + 0.01) / milestoneStep) * milestoneStep));
   const nextAmount = meta * (nextPct / 100);
   const remainingToMilestone = Math.max(0, nextAmount - accumulated);
+  const seasonQuery = `season_id=${encodeURIComponent(season.id)}`;
 
   return (
     <ShamarShell activeTab="overview">
       <ShamarHeader label="Meu SHAMAR" title={goalName(config)} subtitle="Sua reserva cresce a cada escolha de guardar." />
+
+      {seasons.length > 1 ? (
+        <label className="goal-selector">
+          <span>Meta ativa</span>
+          <select value={season.id} onChange={(event) => setSelectedSeasonId(event.target.value)}>
+            {seasons.map((item) => <option key={item.id} value={item.id}>{goalName(item.config)}</option>)}
+          </select>
+        </label>
+      ) : null}
 
       <section className="savings-card">
         <span>Você já guardou</span>
         <strong>{formatMoney(accumulated)}</strong>
         <div className="savings-meta"><span>Meta: {formatMoney(meta)}</span><b>{Math.round(pct)}%</b></div>
         <div className="savings-track"><div style={{ width: `${pct}%` }} /></div>
-        <Link href="/shamar/aporte/novo">+ FAZER UM APORTE</Link>
+        <Link href={`/shamar/aporte/novo?${seasonQuery}`}>+ FAZER UM APORTE</Link>
       </section>
 
       <div className="savings-metrics">
@@ -109,7 +120,7 @@ export function ShamarDashboard() {
         <b>{remainingToMilestone > 0 ? `Faltam ${formatMoney(remainingToMilestone)}` : 'Meta alcançada'}</b>
       </section>
 
-      <ShamarCard title="Últimos aportes" action={<Link className="history-link" href="/shamar/historico">Ver histórico</Link>}>
+      <ShamarCard title="Últimos aportes" action={<Link className="history-link" href={`/shamar/historico?${seasonQuery}`}>Ver histórico</Link>}>
         {contributions.length ? (
           <div className="contribution-list">
             {contributions.slice(0, 3).map((item) => (
@@ -143,6 +154,8 @@ function DashboardStyles() {
     .shamar-steps strong { color: var(--text); font-size: 13px; }
     .shamar-steps small { color: var(--text3); margin-top: 2px; }
     .shamar-primary-action { display: flex; justify-content: center; border-radius: var(--radius-md); background: var(--shamar-dark); color: white; padding: 16px; font-weight: 900; box-shadow: 0 6px 20px rgba(27,94,32,.22); }
+    .goal-selector { display: grid; gap: 6px; margin-bottom: 14px; color: var(--text3); font-size: 11px; font-weight: 800; }
+    .goal-selector select { width: 100%; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); color: var(--text); padding: 12px 13px; font: inherit; font-weight: 800; }
     .savings-card { border-radius: 24px; background: linear-gradient(145deg, #174f31, #0d3822); color: white; padding: 22px; margin-bottom: 14px; box-shadow: 0 12px 32px rgba(13,56,34,.2); }
     .savings-card > span { display: block; color: rgba(255,255,255,.72); font-size: 12px; font-weight: 800; }
     .savings-card > strong { display: block; font-family: var(--font-mono); font-size: clamp(30px, 7vw, 44px); margin: 6px 0 15px; }

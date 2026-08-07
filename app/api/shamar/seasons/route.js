@@ -347,12 +347,15 @@ export async function GET(request) {
   }
 
   const dataSupabase = getShamarWriterSupabase(context.supabase);
+  const requestedSeasonId = normalizeId(new URL(request.url).searchParams.get('season_id'));
   const { seasons, error: seasonsError } = await loadActiveSeasonsWithConfigs(dataSupabase, context.user.id);
   if (seasonsError) {
     return NextResponse.json({ error: resolveShamarDbError(seasonsError, 'shamar_seasons_lookup_failed') }, { status: 500 });
   }
 
-  const season = seasons[0] || null;
+  const season = requestedSeasonId
+    ? seasons.find((item) => item.id === requestedSeasonId) || null
+    : seasons[0] || null;
 
   if (!season) {
     return NextResponse.json({

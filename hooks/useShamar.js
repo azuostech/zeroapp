@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-export function useShamar(mode = '') {
+export function useShamar(mode = '', seasonId = '') {
   const [season, setSeason] = useState(null);
   const [seasons, setSeasons] = useState([]);
   const [config, setConfig] = useState(null);
@@ -21,6 +21,7 @@ export function useShamar(mode = '') {
 
       const params = new URLSearchParams();
       if (mode) params.set('mode', mode);
+      if (seasonId) params.set('season_id', seasonId);
       const path = params.toString() ? `/api/shamar/seasons?${params.toString()}` : '/api/shamar/seasons';
       const res = await fetch(path, { cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
@@ -51,7 +52,7 @@ export function useShamar(mode = '') {
     } finally {
       setIsLoading(false);
     }
-  }, [mode]);
+  }, [mode, seasonId]);
 
   useEffect(() => {
     fetchSeason();
