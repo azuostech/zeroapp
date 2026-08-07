@@ -28,7 +28,8 @@ function parseAmount(value) {
 export default function NewShamarContributionPage() {
   const router = useRouter();
   const [selectedSeasonId, setSelectedSeasonId] = useState('');
-  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar('', selectedSeasonId);
+  const [selectionReady, setSelectionReady] = useState(false);
+  const { season, config, locked, unlockProgress, error, isLoading, refresh } = useShamar('', selectedSeasonId, selectionReady);
   const { squares, isLoading: isBoardLoading, refresh: refreshBoard } = useShamarBoard(season?.id);
   const [amountInput, setAmountInput] = useState('');
   const [contributedAt, setContributedAt] = useState(todayInputValue());
@@ -41,6 +42,7 @@ export default function NewShamarContributionPage() {
 
   useEffect(() => {
     setSelectedSeasonId(new URLSearchParams(window.location.search).get('season_id') || '');
+    setSelectionReady(true);
   }, []);
 
   const amount = parseAmount(amountInput);

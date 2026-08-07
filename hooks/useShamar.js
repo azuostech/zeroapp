@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-export function useShamar(mode = '', seasonId = '') {
+export function useShamar(mode = '', seasonId = '', enabled = true) {
   const [season, setSeason] = useState(null);
   const [seasons, setSeasons] = useState([]);
   const [config, setConfig] = useState(null);
@@ -15,6 +15,8 @@ export function useShamar(mode = '', seasonId = '') {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSeason = useCallback(async () => {
+    if (!enabled) return;
+
     try {
       setIsLoading(true);
       setError(null);
@@ -52,11 +54,11 @@ export function useShamar(mode = '', seasonId = '') {
     } finally {
       setIsLoading(false);
     }
-  }, [mode, seasonId]);
+  }, [enabled, mode, seasonId]);
 
   useEffect(() => {
-    fetchSeason();
-  }, [fetchSeason]);
+    if (enabled) fetchSeason();
+  }, [enabled, fetchSeason]);
 
   return {
     season,
