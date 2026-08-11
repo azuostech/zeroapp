@@ -34,6 +34,13 @@ function jsonError(message, status) {
 
 export async function middleware(request) {
   const pathname = request.nextUrl.pathname;
+
+  // Webhooks authenticate themselves and must not depend on session refresh or
+  // a Supabase round trip before their handler can acknowledge the provider.
+  if (pathname.startsWith('/api/webhooks/')) {
+    return NextResponse.next({ request });
+  }
+
   const isApi = pathname.startsWith('/api/');
   const isProfileApi = pathname.startsWith('/api/profile');
   const isFinanceApi = pathname.startsWith('/api/finance');
