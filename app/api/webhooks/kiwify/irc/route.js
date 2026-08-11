@@ -69,5 +69,12 @@ export async function POST(request) {
     }
   });
 
-  return NextResponse.json({ received: true, accepted: true });
+  return new Response('OK', {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Length': '2',
+      'Cache-Control': 'no-store'
+    }
+  });
 }

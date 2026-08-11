@@ -43,7 +43,8 @@ describe('autenticação do webhook Kiwify IRC', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ received: true, accepted: true });
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    await expect(response.text()).resolves.toBe('OK');
     expect(mocks.provisionIrcPurchase).not.toHaveBeenCalled();
     await mocks.scheduled[0]();
     expect(mocks.provisionIrcPurchase).toHaveBeenCalledOnce();
@@ -69,7 +70,8 @@ describe('autenticação do webhook Kiwify IRC', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ received: true, accepted: true });
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    await expect(response.text()).resolves.toBe('OK');
     expect(mocks.provisionIrcPurchase).not.toHaveBeenCalled();
     await mocks.scheduled[0]();
     expect(mocks.provisionIrcPurchase).toHaveBeenCalledWith({ signature, order });
