@@ -248,8 +248,8 @@ export async function provisionIrcPurchase(payload) {
       .from('email_logs')
       .select('id')
       .eq('user_id', account.userId)
-      .eq('status', 'sent')
       .in('email_type', ['irc_access_invite', 'irc_access_granted'])
+      .in('status', ['sent', 'delivered', 'opened', 'clicked'])
       .contains('email_snapshot', { purchase_id: event.purchaseId })
       .limit(1)
       .maybeSingle();

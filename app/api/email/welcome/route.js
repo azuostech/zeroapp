@@ -29,9 +29,10 @@ export async function POST(request) {
       email,
       full_name: fullName
     };
+    let supabase = null;
 
     try {
-      const supabase = getServiceSupabase();
+      supabase = getServiceSupabase();
       const { data, error } = await supabase
         .from('profiles')
         .select('id,email,full_name')
@@ -49,6 +50,23 @@ export async function POST(request) {
       }
     } catch (error) {
       console.error('[welcome-email] service lookup failed:', error?.message || error);
+    }
+
+    if (supabase) {
+      const { data: existingEmail, error: existingEmailError } = await supabase
+        .from('email_logs')
+        .select('id,status')
+        .ilike('recipient', profile.email || email)
+        .eq('email_type', 'welcome_lead')
+        .in('status', ['sent', 'delivered', 'opened', 'clicked'])
+        .limit(1)
+        .maybeSingle();
+
+      if (existingEmailError) {
+        console.error('[welcome-email] deduplication lookup failed:', existingEmailError.message || existingEmailError);
+      } else if (existingEmail) {
+        return NextResponse.json({ ok: true, sent: false, duplicate: true });
+      }
     }
 
     const template = welcomeLeadTemplate({ profile });
