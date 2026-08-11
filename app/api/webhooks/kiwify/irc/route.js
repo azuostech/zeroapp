@@ -22,15 +22,22 @@ function requestToken(request, body) {
   );
 }
 
+function configuredTokens() {
+  return [process.env.KIWIFY_IRC_WEBHOOK_TOKEN, process.env.KIWIFY_WEBHOOK_TOKEN]
+    .map((token) => String(token || '').trim())
+    .filter((token, index, tokens) => token && tokens.indexOf(token) === index);
+}
+
 export async function POST(request) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 });
   }
 
-  const expectedToken = String(process.env.KIWIFY_IRC_WEBHOOK_TOKEN || process.env.KIWIFY_WEBHOOK_TOKEN || '').trim();
-  if (!expectedToken) return NextResponse.json({ error: 'webhook_not_configured' }, { status: 503 });
-  if (!safeEquals(requestToken(request, body), expectedToken)) {
+  const expectedTokens = configuredTokens();
+  if (!expectedTokens.length) return NextResponse.json({ error: 'webhook_not_configured' }, { status: 503 });
+  const receivedToken = requestToken(request, body);
+  if (!expectedTokens.some((expectedToken) => safeEquals(receivedToken, expectedToken))) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
