@@ -17,9 +17,21 @@ function requestToken(request, body) {
     request.headers.get('x-zeroapp-token') ||
     String(request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim() ||
     body?.webhook_token ||
-    body?.signature ||
     ''
   );
+}
+
+function requestSignature(request, body) {
+  try {
+    return String(body?.signature || new URL(request.url).searchParams.get('signature') || '').trim();
+  } catch (_) {
+    return String(body?.signature || '').trim();
+  }
+}
+
+function calculatedSignature(body, token) {
+  if (!body?.order || typeof body.order !== 'object' || Array.isArray(body.order)) return '';
+  return crypto.createHmac('sha1', token).update(JSON.stringify(body.order)).digest('hex');
 }
 
 function configuredTokens() {
@@ -37,7 +49,12 @@ export async function POST(request) {
   const expectedTokens = configuredTokens();
   if (!expectedTokens.length) return NextResponse.json({ error: 'webhook_not_configured' }, { status: 503 });
   const receivedToken = requestToken(request, body);
-  if (!expectedTokens.some((expectedToken) => safeEquals(receivedToken, expectedToken))) {
+  const receivedSignature = requestSignature(request, body);
+  const authorized = expectedTokens.some((expectedToken) => (
+    safeEquals(receivedToken, expectedToken) ||
+    safeEquals(receivedSignature, calculatedSignature(body, expectedToken))
+  ));
+  if (!authorized) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
