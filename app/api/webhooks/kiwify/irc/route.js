@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { provisionIrcPurchase } from '@/src/modules/irc/application/irc-provisioning';
 
 export const runtime = 'nodejs';
@@ -58,12 +58,16 @@ export async function POST(request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  try {
-    const result = await provisionIrcPurchase(body);
-    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status || 400 });
-    return NextResponse.json({ received: true, ...result });
-  } catch (error) {
-    console.error('[kiwify/irc] processing failed:', error?.message || error);
-    return NextResponse.json({ received: true, error: 'processing_failed' }, { status: 500 });
-  }
+  after(async () => {
+    try {
+      const result = await provisionIrcPurchase(body);
+      if (!result.ok) {
+        console.error('[kiwify/irc] processing rejected:', result.error || 'processing_rejected');
+      }
+    } catch (error) {
+      console.error('[kiwify/irc] processing failed:', error?.message || error);
+    }
+  });
+
+  return NextResponse.json({ received: true, accepted: true });
 }

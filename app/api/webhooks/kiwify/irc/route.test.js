@@ -1,7 +1,18 @@
 import crypto from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ provisionIrcPurchase: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  provisionIrcPurchase: vi.fn(),
+  scheduled: []
+}));
+
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    after: vi.fn((callback) => mocks.scheduled.push(callback))
+  };
+});
 
 vi.mock('@/src/modules/irc/application/irc-provisioning', () => ({
   provisionIrcPurchase: mocks.provisionIrcPurchase
@@ -12,6 +23,7 @@ import { POST } from './route';
 describe('autenticação do webhook Kiwify IRC', () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.scheduled.length = 0;
     delete process.env.KIWIFY_IRC_WEBHOOK_TOKEN;
     delete process.env.KIWIFY_WEBHOOK_TOKEN;
   });
@@ -31,7 +43,9 @@ describe('autenticação do webhook Kiwify IRC', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ received: true, ok: true, ignored: true });
+    await expect(response.json()).resolves.toEqual({ received: true, accepted: true });
+    expect(mocks.provisionIrcPurchase).not.toHaveBeenCalled();
+    await mocks.scheduled[0]();
     expect(mocks.provisionIrcPurchase).toHaveBeenCalledOnce();
   });
 
@@ -55,7 +69,9 @@ describe('autenticação do webhook Kiwify IRC', () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ received: true, ok: true, user_id: 'user-1' });
+    await expect(response.json()).resolves.toEqual({ received: true, accepted: true });
+    expect(mocks.provisionIrcPurchase).not.toHaveBeenCalled();
+    await mocks.scheduled[0]();
     expect(mocks.provisionIrcPurchase).toHaveBeenCalledWith({ signature, order });
   });
 });
