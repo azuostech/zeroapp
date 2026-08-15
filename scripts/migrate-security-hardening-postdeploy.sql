@@ -3,9 +3,16 @@
 
 BEGIN;
 
--- Dados financeiros: usuario le os proprios dados. O painel admin usa service
--- role apos autenticar o admin e registra cada leitura em admin_action_logs.
+-- Dados financeiros: usuario gerencia os proprios dados; admins autenticados
+-- podem consultar e atualizar clientes atendidos no painel.
 DROP POLICY IF EXISTS financial_admin ON public.financial_data;
+DROP POLICY IF EXISTS financial_admin_select ON public.financial_data;
+CREATE POLICY financial_admin
+  ON public.financial_data
+  FOR ALL
+  TO authenticated
+  USING ((SELECT public.current_user_is_admin()))
+  WITH CHECK ((SELECT public.current_user_is_admin()));
 
 DROP POLICY IF EXISTS financial_self ON public.financial_data;
 CREATE POLICY financial_self

@@ -142,6 +142,19 @@ export async function GET(request) {
       month,
       year
     });
+
+    if (context.impersonating) {
+      await recordAdminAudit({
+        supabase,
+        adminUserId: context.user.id,
+        targetUserId: context.targetUserId,
+        action: 'read',
+        resource: 'financial_month',
+        resourceId: `${year}-${month}`,
+        metadata: { month, year }
+      });
+    }
+
     return NextResponse.json({ data });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
