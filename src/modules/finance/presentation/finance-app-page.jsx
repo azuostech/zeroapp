@@ -17,6 +17,7 @@ import {
   normalizeFinancialData
 } from '@/src/modules/finance/domain/defaults';
 import { COMMUNITY_WHATSAPP_URL } from '@/src/lib/community/community-link';
+import { shouldApplyFinancialLoad } from '@/src/modules/finance/application/financial-load-guard';
 
 const THEME_KEY = 'zeroapp-theme';
 const ALLOWED_MAVF_TIERS = ['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO'];
@@ -287,6 +288,7 @@ export default function FinanceAppPage({
     let editingTarget = null;
     let carryForwardSource = null;
     let carryForwardRequestKey = '';
+    let financialLoadSequence = 0;
     const targetUserId = adminMode ? adminViewUserId : null;
     const targetFinancePath = (path) => withUserQuery(path, targetUserId);
     const targetPayload = (body) => withUserBody(body, targetUserId);
@@ -1227,19 +1229,44 @@ export default function FinanceAppPage({
       calcularTotais();
     };
 
-    const carregarDados = async () => {
-      const mes = document.getElementById('mesSelect')?.value;
-      const ano = document.getElementById('anoSelect')?.value;
-      if (!mes || !ano) return;
+    const carregarDados = async (requestedPeriod = getCurrentMonthYear()) => {
+      if (!requestedPeriod) return;
 
-      const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${mes}&year=${ano}`));
+      const { month, year } = requestedPeriod;
+      const requestedPeriodKey = periodKey(requestedPeriod);
+      const loadSequence = ++financialLoadSequence;
+      const payload = await apiRequest(targetFinancePath(`/api/finance/month?month=${month}&year=${year}`));
+
+      const selectedPeriod = getCurrentMonthYear();
+      const canApplyResponse = shouldApplyFinancialLoad({
+        mounted,
+        requestSequence: loadSequence,
+        latestSequence: financialLoadSequence,
+        requestedPeriodKey,
+        selectedPeriodKey: selectedPeriod ? periodKey(selectedPeriod) : ''
+      });
+      if (!canApplyResponse) return;
+
       dados = normalizeFinancialData(payload?.data && Object.keys(payload.data).length > 0 ? payload.data : cloneDefaultFinancialData());
       renderTudo();
-      void avaliarPlanejamentoAnterior(mes, ano);
+      void avaliarPlanejamentoAnterior(month, year);
     };
 
     const trocarMes = async () => {
-      await carregarDados();
+      const requestedPeriod = getCurrentMonthYear();
+      if (!requestedPeriod) return;
+
+      carryForwardRequestKey = periodKey(requestedPeriod);
+      hideCarryForwardSuggestion();
+
+      try {
+        await carregarDados(requestedPeriod);
+      } catch (_) {
+        const selectedPeriod = getCurrentMonthYear();
+        if (selectedPeriod && periodKey(selectedPeriod) === periodKey(requestedPeriod)) {
+          toast('Não foi possível carregar o mês selecionado');
+        }
+      }
     };
 
     const toggleBloco = (bloco) => {
