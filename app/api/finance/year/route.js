@@ -43,7 +43,13 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json({ summary });
+    return NextResponse.json({
+      summary,
+      recipient: {
+        name: context.targetProfile?.full_name || '',
+        email: context.targetProfile?.email || (context.impersonating ? '' : context.user?.email) || ''
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
