@@ -2,8 +2,9 @@ import {
   cloneDefaultFinancialData,
   createContaSubcat,
   createFinanceItem,
+  isNumericValueString,
   normalizeFinancialData
-} from '@/src/modules/finance/domain/defaults';
+} from '../domain/defaults';
 
 const SIMPLE_BLOCKS = new Set(['receitas', 'pagar-primeiro', 'doar', 'investimentos', 'desfrute']);
 
@@ -13,7 +14,9 @@ const OPERATION_TYPES = new Set([
   'add_group',
   'remove_group',
   'add_subcategory',
-  'remove_subcategory'
+  'remove_subcategory',
+  'update_category',
+  'update_subcategory'
 ]);
 
 function cleanName(value) {
@@ -95,6 +98,78 @@ function removeSubcategory(data, groupName, nome) {
   return changed;
 }
 
+function updatePlannedItem(item, nome, valorPrevisto) {
+  const changed = item.nome !== nome || item.valor_previsto !== valorPrevisto || item.valor !== valorPrevisto;
+  if (!changed) return false;
+
+  item.nome = nome;
+  item.valor_previsto = valorPrevisto;
+  item.valor = valorPrevisto;
+  return true;
+}
+
+function asOptionalIndex(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function findItemByNameOrIndex(list, oldName, index) {
+  return list.find((candidate) => sameName(candidate?.nome, oldName)) || (index === null ? null : list[index]);
+}
+
+function updateSimpleCategory(data, bloco, oldName, nome, valorPrevisto, itemIndex) {
+  const list = asArray(data[bloco]);
+  const item = findItemByNameOrIndex(list, oldName, itemIndex);
+  if (!item) return false;
+  return updatePlannedItem(item, nome, valorPrevisto);
+}
+
+function updateSubcategory(data, groupName, oldName, nome, valorPrevisto, groupIndex, subcatIndex) {
+  const groups = asGroups(data.contas);
+  const group = groups.find((candidate) => sameName(candidate?.nome, groupName)) ||
+    (groupIndex === null ? null : groups[groupIndex]);
+  if (!group) return false;
+
+  const item = findItemByNameOrIndex(asArray(group.subcats), oldName, subcatIndex);
+  if (!item) return false;
+  return updatePlannedItem(item, nome, valorPrevisto);
+}
+
+function parsePlannedUpdate(input, type) {
+  const oldName = cleanName(input.oldName);
+  const nome = cleanName(input.nome);
+  const valorPrevisto = typeof input.valorPrevisto === 'string'
+    ? input.valorPrevisto.trim()
+    : String(input.valorPrevisto ?? '').trim();
+
+  if (!oldName) return { ok: false, reason: 'invalid_old_name' };
+  if (!nome) return { ok: false, reason: 'invalid_nome' };
+  if (!isNumericValueString(valorPrevisto)) return { ok: false, reason: 'invalid_valor_previsto' };
+  if (type === 'update_category') {
+    const bloco = cleanName(input.bloco);
+    if (!SIMPLE_BLOCKS.has(bloco)) return { ok: false, reason: 'invalid_bloco' };
+    return {
+      ok: true,
+      value: { type, bloco, oldName, nome, valorPrevisto, itemIndex: asOptionalIndex(input.itemIndex) }
+    };
+  }
+
+  const groupName = cleanName(input.groupName);
+  if (!groupName) return { ok: false, reason: 'invalid_group_name' };
+  return {
+    ok: true,
+    value: {
+      type,
+      groupName,
+      oldName,
+      nome,
+      valorPrevisto,
+      groupIndex: asOptionalIndex(input.groupIndex),
+      subcatIndex: asOptionalIndex(input.subcatIndex)
+    }
+  };
+}
+
 export function parseStructureOperation(input) {
   if (!input || typeof input !== 'object') return { ok: false, reason: 'invalid_operation' };
   if (!OPERATION_TYPES.has(input.type)) return { ok: false, reason: 'invalid_operation_type' };
@@ -119,6 +194,10 @@ export function parseStructureOperation(input) {
     if (!groupName) return { ok: false, reason: 'invalid_group_name' };
     if (!nome) return { ok: false, reason: 'invalid_nome' };
     return { ok: true, value: { type: input.type, groupName, nome } };
+  }
+
+  if (input.type === 'update_category' || input.type === 'update_subcategory') {
+    return parsePlannedUpdate(input, input.type);
   }
 
   return { ok: false, reason: 'invalid_operation' };
@@ -147,6 +226,27 @@ export function applyStructureOperation(sourceData, operation) {
     case 'remove_subcategory':
       changed = removeSubcategory(data, operation.groupName, operation.nome);
       break;
+    case 'update_category':
+      changed = updateSimpleCategory(
+        data,
+        operation.bloco,
+        operation.oldName,
+        operation.nome,
+        operation.valorPrevisto,
+        operation.itemIndex
+      );
+      break;
+    case 'update_subcategory':
+      changed = updateSubcategory(
+        data,
+        operation.groupName,
+        operation.oldName,
+        operation.nome,
+        operation.valorPrevisto,
+        operation.groupIndex,
+        operation.subcatIndex
+      );
+      break;
     default:
       changed = false;
   }
@@ -164,6 +264,32 @@ function buildYearMonths(year) {
 
 function shouldCreateMissingMonths(operation) {
   return operation.type.startsWith('add_');
+}
+
+function isPlannedUpdate(operation) {
+  return operation.type === 'update_category' || operation.type === 'update_subcategory';
+}
+
+export function isFuturePeriod(month, year, currentMonth, currentYear) {
+  return `${year}-${month}` > `${currentYear}-${currentMonth}`;
+}
+
+function resetRealizedValues(sourceData) {
+  const data = JSON.parse(JSON.stringify(normalizeFinancialData(sourceData)));
+  Object.keys(data).forEach((key) => {
+    if (key === 'contas') return;
+    asArray(data[key]).forEach((item) => {
+      item.realized = false;
+      item.valor_realizado = '0';
+    });
+  });
+  asGroups(data.contas).forEach((group) => {
+    asArray(group.subcats).forEach((item) => {
+      item.realized = false;
+      item.valor_realizado = '0';
+    });
+  });
+  return data;
 }
 
 export async function replicateStructureOperation({
@@ -184,9 +310,12 @@ export async function replicateStructureOperation({
   const existing = rows || [];
   const existingKeys = new Set(existing.map((row) => `${row.year}-${row.month}`));
   const updates = [];
+  const plannedUpdate = isPlannedUpdate(operation);
+  const currentRow = existing.find((row) => row.month === currentMonth && row.year === currentYear);
 
   existing.forEach((row) => {
     if (row.month === currentMonth && row.year === currentYear) return;
+    if (plannedUpdate && !isFuturePeriod(row.month, row.year, currentMonth, currentYear)) return;
     const result = applyStructureOperation(row.data, operation);
     if (!result.changed) return;
     updates.push({
@@ -217,6 +346,25 @@ export async function replicateStructureOperation({
         updated_at: nowIso
       });
     });
+  }
+
+  if (plannedUpdate) {
+    const source = currentRow?.data || cloneDefaultFinancialData();
+    const sourceResult = applyStructureOperation(source, operation);
+    if (sourceResult.changed) {
+      buildYearMonths(currentYear).forEach(({ year, month }) => {
+        if (!isFuturePeriod(month, year, currentMonth, currentYear)) return;
+        if (existingKeys.has(`${year}-${month}`)) return;
+
+        updates.push({
+          user_id: userId,
+          month,
+          year,
+          data: resetRealizedValues(sourceResult.data),
+          updated_at: nowIso
+        });
+      });
+    }
   }
 
   if (!updates.length) return { affectedMonths: 0 };

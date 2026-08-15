@@ -435,18 +435,15 @@ export default function FinanceAppPage({
       event.preventDefault();
     };
 
-    const salvarNuvem = async () => {
+    const salvarNuvem = async ({ month, year, data }) => {
       try {
-        const mes = document.getElementById('mesSelect')?.value;
-        const ano = document.getElementById('anoSelect')?.value;
-
         await apiRequest('/api/finance/month', {
           method: 'POST',
           body: JSON.stringify(
             targetPayload({
-              month: mes,
-              year: ano,
-              data: dados
+              month,
+              year,
+              data
             })
           )
         });
@@ -468,13 +465,20 @@ export default function FinanceAppPage({
     };
 
     const agendarSalvar = () => {
+      const period = getCurrentMonthYear();
+      if (!period) return;
+
+      const dataSnapshot = JSON.parse(JSON.stringify(dados));
       const dot = document.getElementById('save-dot');
       const lbl = document.getElementById('save-label');
       dot?.classList.add('saving');
       if (lbl) lbl.textContent = 'Salvando...';
       hideCarryForwardSuggestion();
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(salvarNuvem, 1500);
+      saveTimer = setTimeout(
+        () => salvarNuvem({ month: period.month, year: period.year, data: dataSnapshot }),
+        1500
+      );
     };
 
     const getPrevisto = (item) => pm(item?.valor_previsto ?? item?.valor ?? '0');
@@ -775,6 +779,8 @@ export default function FinanceAppPage({
       if (!nameInput || !previstoInput || !realizadoInput) return;
 
       ensureItemShape(item);
+      const previousName = item.nome;
+      const previousPlannedValue = item.valor_previsto ?? item.valor ?? '';
       const nextName = nameInput.value.trim();
       if (!nextName) {
         toast('Informe um nome para a linha');
@@ -799,6 +805,30 @@ export default function FinanceAppPage({
 
       calcularTotais();
       agendarSalvar();
+
+      const plannedDataChanged = previousName !== nextName || previousPlannedValue !== previstoInput.value;
+      if (adminMode && plannedDataChanged) {
+        const operation = editingTarget?.kind === 'subcat'
+          ? {
+              type: 'update_subcategory',
+              groupName: dados?.contas?.[editingTarget.gi]?.nome || '',
+              groupIndex: editingTarget.gi,
+              subcatIndex: editingTarget.si,
+              oldName: previousName,
+              nome: nextName,
+              valorPrevisto: previstoInput.value
+            }
+          : {
+              type: 'update_category',
+              bloco: editingTarget?.bloco,
+              itemIndex: editingTarget?.index,
+              oldName: previousName,
+              nome: nextName,
+              valorPrevisto: previstoInput.value
+            };
+
+        void replicarEstrutura(operation, 'Planejamento atualizado nos próximos meses');
+      }
       closeEditor();
     };
 
