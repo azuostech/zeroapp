@@ -2043,8 +2043,11 @@ export default function FinanceAppPage({
           <button className="btn btn-outline" onClick={() => window.exportarTexto?.()}>
             ↓ Exportar resumo
           </button>
-          <a className="btn btn-outline" href="/resumo">
-            Ver resumo mensal
+          <a
+            className="btn btn-outline"
+            href={encodedTargetId ? `/resumo?user_id=${encodedTargetId}` : '/resumo'}
+          >
+            Ver resumo anual
           </a>
         </div>
 

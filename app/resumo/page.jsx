@@ -1,246 +1,333 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
-import BlocoResumoStrip from '@/src/modules/finance/presentation/BlocoResumoStrip';
-import {
-  percentualRealizado,
-  statusBloco,
-  totalPrevisto,
-  totalPrevistoContas,
-  totalRealizado,
-  totalRealizadoContas
-} from '@/src/modules/finance/domain/finance.calculations';
 
-const BLOCK_ORDER = [
-  { key: 'receitas', nome: 'Receitas', icon: '💰', tipo: 'receita' },
-  { key: 'pagar-primeiro', nome: 'Se Pagar Primeiro', icon: '🛟', tipo: 'gasto' },
-  { key: 'doar', nome: 'Doação', icon: '🤝', tipo: 'gasto' },
-  { key: 'contas', nome: 'Contas', icon: '📄', tipo: 'gasto' },
-  { key: 'investimentos', nome: 'Investimentos', icon: '📈', tipo: 'gasto' },
-  { key: 'desfrute', nome: 'Desfrute', icon: '✨', tipo: 'gasto' }
-];
+const MONTH_LABELS = {
+  '01': 'Jan',
+  '02': 'Fev',
+  '03': 'Mar',
+  '04': 'Abr',
+  '05': 'Mai',
+  '06': 'Jun',
+  '07': 'Jul',
+  '08': 'Ago',
+  '09': 'Set',
+  '10': 'Out',
+  '11': 'Nov',
+  '12': 'Dez'
+};
 
-function pad2(num) {
-  return String(num).padStart(2, '0');
-}
+const BLOCK_ICONS = {
+  receitas: '💰',
+  'pagar-primeiro': '🛟',
+  doar: '🤝',
+  contas: '📄',
+  investimentos: '📈',
+  desfrute: '✨'
+};
 
-function nowPeriod() {
-  const date = new Date();
-  return { month: pad2(date.getMonth() + 1), year: String(date.getFullYear()) };
-}
-
-function shiftPeriod({ month, year }, delta) {
-  const date = new Date(Number(year), Number(month) - 1 + delta, 1);
-  return { month: pad2(date.getMonth() + 1), year: String(date.getFullYear()) };
+function currentYear() {
+  return new Date().getFullYear();
 }
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
 }
 
-function flattenContas(contas = []) {
-  if (!Array.isArray(contas)) return [];
-  return contas.flatMap((grupo) => (Array.isArray(grupo?.subcats) ? grupo.subcats : []));
+function formatCompactMoney(value) {
+  const numeric = Number(value || 0);
+  if (numeric === 0) return '—';
+
+  const absolute = Math.abs(numeric);
+  const sign = numeric < 0 ? '-' : '';
+  if (absolute >= 1000000) {
+    return `${sign}R$ ${(absolute / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`;
+  }
+  if (absolute >= 1000) {
+    return `${sign}R$ ${(absolute / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`;
+  }
+  return `${sign}R$ ${absolute.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
 }
 
-function buildStatusLabel({ status, percent, pending }) {
-  if (status === 'vazio') return 'Não iniciado';
-  if (status === 'acima') return `⚠ Acima +${Math.max(0, percent - 100)}%`;
-  if (status === 'completo') return 'Completo ✓';
-  return `${pending} pendentes`;
+function formatPercentage(value) {
+  const numeric = Number(value || 0);
+  return `${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+}
+
+function AmountCell({ value, className = '' }) {
+  return (
+    <td className={className} title={formatMoney(value)}>
+      {formatCompactMoney(value)}
+    </td>
+  );
+}
+
+function SummaryCard({ icon, label, value, tone = 'neutral' }) {
+  return (
+    <article className={`annual-kpi ${tone}`}>
+      <span className="annual-kpi-icon" aria-hidden="true">{icon}</span>
+      <div>
+        <span>{label}</span>
+        <strong>{formatMoney(value)}</strong>
+      </div>
+    </article>
+  );
 }
 
 export default function ResumoPage() {
-  const [period, setPeriod] = useState(() => nowPeriod());
+  const [year, setYear] = useState(currentYear);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [data, setData] = useState({});
+  const [summary, setSummary] = useState(null);
+  const [expandedBlocks, setExpandedBlocks] = useState(() => new Set());
   const [isIAOpen, setIsIAOpen] = useState(false);
+  const [queryContext, setQueryContext] = useState({ ready: false, userId: '' });
+  const summaryCache = useRef(new Map());
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setQueryContext({ ready: true, userId: params.get('user_id') || '' });
+  }, []);
+
+  useEffect(() => {
+    if (!queryContext.ready) return undefined;
+
     let mounted = true;
+    const cacheKey = `${queryContext.userId || 'self'}:${year}`;
+    const cached = summaryCache.current.get(cacheKey);
+
+    if (cached) {
+      setSummary(cached);
+      setError('');
+      setLoading(false);
+      return undefined;
+    }
 
     const load = async () => {
       setLoading(true);
       setError('');
 
       try {
-        const response = await fetch(`/api/finance/month?month=${period.month}&year=${period.year}`, {
-          cache: 'no-store'
-        });
+        const params = new URLSearchParams({ year: String(year) });
+        if (queryContext.userId) params.set('user_id', queryContext.userId);
 
+        const response = await fetch(`/api/finance/year?${params.toString()}`, { cache: 'no-store' });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(payload?.error || 'Não foi possível carregar o resumo mensal.');
+          throw new Error(payload?.error || 'Não foi possível carregar o resumo anual.');
         }
 
-        if (mounted) {
-          setData(payload?.data || {});
-        }
+        if (!mounted) return;
+        const nextSummary = payload?.summary || null;
+        summaryCache.current.set(cacheKey, nextSummary);
+        setSummary(nextSummary);
       } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : 'Erro ao carregar resumo.');
-        }
+        if (mounted) setError(err instanceof Error ? err.message : 'Erro ao carregar resumo anual.');
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
-    load();
-
+    void load();
     return () => {
       mounted = false;
     };
-  }, [period.month, period.year]);
+  }, [queryContext, year]);
 
-  const blocos = useMemo(() => {
-    return BLOCK_ORDER.map((block) => {
-      const items = block.key === 'contas' ? flattenContas(data?.contas) : Array.isArray(data?.[block.key]) ? data[block.key] : [];
+  useEffect(() => {
+    setExpandedBlocks(new Set());
+  }, [year]);
 
-      const previsto = block.key === 'contas' ? totalPrevistoContas(data?.contas || []) : totalPrevisto(items);
-      const realizado = block.key === 'contas' ? totalRealizadoContas(data?.contas || []) : totalRealizado(items);
-      const percent = percentualRealizado(items);
-      const status = statusBloco(items);
-      const pending = items.filter((item) => !item?.realized).length;
+  const backHref = queryContext.userId
+    ? `/admin/users/${encodeURIComponent(queryContext.userId)}/dashboard`
+    : '/app';
 
-      return {
-        ...block,
-        items,
-        previsto,
-        realizado,
-        percent,
-        status,
-        pending,
-        label: buildStatusLabel({ status, percent, pending })
-      };
+  const months = summary?.months || Object.keys(MONTH_LABELS);
+  const blocks = summary?.blocks || [];
+  const totals = summary?.totals || {};
+
+  const annualRows = useMemo(() => [
+    {
+      key: 'total-expenses',
+      label: 'Total de saídas',
+      icon: '🧮',
+      monthly: totals.expenseMonthly || {},
+      total: totals.expenses || 0,
+      revenuePercentage: totals.expensePercentage || 0,
+      className: 'expenses-row'
+    },
+    {
+      key: 'balance',
+      label: 'Saldo',
+      icon: '💵',
+      monthly: totals.balanceMonthly || {},
+      total: totals.balance || 0,
+      revenuePercentage: totals.balancePercentage || 0,
+      className: 'balance-row'
+    }
+  ], [totals]);
+
+  const toggleBlock = (blockKey) => {
+    setExpandedBlocks((current) => {
+      const next = new Set(current);
+      if (next.has(blockKey)) next.delete(blockKey);
+      else next.add(blockKey);
+      return next;
     });
-  }, [data]);
-
-  const resumo = useMemo(() => {
-    const receitas = blocos.find((block) => block.key === 'receitas');
-    const gastos = blocos.filter((block) => block.key !== 'receitas');
-
-    const receitasPrev = receitas?.previsto || 0;
-    const receitasReal = receitas?.realizado || 0;
-
-    const gastosPrev = gastos.reduce((acc, block) => acc + block.previsto, 0);
-    const gastosReal = gastos.reduce((acc, block) => acc + block.realizado, 0);
-
-    const saldoPrevisto = receitasPrev - gastosPrev;
-    const saldoRealizado = receitasReal - gastosReal;
-    const aindaASair = Math.max(0, gastosPrev - gastosReal);
-
-    return {
-      saldoPrevisto,
-      saldoRealizado,
-      aindaASair,
-      receitasPrev,
-      receitasReal,
-      gastosPrev,
-      gastosReal
-    };
-  }, [blocos]);
-
-  const insights = useMemo(() => {
-    const items = [];
-
-    const acimaDoPrevisto = blocos.filter(
-      (block) => block.key !== 'receitas' && block.previsto > 0 && block.realizado > block.previsto
-    );
-
-    if (acimaDoPrevisto.length > 0) {
-      items.push({
-        tone: 'warn',
-        text: `Atenção: ${acimaDoPrevisto.map((b) => b.nome).join(', ')} está acima do previsto.`
-      });
-    }
-
-    const reserva = blocos.find((block) => block.key === 'pagar-primeiro');
-    if (reserva && reserva.previsto > 0 && reserva.realizado >= reserva.previsto) {
-      items.push({
-        tone: 'good',
-        text: 'Excelente: meta do bloco Se Pagar Primeiro já foi realizada neste mês.'
-      });
-    }
-
-    return items;
-  }, [blocos]);
+  };
 
   return (
-    <main className="resumo-shell">
-      <div className="resumo-header">
+    <main className="annual-shell">
+      <header className="annual-header">
         <div>
-          <h1 className="text-display">Resumo Mensal</h1>
-          <p>Visão consolidada de previsto x realizado por bloco</p>
+          <h1>Resumo Financeiro Anual</h1>
+          <p>Comparativo mês a mês — somente valores realizados</p>
         </div>
-        <Link href="/app" className="back-link">
-          Voltar ao app
-        </Link>
-      </div>
+        <Link href={backHref} className="back-link">Voltar ao app</Link>
+      </header>
 
-      <div className="period-nav">
-        <button type="button" onClick={() => setPeriod((prev) => shiftPeriod(prev, -1))}>
-          ◀
-        </button>
-        <strong>{`${period.month}/${period.year}`}</strong>
-        <button type="button" onClick={() => setPeriod((prev) => shiftPeriod(prev, +1))}>
-          ▶
-        </button>
-      </div>
+      <nav className="year-nav" aria-label="Selecionar ano">
+        <button type="button" onClick={() => setYear((current) => current - 1)} aria-label="Ano anterior">◀</button>
+        <strong>{year}</strong>
+        <button type="button" onClick={() => setYear((current) => current + 1)} aria-label="Próximo ano">▶</button>
+      </nav>
 
-      {loading ? <div className="feedback">Carregando resumo...</div> : null}
+      {loading ? <div className="feedback">Carregando dados realizados de {year}...</div> : null}
       {error ? <div className="feedback error">{error}</div> : null}
 
-      {!loading && !error ? (
+      {!loading && !error && summary ? (
         <>
-          <section className="saldo-card">
-            <div className="text-label">Saldo principal do mês</div>
-            <strong className="saldo-main">{formatMoney(resumo.saldoRealizado)}</strong>
-            <div className="saldo-meta">
-              <span>Previsto: {formatMoney(resumo.saldoPrevisto)}</span>
-              <span>A sair: {formatMoney(resumo.aindaASair)}</span>
-            </div>
+          <section className="annual-kpis" aria-label="Indicadores anuais">
+            <SummaryCard icon="💰" label="Receita realizada no ano" value={totals.revenue} tone="positive" />
+            <SummaryCard icon="💳" label="Saídas realizadas no ano" value={totals.expenses} />
+            <SummaryCard icon="📊" label="Saldo realizado no ano" value={totals.balance} tone={totals.balance >= 0 ? 'positive' : 'negative'} />
           </section>
 
-          {insights.length > 0 ? (
-            <section className="insights">
-              {insights.map((insight) => (
-                <div key={insight.text} className={`insight ${insight.tone}`}>
-                  {insight.text}
-                </div>
-              ))}
-            </section>
-          ) : null}
+          <section className="annual-table-card">
+            <div className="table-heading">
+              <div>
+                <h2>Realizado por bloco</h2>
+                <p>Selecione um bloco para consultar os lançamentos declarados</p>
+              </div>
+              <span className="realized-only">Somente realizados</span>
+            </div>
 
-          <section className="blocos-grid">
-            {blocos.map((block) => (
-              <article key={block.key} className="bloco-card">
-                <header>
-                  <span className="icon">{block.icon}</span>
-                  <div>
-                    <h3>{block.nome}</h3>
-                    <small className={`status-badge ${block.status}`}>{block.label}</small>
-                  </div>
-                </header>
+            <div className="table-hint">
+              <span aria-hidden="true">›</span>
+              Os blocos iniciam recolhidos. Abra somente o que deseja analisar.
+            </div>
 
-                <BlocoResumoStrip
-                  totalPrevisto={block.previsto}
-                  totalRealizado={block.realizado}
-                  tipo={block.tipo === 'receita' ? 'receita' : 'gasto'}
-                />
+            <div className="annual-table-scroll">
+              <table className="annual-table">
+                <thead>
+                  <tr>
+                    <th className="block-column">Bloco</th>
+                    {months.map((month) => <th key={month}>{MONTH_LABELS[month]}</th>)}
+                    <th className="annual-total-column">Total anual</th>
+                    <th className="annual-percentage-column">% da receita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {blocks.map((block) => {
+                    const expanded = expandedBlocks.has(block.key);
+                    const detailId = `annual-detail-${block.key}`;
+                    return (
+                      <Fragment key={block.key}>
+                        <tr className={`block-row ${expanded ? 'expanded' : ''} ${block.key === 'receitas' ? 'revenue-row' : ''}`}>
+                          <th className="block-column" scope="row">
+                            <button
+                              type="button"
+                              className="block-toggle"
+                              onClick={() => toggleBlock(block.key)}
+                              aria-expanded={expanded}
+                              aria-controls={detailId}
+                            >
+                              <span className="chevron" aria-hidden="true">{expanded ? '⌄' : '›'}</span>
+                              <span className="block-icon" aria-hidden="true">{BLOCK_ICONS[block.key]}</span>
+                              <span className="block-label-wrap">
+                                <strong>{block.label}</strong>
+                                <small>{block.entries.length} {block.entries.length === 1 ? 'lançamento realizado' : 'lançamentos realizados'}</small>
+                              </span>
+                            </button>
+                          </th>
+                          {months.map((month) => <AmountCell key={month} value={block.monthly?.[month]} />)}
+                          <AmountCell value={block.total} className="annual-total-column" />
+                          <td className="annual-percentage-column">{formatPercentage(block.revenuePercentage)}</td>
+                        </tr>
 
-                <div className="totais">
-                  <span>{formatMoney(block.realizado)}</span>
-                  <span>prev. {formatMoney(block.previsto)}</span>
-                </div>
-              </article>
-            ))}
+                        {expanded ? (
+                          <tr className="details-row" id={detailId}>
+                            <td colSpan={months.length + 3}>
+                              <div className="details-panel">
+                                <div className="details-heading">
+                                  <strong>Lançamentos de {block.label}</strong>
+                                  <button type="button" onClick={() => toggleBlock(block.key)}>Recolher ⌃</button>
+                                </div>
+
+                                {block.entries.length > 0 ? (
+                                  <table className="details-table">
+                                    <thead>
+                                      <tr>
+                                        <th className="detail-name-column">Descrição</th>
+                                        {months.map((month) => <th key={month}>{MONTH_LABELS[month]}</th>)}
+                                        <th className="annual-total-column">Total anual</th>
+                                        <th className="annual-percentage-column">% da receita</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {block.entries.map((entry) => (
+                                        <tr key={entry.key}>
+                                          <th className="detail-name-column" scope="row">
+                                            {entry.groupLabel ? <small>{entry.groupLabel}</small> : null}
+                                            <span>{entry.label}</span>
+                                          </th>
+                                          {months.map((month) => <AmountCell key={month} value={entry.monthly?.[month]} />)}
+                                          <AmountCell value={entry.total} className="annual-total-column" />
+                                          <td className="annual-percentage-column">{formatPercentage(entry.revenuePercentage)}</td>
+                                        </tr>
+                                      ))}
+                                      <tr className="details-subtotal">
+                                        <th className="detail-name-column" scope="row">Subtotal de {block.label}</th>
+                                        {months.map((month) => <AmountCell key={month} value={block.monthly?.[month]} />)}
+                                        <AmountCell value={block.total} className="annual-total-column" />
+                                        <td className="annual-percentage-column">{formatPercentage(block.revenuePercentage)}</td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <div className="empty-details">Nenhum lançamento realizado neste ano.</div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+
+                  {annualRows.map((row) => (
+                    <tr key={row.key} className={row.className}>
+                      <th className="block-column" scope="row">
+                        <span className="summary-row-label"><span aria-hidden="true">{row.icon}</span>{row.label}</span>
+                      </th>
+                      {months.map((month) => <AmountCell key={month} value={row.monthly?.[month]} />)}
+                      <AmountCell value={row.total} className="annual-total-column" />
+                      <td className="annual-percentage-column">{formatPercentage(row.revenuePercentage)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="table-footnote"><span aria-hidden="true">ⓘ</span> Percentuais calculados sobre a receita realizada do período.</p>
           </section>
         </>
       ) : null}
@@ -248,222 +335,405 @@ export default function ResumoPage() {
       <FAB onClick={() => setIsIAOpen(true)} />
       <JacksonAIModal isOpen={isIAOpen} onClose={() => setIsIAOpen(false)} />
 
-      <style jsx>{`
-        .resumo-shell {
-          max-width: 1080px;
+      <style jsx global>{`
+        .annual-shell {
+          max-width: 1540px;
           margin: 0 auto;
-          padding: 28px 16px 120px;
+          min-height: 100vh;
+          padding: 32px 24px 120px;
           color: var(--text);
           background: var(--bg);
         }
 
-        .resumo-header {
+        .annual-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 14px;
+          gap: 20px;
         }
 
-        .resumo-header h1 {
+        .annual-header h1 {
           margin: 0;
-          font-size: 28px;
-          line-height: 1.1;
+          font-family: var(--font-display);
+          font-size: clamp(30px, 3vw, 44px);
+          line-height: 1.05;
         }
 
-        .resumo-header p {
-          margin: 6px 0 0;
+        .annual-header p,
+        .table-heading p {
+          margin: 8px 0 0;
           color: var(--text-2);
         }
 
         .back-link {
-          color: var(--green);
-          text-decoration: none;
+          color: var(--text);
           font-weight: 600;
+          text-decoration: none;
           white-space: nowrap;
         }
 
-        .period-nav {
+        .year-nav {
+          width: fit-content;
+          margin: 26px auto 22px;
           display: inline-flex;
+          position: relative;
+          left: 50%;
+          transform: translateX(-50%);
           align-items: center;
-          gap: 8px;
-          margin-bottom: 16px;
           border: 1px solid var(--border-2);
           border-radius: 999px;
-          padding: 5px 9px;
           background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
+          overflow: hidden;
         }
 
-        .period-nav button {
+        .year-nav button {
+          width: 48px;
+          height: 48px;
           border: 0;
-          background: var(--bg-surface);
+          background: transparent;
           color: var(--text);
-          border-radius: 8px;
-          width: 30px;
-          height: 30px;
           cursor: pointer;
         }
 
+        .year-nav button:hover { background: var(--bg-surface); }
+
+        .year-nav strong {
+          min-width: 92px;
+          text-align: center;
+          font-size: 18px;
+        }
+
         .feedback {
-          padding: 12px;
-          border-radius: var(--radius-md);
+          margin-bottom: 20px;
+          padding: 16px;
           border: 1px solid var(--border-2);
+          border-radius: var(--radius-lg);
           background: var(--bg-card);
-          margin-bottom: 16px;
         }
 
         .feedback.error {
-          border-color: color-mix(in srgb, var(--red) 38%, transparent);
           color: var(--red);
+          border-color: var(--red);
           background: var(--red-dim);
         }
 
-        .saldo-card {
-          border: 1px solid var(--border-green);
-          border-radius: var(--radius-xl);
-          background: var(--green-dim);
-          padding: 14px;
-          margin-bottom: 14px;
+        .annual-kpis {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 18px;
+          margin-bottom: 24px;
+        }
+
+        .annual-kpi {
+          min-height: 122px;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          padding: 20px 24px;
+          border: 1px solid var(--border-2);
+          border-radius: 22px;
+          background: var(--bg-card);
           box-shadow: var(--shadow-card);
         }
 
-        .saldo-main {
+        .annual-kpi.positive {
+          border-color: var(--border-green);
+          background: linear-gradient(135deg, var(--green-dim), var(--bg-card));
+        }
+
+        .annual-kpi.negative { border-color: var(--red); }
+
+        .annual-kpi-icon {
+          width: 58px;
+          height: 58px;
+          flex: 0 0 58px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          background: color-mix(in srgb, var(--bg-card) 82%, transparent);
+          border: 1px solid var(--border-2);
+          font-size: 26px;
+        }
+
+        .annual-kpi span:not(.annual-kpi-icon) {
+          color: var(--text-2);
+          font-size: 14px;
+        }
+
+        .annual-kpi strong {
           display: block;
-          margin-top: 8px;
-          font-size: 32px;
-          color: var(--green-text);
+          margin-top: 6px;
           font-family: var(--font-mono);
+          font-size: clamp(21px, 2vw, 30px);
           line-height: 1.1;
         }
 
-        .saldo-meta {
+        .annual-kpi.positive strong { color: var(--green-text); }
+        .annual-kpi.negative strong { color: var(--red); }
+
+        .annual-table-card {
+          border: 1px solid var(--border-2);
+          border-radius: 24px;
+          background: var(--bg-card);
+          box-shadow: var(--shadow-card);
+          padding: 22px 18px 16px;
+        }
+
+        .table-heading {
           display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          margin-top: 8px;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 0 8px;
+        }
+
+        .table-heading h2 {
+          margin: 0;
+          font-family: var(--font-display);
+          font-size: 24px;
+        }
+
+        .realized-only {
+          padding: 7px 11px;
+          border-radius: 999px;
+          color: var(--green-text);
+          background: var(--green-dim);
+          border: 1px solid var(--border-green);
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .table-hint {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 22px 8px 12px;
           color: var(--text-2);
           font-size: 13px;
         }
 
-        .insights {
-          margin-bottom: 14px;
+        .table-hint span {
+          width: 20px;
+          height: 20px;
           display: grid;
-          gap: 8px;
+          place-items: center;
+          border: 1px solid var(--border-green);
+          border-radius: 50%;
+          color: var(--green-text);
+          font-weight: 800;
         }
 
-        .insight {
-          border-radius: var(--radius-md);
-          padding: 10px 12px;
-          border: 1px solid transparent;
-          font-size: 14px;
-        }
-
-        .insight.warn {
-          background: var(--blue-dim);
-          border-color: var(--blue);
-          color: var(--text-2);
-        }
-
-        .insight.good {
-          background: var(--blue-dim);
-          border-color: var(--blue);
-          color: var(--text-2);
-        }
-
-        .blocos-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .bloco-card {
+        .annual-table-scroll {
+          overflow-x: auto;
           border: 1px solid var(--border-2);
-          border-radius: var(--radius-lg);
+          border-radius: 16px;
+          scrollbar-color: var(--green-mid) transparent;
+        }
+
+        .annual-table,
+        .details-table {
+          width: 100%;
+          min-width: 1420px;
+          border-collapse: separate;
+          border-spacing: 0;
+          table-layout: fixed;
+          font-size: 12px;
+        }
+
+        .annual-table th,
+        .annual-table td,
+        .details-table th,
+        .details-table td {
+          height: 58px;
+          padding: 9px 8px;
+          border-bottom: 1px solid var(--border-2);
+          text-align: right;
+          white-space: nowrap;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .annual-table thead th,
+        .details-table thead th {
+          height: 50px;
+          color: var(--text-2);
           background: var(--bg-card);
-          box-shadow: var(--shadow-sm);
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .bloco-card header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .bloco-card .icon {
-          font-size: 22px;
-          line-height: 1;
-          width: 40px;
-          height: 40px;
-          border-radius: var(--radius-full);
-          background: var(--green-dim);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .bloco-card h3 {
-          margin: 0;
-          font-size: 15px;
-          font-family: var(--font-display);
           font-weight: 700;
         }
 
-        .bloco-card small {
-          font-size: 11px;
+        .annual-table tbody tr:last-child > *,
+        .details-table tbody tr:last-child > * { border-bottom: 0; }
+
+        .annual-table th:not(.block-column),
+        .annual-table td:not(.block-column),
+        .details-table th:not(.detail-name-column),
+        .details-table td:not(.detail-name-column) { width: 82px; }
+
+        .block-column {
+          width: 220px;
+          min-width: 220px;
+          position: sticky;
+          left: 0;
+          z-index: 2;
+          text-align: left !important;
+          background: var(--bg-card);
+          border-right: 1px solid var(--border-2);
         }
 
-        .status-badge {
-          display: inline-flex;
-          margin-top: 3px;
-          border-radius: 999px;
-          padding: 3px 8px;
-          border: 1px solid var(--border-2);
-          color: var(--text-2);
-          background: var(--bg-surface);
+        thead .block-column { z-index: 4; }
+
+        .annual-total-column {
+          width: 112px !important;
+          background: color-mix(in srgb, var(--green-dim) 48%, var(--bg-card));
+          border-left: 1px solid var(--border-green);
+          font-weight: 800;
         }
 
-        .status-badge.completo {
-          border-color: var(--green-mid);
-          color: var(--green);
-          background: var(--green-dim);
+        .annual-percentage-column {
+          width: 98px !important;
+          background: color-mix(in srgb, var(--green-dim) 48%, var(--bg-card));
+          font-weight: 800;
         }
 
-        .status-badge.acima {
-          border-color: var(--red);
-          color: var(--red);
-          background: var(--red-dim);
-        }
-
-        .status-badge.pendente {
-          border-color: rgba(255, 213, 79, 0.35);
-          color: var(--gold);
-          background: var(--gold-dim);
-        }
-
-        .status-badge.vazio {
-          border-color: var(--border-2);
-          color: var(--text-3);
-          background: var(--bg-surface);
-        }
-
-        .totais {
+        .block-toggle {
+          width: 100%;
+          min-height: 44px;
           display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          font-size: 12px;
-          color: var(--text-2);
-          font-family: var(--font-mono);
+          align-items: center;
+          gap: 9px;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          color: var(--text);
+          text-align: left;
+          cursor: pointer;
         }
 
-        @media (max-width: 920px) {
-          .saldo-grid,
-          .blocos-grid {
-            grid-template-columns: 1fr;
-          }
+        .chevron {
+          width: 18px;
+          color: var(--green-text);
+          font-size: 22px;
+          line-height: 1;
+        }
+
+        .block-icon { font-size: 19px; }
+
+        .block-label-wrap {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .block-label-wrap strong { font-size: 13px; }
+        .block-label-wrap small { margin-top: 3px; color: var(--text-3); font-size: 9px; }
+
+        .block-row:hover > *,
+        .block-row.expanded > * { background-color: color-mix(in srgb, var(--green-dim) 65%, var(--bg-card)); }
+
+        .revenue-row > *,
+        .balance-row > * { color: var(--green-text); }
+
+        .revenue-row > *,
+        .balance-row > *,
+        .balance-row .block-column { background-color: color-mix(in srgb, var(--green-dim) 72%, var(--bg-card)); }
+
+        .expenses-row > *,
+        .expenses-row .block-column { background-color: var(--bg-surface); font-weight: 800; }
+
+        .summary-row-label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding-left: 25px;
+          font-weight: 800;
+        }
+
+        .details-row > td {
+          height: auto;
+          padding: 0;
+          background: var(--bg-surface);
+          text-align: left;
+        }
+
+        .details-panel {
+          margin: 10px;
+          padding: 14px 10px 10px;
+          border: 1px solid var(--border-2);
+          border-radius: 14px;
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .details-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 8px 12px;
+        }
+
+        .details-heading button {
+          border: 0;
+          background: transparent;
+          color: var(--green-text);
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .details-table {
+          min-width: 1340px;
+          border: 1px solid var(--border-2);
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .details-table th,
+        .details-table td { height: 50px; font-size: 11px; }
+
+        .detail-name-column {
+          width: 190px;
+          min-width: 190px;
+          text-align: left !important;
+          white-space: normal !important;
+        }
+
+        .detail-name-column small,
+        .detail-name-column span { display: block; }
+        .detail-name-column small { color: var(--text-3); margin-bottom: 2px; }
+
+        .details-subtotal > * {
+          background: color-mix(in srgb, var(--green-dim) 62%, var(--bg-card));
+          font-weight: 800;
+        }
+
+        .empty-details {
+          padding: 22px;
+          color: var(--text-3);
+          text-align: center;
+        }
+
+        .table-footnote {
+          margin: 16px 8px 2px;
+          color: var(--text-2);
+          font-size: 12px;
+        }
+
+        .table-footnote span { color: var(--green-text); font-weight: 800; }
+
+        @media (max-width: 900px) {
+          .annual-shell { padding: 24px 14px 110px; }
+          .annual-kpis { grid-template-columns: 1fr; gap: 10px; }
+          .annual-kpi { min-height: 96px; }
+          .annual-table-card { padding: 18px 10px 12px; }
+        }
+
+        @media (max-width: 620px) {
+          .annual-header { flex-direction: column; }
+          .table-heading { flex-direction: column; }
+          .annual-header h1 { font-size: 30px; }
+          .annual-header p { font-size: 14px; }
+          .year-nav { margin-top: 18px; }
+          .annual-kpi { padding: 16px; }
         }
       `}</style>
     </main>
