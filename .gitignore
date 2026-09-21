@@ -14,3 +14,4 @@ apps/web/dev-dist
 backup_zeroapp.sql
 backup.dump
 backups/
+output/

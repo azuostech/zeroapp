@@ -75,7 +75,7 @@ export async function GET(request) {
   let query = auth.service
     .from('irc_diagnostics')
     .select(
-      'id,user_id,status,current_domain,current_stage,report_generated_at,pdf_path,pdf_status,email_status,email_sent_at,generation_attempts,last_error,created_at,updated_at',
+      'id,user_id,status,current_domain,current_stage,report_generated_at,visual_status,pdf_path,pdf_status,email_status,email_sent_at,generation_attempts,last_error,created_at,updated_at',
       { count: 'exact' }
     )
     .order('updated_at', { ascending: false })

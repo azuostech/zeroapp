@@ -74,6 +74,12 @@ export async function POST() {
         report_generated_at: new Date().toISOString(),
         report_input_tokens: generated.inputTokens,
         report_output_tokens: generated.outputTokens,
+        visual_status: 'pending',
+        visual_version: null,
+        visual_model: null,
+        visual_assets: {},
+        visuals_generated_at: null,
+        visual_last_error: null,
         pdf_status: 'pending',
         email_status: 'pending',
         last_error: null

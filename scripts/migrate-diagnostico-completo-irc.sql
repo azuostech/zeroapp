@@ -74,6 +74,13 @@ CREATE TABLE IF NOT EXISTS public.irc_diagnostics (
   report_generated_at timestamptz,
   report_input_tokens integer,
   report_output_tokens integer,
+  visual_status text NOT NULL DEFAULT 'pending'
+    CHECK (visual_status IN ('pending', 'generating', 'ready', 'fallback', 'failed')),
+  visual_version text,
+  visual_model text,
+  visual_assets jsonb NOT NULL DEFAULT '{}'::jsonb,
+  visuals_generated_at timestamptz,
+  visual_last_error text,
   pdf_path text,
   pdf_generated_at timestamptz,
   pdf_status text NOT NULL DEFAULT 'pending'

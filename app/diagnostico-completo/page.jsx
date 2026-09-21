@@ -7,7 +7,7 @@ import styles from './styles.module.css';
 
 export const metadata = {
   title: 'Diagnóstico Completo | ZeroApp',
-  description: 'Identificador e Reprogramador de Crenças do Finanças do Zero'
+  description: 'Ferramenta de Diagnóstico, Identificador e Reprogramador de Crenças desenvolvida por Jackson Souza'
 };
 
 export const dynamic = 'force-dynamic';

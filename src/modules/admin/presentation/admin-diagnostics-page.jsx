@@ -190,6 +190,7 @@ export default function AdminDiagnosticsPage() {
               </span>
             </div>
             <div className={styles.delivery} data-label="Relatório">
+              <span>Visual: {item.visual_status || '—'}</span>
               <span>PDF: {item.pdf_status || '—'}</span>
               <span>E-mail: {item.email_status || '—'}</span>
             </div>

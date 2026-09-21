@@ -4,7 +4,8 @@ import { IRC_REPORT_VERSION } from '@/src/modules/irc/domain/irc-domains';
 import { reportHasRequiredSections } from '@/src/modules/irc/domain/report-validation';
 
 export const IRC_SYSTEM_PROMPT = `Você está escrevendo, na voz de Jackson Souza, o relatório do Diagnóstico
-Completo (IRC — Identificador e Reprogramador de Crenças) do Finanças do
+Completo (Ferramenta de Diagnóstico, Identificador e Reprogramador de Crenças
+desenvolvida por Jackson Souza) do Finanças do
 Zero. A pessoa respondeu 6 conjuntos de perguntas fechadas sobre sua relação
 com dinheiro. Cruze as respostas em uma leitura personalizada, coesa e
 profunda. Não apenas repita respostas.
@@ -34,8 +35,8 @@ Cruze emoção e autossabotagem e mostre o ciclo.
 **6. Onde você quer chegar**
 Contraste o momento atual e a visão de futuro, calibrando pela distância percebida.
 
-**7. Reprogramação — Método Lucro Primeiro + Novos Hábitos**
-Esta é a única seção em lista. O Método Lucro Primeiro organiza o dinheiro em:
+**7. Reprogramação — Método Finanças do Zero + Novos Hábitos**
+Esta é a única seção em lista. O Método Finanças do Zero organiza o dinheiro em:
 Receita, Lucro, Impostos, Despesas Fixas, Investimentos e Reserva de Emergência.
 Entregue 2 a 3 movimentos concretos, nomeando a crença contrariada.
 

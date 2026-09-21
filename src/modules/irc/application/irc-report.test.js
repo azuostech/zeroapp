@@ -14,7 +14,7 @@ Texto.
 Texto.
 **6. Onde você quer chegar**
 Texto.
-**7. Reprogramação — Método Lucro Primeiro + Novos Hábitos**
+**7. Reprogramação — Método Finanças do Zero + Novos Hábitos**
 - Movimento.
 **8. Fechamento + convite**
 Texto.

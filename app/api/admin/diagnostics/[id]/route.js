@@ -17,7 +17,7 @@ export async function GET(_request, { params }) {
   const { data, error } = await auth.service
     .from('irc_diagnostics')
     .select(
-      'id,user_id,status,current_domain,current_stage,report,report_generated_at,pdf_path,pdf_status,email_status,email_sent_at,generation_attempts,last_error,created_at,updated_at'
+      'id,user_id,status,current_domain,current_stage,report,report_generated_at,visual_status,pdf_path,pdf_status,email_status,email_sent_at,generation_attempts,last_error,created_at,updated_at'
     )
     .eq('id', diagnosticId)
     .maybeSingle();

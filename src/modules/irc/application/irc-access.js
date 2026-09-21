@@ -96,6 +96,7 @@ export function serializeDiagnostic(diagnostic) {
     answers: diagnostic.answers || {},
     report: diagnostic.report || null,
     report_generated_at: diagnostic.report_generated_at || null,
+    visual_status: diagnostic.visual_status || 'pending',
     pdf_ready: Boolean(diagnostic.pdf_path && diagnostic.pdf_status === 'ready'),
     pdf_status: diagnostic.pdf_status,
     email_status: diagnostic.email_status,

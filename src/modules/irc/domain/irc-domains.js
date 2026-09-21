@@ -1,7 +1,7 @@
 export const IRC_PRODUCT_CODE = 'diagnostico_completo';
 export const IRC_TURMA = 'diagnostico';
 export const IRC_SOURCE = 'ChatQuiz';
-export const IRC_REPORT_VERSION = 'irc-report-v1';
+export const IRC_REPORT_VERSION = 'irc-report-v2';
 
 const option = (id, label) => ({ id, label });
 const yesNo = (yes, no) => [option('sim', yes), option('nao', no)];
