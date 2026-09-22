@@ -20,6 +20,13 @@ ALTER TABLE public.irc_diagnostics
 CREATE INDEX IF NOT EXISTS idx_irc_diagnostics_visual_delivery
   ON public.irc_diagnostics (status, visual_status, pdf_status);
 
+UPDATE storage.buckets
+SET
+  public = false,
+  file_size_limit = 10485760,
+  allowed_mime_types = ARRAY['application/pdf', 'image/png', 'image/jpeg', 'image/webp']
+WHERE id = 'irc-reports';
+
 -- Força a recriação no novo layout quando o usuário voltar a abrir o relatório.
 -- O e-mail antigo não é reenviado automaticamente.
 UPDATE public.irc_diagnostics

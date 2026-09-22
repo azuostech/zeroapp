@@ -230,9 +230,29 @@ function drawMethodOverview(doc, state) {
   doc.font('Helvetica-Bold').fontSize(9.5).fillColor(C.white).text('Olhar deixa de ser ameaça quando cada valor ganha um nome e uma função.', PAGE.margin + 20, 725, { width: PAGE.width - PAGE.margin * 2 - 40, align: 'center' });
 }
 
+export function parseActionContent(section) {
+  const fullIntro = section.paragraphs.join(' ').trim();
+  if (section.items.length) return { intro: fullIntro, items: section.items };
+
+  const markers = [...fullIntro.matchAll(/Movimento\s+(\d+)\s*:\s*/gi)];
+  if (!markers.length) {
+    return {
+      intro: '',
+      items: [{ title: '', text: fullIntro || 'Aplique os próximos movimentos com constância.' }]
+    };
+  }
+
+  return {
+    intro: fullIntro.slice(0, markers[0].index).trim(),
+    items: markers.map((marker, index) => ({
+      title: `Movimento ${marker[1]}`,
+      text: fullIntro.slice(marker.index + marker[0].length, markers[index + 1]?.index ?? fullIntro.length).trim()
+    }))
+  };
+}
+
 function drawActionPages(doc, state, section) {
-  const intro = section.paragraphs.join(' ');
-  const items = section.items.length ? section.items : [{ title: '', text: intro || 'Aplique os próximos movimentos com constância.' }];
+  const { intro, items } = parseActionContent(section);
   let index = 0;
   let y = 0;
   const newPage = () => {

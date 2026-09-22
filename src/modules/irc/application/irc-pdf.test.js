@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIrcPdf, parseIrcReport } from './irc-pdf';
+import { buildIrcPdf, parseActionContent, parseIrcReport } from './irc-pdf';
 import { IRC_DOMAINS } from '../domain/irc-domains';
 
 describe('PDF do Diagnóstico Completo', () => {
@@ -35,5 +35,18 @@ describe('PDF do Diagnóstico Completo', () => {
     const sections = parseIrcReport('**7. Reprogramação — Método Lucro Primeiro + Novos Hábitos**\n- Nomeie tudo. Texto completo.');
     expect(sections[0].heading).toContain('Método Finanças do Zero');
     expect(sections[0].items[0]).toEqual({ title: 'Nomeie tudo.', text: 'Texto completo.' });
+  });
+
+  it('separa movimentos inline de relatórios antigos sem duplicar a introdução', () => {
+    const parsed = parseActionContent({
+      paragraphs: ['Introdução do método. Movimento 1: Primeira ação completa. Movimento 2: Segunda ação completa. Movimento 3: Terceira ação completa.'],
+      items: []
+    });
+    expect(parsed.intro).toBe('Introdução do método.');
+    expect(parsed.items).toEqual([
+      { title: 'Movimento 1', text: 'Primeira ação completa.' },
+      { title: 'Movimento 2', text: 'Segunda ação completa.' },
+      { title: 'Movimento 3', text: 'Terceira ação completa.' }
+    ]);
   });
 });

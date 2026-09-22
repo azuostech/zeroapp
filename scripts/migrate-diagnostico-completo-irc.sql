@@ -188,7 +188,7 @@ GRANT SELECT ON public.product_access, public.irc_diagnostics TO authenticated;
 GRANT ALL ON public.commerce_webhook_events, public.product_access, public.user_tags, public.irc_diagnostics TO service_role;
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('irc-reports', 'irc-reports', false, 10485760, ARRAY['application/pdf'])
+VALUES ('irc-reports', 'irc-reports', false, 10485760, ARRAY['application/pdf', 'image/png', 'image/jpeg', 'image/webp'])
 ON CONFLICT (id) DO UPDATE SET
   public = false,
   file_size_limit = EXCLUDED.file_size_limit,
