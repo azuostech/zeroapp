@@ -27,7 +27,7 @@
     },
     {
       "path": "/api/cron/irc-delivery",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
