@@ -30,7 +30,7 @@ async function writeEmailLog({ userId, to, subject, emailType, status, resendId 
 /**
  * Envia email e registra no email_logs.
  */
-export async function sendEmail({ userId, to, subject, html, emailType, emailSnapshot = null, attachments = undefined }) {
+export async function sendEmail({ userId, to, subject, html, emailType, emailSnapshot = null, attachments = undefined, idempotencyKey = undefined }) {
   if (!to || !subject || !html || !emailType) {
     return { success: false, error: 'invalid_email_payload' };
   }
@@ -54,13 +54,16 @@ export async function sendEmail({ userId, to, subject, html, emailType, emailSna
       throw new Error('resend_not_configured');
     }
 
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [to],
-      subject,
-      html,
-      ...(Array.isArray(attachments) && attachments.length ? { attachments } : {})
-    });
+    const { data, error } = await resend.emails.send(
+      {
+        from: EMAIL_FROM,
+        to: [to],
+        subject,
+        html,
+        ...(Array.isArray(attachments) && attachments.length ? { attachments } : {})
+      },
+      idempotencyKey ? { idempotencyKey } : undefined
+    );
 
     if (error) {
       throw new Error(error.message || 'resend_send_failed');

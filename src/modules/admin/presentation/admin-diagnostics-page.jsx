@@ -68,6 +68,7 @@ export default function AdminDiagnosticsPage() {
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [retryingId, setRetryingId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -117,6 +118,21 @@ export default function AdminDiagnosticsPage() {
     setDetail(null);
     setDetailError('');
     setDetailLoading(false);
+  };
+
+  const retryDelivery = async (item) => {
+    setRetryingId(item.id);
+    setError('');
+    try {
+      const response = await fetch(`/api/admin/diagnostics/${encodeURIComponent(item.id)}/retry`, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'diagnostic_retry_failed');
+      await load();
+    } catch (_) {
+      setError('Não foi possível reenfileirar este relatório.');
+    } finally {
+      setRetryingId('');
+    }
   };
 
   const diagnostics = payload?.diagnostics || [];
@@ -201,6 +217,11 @@ export default function AdminDiagnosticsPage() {
               </button>
               {item.pdf_ready ? (
                 <a href={`/api/admin/diagnostics/${encodeURIComponent(item.id)}/pdf`} target="_blank" rel="noreferrer">PDF</a>
+              ) : null}
+              {item.status === 'report_ready' && (!item.pdf_ready || item.email_status === 'failed') ? (
+                <button type="button" onClick={() => retryDelivery(item)} disabled={retryingId === item.id}>
+                  {retryingId === item.id ? 'Enfileirando…' : 'Reprocessar'}
+                </button>
               ) : null}
             </div>
           </article>

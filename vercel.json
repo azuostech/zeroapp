@@ -24,6 +24,10 @@
     {
       "path": "/api/cron/shamar-index",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/irc-delivery",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
