@@ -1,0 +1,1 @@
+import MilestoneFreezePage from '@/src/modules/patrimony/presentation/MilestoneFreezePage'; export default async function Page({params}){const{id}=await params;return <MilestoneFreezePage adminViewUserId={id}/>}

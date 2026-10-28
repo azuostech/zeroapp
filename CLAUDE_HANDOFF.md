@@ -2510,3 +2510,11 @@ Implementado:
 - Executar no Supabase:
   - `scripts/migrate-email-logs-shamar-types.sql`
 - `backup.dump` continua nao rastreado e nao deve ser incluido em commit sem uma decisao explicita.
+# Gestão de Patrimônio
+
+- Tabelas isoladas: `patrimony_settings`, `patrimony_debts`, `patrimony_assets`, `patrimony_change_log`, `patrimony_milestones` e `patrimony_commitments`, todas com RLS. Acesso do aluno exige tier MOVIMENTO, ACELERACAO ou AUTOGOVERNO; admin pode atuar por impersonação auditada.
+- Marcos são fotos imutáveis. Apenas admin congela e só o último marco pode ser excluído.
+- Coins: `debt_mapped` concede 25 uma vez por dívida, limitado a 20 por usuário; `debt_cleared` concede 200 uma vez, com idade mínima de 7 dias, exceto quitação pelo mentor.
+- UI do aluno: `/financas/patrimonio/**`. UI do mentor: `/admin/users/[id]/patrimonio/**`. APIs: `/api/patrimony/**`.
+- Aplicar em staging: `scripts/migrate-patrimonio-etapa-a.sql`. Reverter apenas sem dados reais: `scripts/rollback-patrimonio-etapa-a.sql`.
+- Pendente de operação: aplicar a migração e executar os cenários manuais A1–A10 e E1–E10 em staging antes do deploy.

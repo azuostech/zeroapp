@@ -1,0 +1,1 @@
+import DebtDetailPage from '@/src/modules/patrimony/presentation/DebtDetailPage'; export default async function Page({params}){const{id,debtId}=await params;return <DebtDetailPage id={debtId} adminViewUserId={id}/>}
