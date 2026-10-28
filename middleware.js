@@ -44,6 +44,7 @@ export async function middleware(request) {
   const isApi = pathname.startsWith('/api/');
   const isProfileApi = pathname.startsWith('/api/profile');
   const isFinanceApi = pathname.startsWith('/api/finance');
+  const isPatrimonyApi = pathname.startsWith('/api/patrimony');
   const isAdminApi = pathname.startsWith('/api/admin');
   const isAuthApi = pathname.startsWith('/api/auth');
   const isPortalApi = pathname === '/api/portal' || pathname.startsWith('/api/portal/');
@@ -53,6 +54,7 @@ export async function middleware(request) {
   const isAdminArea = pathname.startsWith('/admin');
   const isContentArea = pathname.startsWith('/conteudo');
   const isFinanceArea = pathname.startsWith('/financas');
+  const isPatrimonyArea = pathname.startsWith('/financas/patrimonio');
   const isPortalArea = pathname === '/portal' || pathname.startsWith('/portal/');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
   const isShamarArea = pathname.startsWith('/shamar');
@@ -65,7 +67,7 @@ export async function middleware(request) {
   const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea;
   const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
   const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || isIrcArea || studentOnlyPage);
-  const protectedApi = !isPortalApi && (isFinanceApi || isAdminApi || isIrcApi || studentOnlyApi);
+  const protectedApi = !isPortalApi && (isFinanceApi || isPatrimonyApi || isAdminApi || isIrcApi || studentOnlyApi);
 
   if (isCommunityApi) {
     return jsonError('community_discontinued', 410);
@@ -154,6 +156,14 @@ export async function middleware(request) {
   const profileTier = String(profile.tier || 'DESPERTAR').toUpperCase();
   if (isFinanceArea && !isAdmin && !FINANCE_TIERS.has(profileTier) && !hasDiagnosticAccess(profile)) {
     return redirect(request, '/upgrade');
+  }
+
+  // Gestão de Patrimônio: MOVIMENTO+ (comprador só do Diagnóstico NÃO acessa)
+  if (isPatrimonyArea && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+    return redirect(request, '/upgrade');
+  }
+  if (isPatrimonyApi && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+    return jsonError('tier_required', 403);
   }
 
   if (!isAdmin && studentOnlyPage && !hasStudentAccess(profile)) {

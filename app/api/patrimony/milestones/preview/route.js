@@ -1,0 +1,3 @@
+import { previewMilestone } from '@/src/modules/patrimony/application/patrimony-milestones';
+import { routeContext, json, errorResponse } from '@/src/modules/patrimony/application/patrimony-api';
+export async function GET(request) { const resolved = await routeContext({ request, requestedUserId: request.nextUrl.searchParams.get('user_id'), resource: 'patrimony_milestone', action: 'read' }); if (resolved.response) return resolved.response; if (!resolved.context.isAdmin) return json({ error: 'mentor_only' }, 403); try { return json({ data: await previewMilestone({ supabase: resolved.supabase, userId: resolved.context.targetUserId }) }); } catch (error) { return errorResponse(error); } }

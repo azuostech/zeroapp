@@ -1,0 +1,3 @@
+import { getChangeHistory } from '@/src/modules/patrimony/application/patrimony-service';
+import { routeContext, json, errorResponse } from '@/src/modules/patrimony/application/patrimony-api';
+export async function GET(request) { const entityId = request.nextUrl.searchParams.get('entity_id'); if (!entityId) return json({ error: 'entity_id_required' }, 400); const resolved = await routeContext({ request, requestedUserId: request.nextUrl.searchParams.get('user_id'), resource: 'patrimony_history' }); if (resolved.response) return resolved.response; try { return json({ data: await getChangeHistory({ supabase: resolved.supabase, entityId }) }); } catch (error) { return errorResponse(error); } }
