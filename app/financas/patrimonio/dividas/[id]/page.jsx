@@ -1,0 +1,1 @@
+'use client'; import { use } from 'react'; import DebtDetailPage from '@/src/modules/patrimony/presentation/DebtDetailPage'; export default function Page({params}){const{id}=use(params);return <DebtDetailPage id={id}/>}

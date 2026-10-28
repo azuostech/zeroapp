@@ -2277,6 +2277,17 @@ export default function FinanceAppPage({
           </section>
         ) : null}
 
+        {!adminMode ? (
+          <section className="home-quick-access">
+            <QuickAccessCard
+              emoji={canAccessMavf ? '🏛️' : '🔒'}
+              title="Patrimônio"
+              subtitle="Ativos, dívidas e evolução"
+              href={canAccessMavf ? '/financas/patrimonio' : '/upgrade'}
+            />
+          </section>
+        ) : null}
+
         {!adminMode && showJourneySections ? (
           <section className="perfil-section" id="perfil">
             <div className="perfil-header">
