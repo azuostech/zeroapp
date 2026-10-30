@@ -2516,5 +2516,9 @@ Implementado:
 - Marcos são fotos imutáveis. Apenas admin congela e só o último marco pode ser excluído.
 - Coins: `debt_mapped` concede 25 uma vez por dívida, limitado a 20 por usuário; `debt_cleared` concede 200 uma vez, com idade mínima de 7 dias, exceto quitação pelo mentor.
 - UI do aluno: `/financas/patrimonio/**`. UI do mentor: `/admin/users/[id]/patrimonio/**`. APIs: `/api/patrimony/**`.
-- Aplicar em staging: `scripts/migrate-patrimonio-etapa-a.sql`. Reverter apenas sem dados reais: `scripts/rollback-patrimonio-etapa-a.sql`.
-- Pendente de operação: aplicar a migração e executar os cenários manuais A1–A10 e E1–E10 em staging antes do deploy.
+- Em 2026-10-30, `scripts/migrate-patrimonio-etapa-a.sql` foi aplicado no Supabase configurado em `.env.local`; as seis tabelas foram verificadas com RLS ativo e o cache do PostgREST foi recarregado. Reverter apenas sem dados reais com `scripts/rollback-patrimonio-etapa-a.sql`.
+- Em 2026-10-30, a implementação visual foi alinhada ao protótipo: hub, ativos, dívidas, detalhe, sessão do mentor e congelamento de marco receberam métricas, autoria, confirmação de dados antigos, compromissos e prévia comparativa.
+- O acesso a Patrimônio aparece ao lado de `Ver resumo anual` em `/financas`, com o mesmo tamanho e regra de acesso já usada pelo módulo.
+- A imagem de compartilhamento deixou de depender de `next/og`: `/api/patrimony/share-image` gera PNG 1080×1920 com `sharp`, resposta `no-store` e tratamento explícito de falha/retry na UI.
+- Verificações finais: `npm test` com 70/70 testes, `npm run build` aprovado, PNG validado pela assinatura e `git diff --check` sem erros.
+- Pendente de operação: executar os cenários manuais A1–A10 e E1–E10 no ambiente publicado. Não há migração destrutiva nem alteração de dados de clientes nesta entrega.

@@ -2057,6 +2057,14 @@ export default function FinanceAppPage({
           >
             Ver resumo anual
           </a>
+          {!adminMode ? (
+            <a
+              className="btn btn-outline"
+              href={canAccessMavf ? '/financas/patrimonio' : '/upgrade'}
+            >
+              🏛️ Patrimônio
+            </a>
+          ) : null}
           <button className="btn btn-quiet-danger" onClick={() => window.limparMes?.()}>
             ↺ Limpar mês
           </button>
@@ -2274,17 +2282,6 @@ export default function FinanceAppPage({
             <QuickAccessCard emoji="💬" title="Comunidade" subtitle="Entrar no grupo do WhatsApp" href={COMMUNITY_WHATSAPP_URL} />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
             <QuickAccessCard emoji="🛡️" title="SHAMAR" subtitle="Ferramenta da jornada" href="/shamar" />
-          </section>
-        ) : null}
-
-        {!adminMode ? (
-          <section className="home-quick-access">
-            <QuickAccessCard
-              emoji={canAccessMavf ? '🏛️' : '🔒'}
-              title="Patrimônio"
-              subtitle="Ativos, dívidas e evolução"
-              href={canAccessMavf ? '/financas/patrimonio' : '/upgrade'}
-            />
           </section>
         ) : null}
 

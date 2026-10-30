@@ -1,5 +1,5 @@
 import { debtInputSchema } from '@/src/modules/patrimony/domain/patrimony.validation';
-import { createDebt, getSettings, listDebts } from '@/src/modules/patrimony/application/patrimony-service';
+import { createDebt, getSettings, listDebts, suggestSettingsFromFinance } from '@/src/modules/patrimony/application/patrimony-service';
 import { awardDebtMapped } from '@/src/modules/patrimony/application/patrimony-coins';
 import { enrichDebts } from '@/src/modules/patrimony/application/patrimony-enrichment';
 import { routeContext, json, errorResponse, parseBody } from '@/src/modules/patrimony/application/patrimony-api';
@@ -14,9 +14,10 @@ export async function GET(request) {
 
   try {
     const { supabase, context } = resolved;
-    const [debts, settings, baselineResult] = await Promise.all([
+    const [debts, settings, settingsSuggestion, baselineResult] = await Promise.all([
       listDebts({ supabase, userId: context.targetUserId }),
       getSettings({ supabase, userId: context.targetUserId }),
+      suggestSettingsFromFinance({ supabase, userId: context.targetUserId }),
       supabase
         .from('patrimony_milestones')
         .select('id,label,milestone_date,metrics,snapshot')
@@ -36,6 +37,7 @@ export async function GET(request) {
       data: {
         ...enriched,
         settings,
+        settingsSuggestion,
         baseline: baselineResult.data || null,
         deltasVsBaseline: baselineMetrics ? {
           total_debts: enriched.totals.total_debts - Number(baselineMetrics.total_debts || 0),
