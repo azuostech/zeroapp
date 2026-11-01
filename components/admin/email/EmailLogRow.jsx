@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -51,10 +52,10 @@ function typeLabel(type) {
     phase_milestone: 'Marco',
     reconnect: 'Reconexão',
     test: 'Teste',
-    shamar_invite: 'Convite SHAMAR',
-    shamar_invite_resend: 'Reenvio SHAMAR',
-    shamar_invite_admin_resend: 'Reenvio SHAMAR',
-    shamar_contribution_registered: 'Aporte SHAMAR',
+    shamar_invite: SHAMAR_ENABLED ? 'Convite SHAMAR' : 'Convite de jornada',
+    shamar_invite_resend: SHAMAR_ENABLED ? 'Reenvio SHAMAR' : 'Reenvio de jornada',
+    shamar_invite_admin_resend: SHAMAR_ENABLED ? 'Reenvio SHAMAR' : 'Reenvio de jornada',
+    shamar_contribution_registered: SHAMAR_ENABLED ? 'Aporte SHAMAR' : 'Aporte de jornada',
     welcome_lead: 'Boas-vindas',
     workshop_access_granted: 'Acesso Workshop'
   };

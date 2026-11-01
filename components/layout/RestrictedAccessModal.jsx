@@ -6,6 +6,7 @@ import {
   BASIC_ACCESS_PRICE_LABEL,
   buildMentorshipWhatsappUrl
 } from '@/src/lib/commerce/access-offer';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 
 export default function RestrictedAccessModal({ isOpen, onClose }) {
   useEffect(() => {
@@ -37,8 +38,13 @@ export default function RestrictedAccessModal({ isOpen, onClose }) {
         <p className="eyebrow">Ambiente restrito para alunos</p>
         <h2 id="restricted-title">Libere sua jornada no ZeroApp</h2>
         <p className="intro">
-          Este espaço é exclusivo para alunos. Com o Acesso Básico, você entra na Imersão Finanças do Zero,
-          libera ferramentas SHAMAR e participa da comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.
+          {SHAMAR_ENABLED ? (
+            <>Este espaço é exclusivo para alunos. Com o Acesso Básico, você entra na Imersão Finanças do Zero,
+              libera ferramentas SHAMAR e participa da comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.</>
+          ) : (
+            <>Este espaço é exclusivo para alunos. Com o Acesso Básico, você entra na Imersão Finanças do Zero e
+              participa da comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.</>
+          )}
         </p>
 
         <div className="actions">

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { resolveShamarDbError } from '@/src/lib/shamar/api';
 import { calculateAndPersistShamarIndex } from '@/src/lib/shamar/index-calculator';
@@ -9,6 +10,10 @@ export const runtime = 'nodejs';
 async function runIndexJob(request) {
   if (!isCronRequestAuthorized(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  if (!SHAMAR_ENABLED) {
+    return NextResponse.json({ skipped: true, reason: 'feature_disabled' });
   }
 
   let supabase;

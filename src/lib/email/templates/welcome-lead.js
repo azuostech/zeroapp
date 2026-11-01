@@ -1,4 +1,5 @@
 import { BASIC_ACCESS_CHECKOUT_URL, BASIC_ACCESS_PRICE_LABEL, buildMentorshipWhatsappUrl } from '@/src/lib/commerce/access-offer';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { baseTemplate } from './base-template.js';
 
 function firstName(fullName) {
@@ -27,13 +28,17 @@ export function welcomeLeadTemplate({ profile }) {
     </p>
     <p class="intro">
       Seu acesso inicial ja permite entrar no painel financeiro e assistir aos conteudos gratuitos da area educacional.
-      Os ambientes de alunos, como comunidade e ferramentas SHAMAR, ficam liberados quando voce entra para uma turma ativa.
+      ${SHAMAR_ENABLED
+        ? 'Os ambientes de alunos, como comunidade e ferramentas SHAMAR, ficam liberados quando voce entra para uma turma ativa.'
+        : 'Os ambientes de alunos, como a comunidade, ficam liberados quando voce entra para uma turma ativa.'}
     </p>
 
     <div class="highlight">
       <div class="hl-label">Acesso Basico</div>
       <div class="hl-value">${escapeHtml(BASIC_ACCESS_PRICE_LABEL)}</div>
-      <div class="hl-sub">Pagamento unico para liberar Imersao Financas do Zero, SHAMAR e comunidade.</div>
+      <div class="hl-sub">${SHAMAR_ENABLED
+        ? 'Pagamento unico para liberar Imersao Financas do Zero, SHAMAR e comunidade.'
+        : 'Pagamento unico para liberar Imersao Financas do Zero e comunidade.'}</div>
     </div>
 
     <div class="cta-box">

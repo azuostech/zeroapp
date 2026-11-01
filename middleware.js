@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { hasDiagnosticAccess, hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 const ROOT_PATH = '/';
@@ -71,6 +72,15 @@ export async function middleware(request) {
 
   if (isCommunityApi) {
     return jsonError('community_discontinued', 410);
+  }
+
+  // SHAMAR oculto: bloqueia aluno e admin enquanto a flag estiver desligada
+  const isAdminShamarArea = pathname.startsWith('/admin/shamar');
+  const isAdminShamarApi = pathname.startsWith('/api/admin/shamar') || /^\/api\/admin\/users\/[^/]+\/shamar(\/|$)/.test(pathname);
+  if (!SHAMAR_ENABLED) {
+    if (isShamarApi || isAdminShamarApi) return jsonError('feature_disabled', 404);
+    if (isAdminShamarArea) return redirect(request, '/admin');
+    if (isShamarArea) return redirect(request, '/app');
   }
 
   if (!hasSupabaseEnv()) {

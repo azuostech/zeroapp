@@ -17,6 +17,7 @@ import {
   normalizeFinancialData
 } from '@/src/modules/finance/domain/defaults';
 import { COMMUNITY_WHATSAPP_URL } from '@/src/lib/community/community-link';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { shouldApplyFinancialLoad } from '@/src/modules/finance/application/financial-load-guard';
 
 const THEME_KEY = 'zeroapp-theme';
@@ -2281,7 +2282,7 @@ export default function FinanceAppPage({
           <section className="home-quick-access">
             <QuickAccessCard emoji="💬" title="Comunidade" subtitle="Entrar no grupo do WhatsApp" href={COMMUNITY_WHATSAPP_URL} />
             <QuickAccessCard emoji="📚" title="Conteudo" subtitle="Aulas e materiais" href="/conteudo" />
-            <QuickAccessCard emoji="🛡️" title="SHAMAR" subtitle="Ferramenta da jornada" href="/shamar" />
+            {SHAMAR_ENABLED ? <QuickAccessCard emoji="🛡️" title="SHAMAR" subtitle="Ferramenta da jornada" href="/shamar" /> : null}
           </section>
         ) : null}
 

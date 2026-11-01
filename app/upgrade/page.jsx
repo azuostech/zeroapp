@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import { buildWhatsappUrl } from '@/src/lib/commerce/access-offer';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { createServerSupabase } from '@/src/lib/supabase/server';
 import styles from './upgrade.module.css';
 
@@ -14,7 +15,7 @@ export const metadata = {
 const BENEFITS = [
   '6 Blocos Financeiros',
   'Gamificação completa',
-  'Jornada SHAMAR',
+  ...(SHAMAR_ENABLED ? ['Jornada SHAMAR'] : []),
   'Grupo da comunidade no WhatsApp',
   'Minha Jornada',
   'Conteúdos exclusivos'

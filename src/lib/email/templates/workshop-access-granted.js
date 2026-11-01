@@ -1,4 +1,5 @@
 import { BASIC_ACCESS_PRICE_LABEL, buildMentorshipWhatsappUrl, WORKSHOP_TURMA } from '@/src/lib/commerce/access-offer';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { baseTemplate } from './base-template.js';
 
 function firstName(fullName) {
@@ -24,7 +25,9 @@ export function workshopAccessGrantedTemplate({ profile }) {
     <p class="greeting">Seu acesso foi liberado, ${nome}.</p>
     <p class="intro">
       Pagamento confirmado. Seu perfil foi atualizado para a turma ${turma}, mantendo o tier DESPERTAR.
-      Agora voce pode acessar a Imersao Financas do Zero, ferramentas SHAMAR e comunidade.
+      ${SHAMAR_ENABLED
+        ? 'Agora voce pode acessar a Imersao Financas do Zero, ferramentas SHAMAR e comunidade.'
+        : 'Agora voce pode acessar a Imersao Financas do Zero e a comunidade.'}
     </p>
 
     <div class="highlight">

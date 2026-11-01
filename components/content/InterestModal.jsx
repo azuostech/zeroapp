@@ -6,6 +6,7 @@ import {
   BASIC_ACCESS_PRICE_LABEL,
   buildMentorshipWhatsappUrl
 } from '@/src/lib/commerce/access-offer';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 
 export default function InterestModal({ isOpen, onClose, program }) {
   useEffect(() => {
@@ -39,8 +40,13 @@ export default function InterestModal({ isOpen, onClose, program }) {
         <h2 id="interest-title">{program.title}</h2>
         <span className="reason">{program.locked_reason || 'Conteúdo exclusivo'}</span>
         <p>
-          Este é um ambiente restrito para alunos. Com o Acesso Básico, você libera a Imersão Finanças do Zero,
-          ferramentas SHAMAR e comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.
+          {SHAMAR_ENABLED ? (
+            <>Este é um ambiente restrito para alunos. Com o Acesso Básico, você libera a Imersão Finanças do Zero,
+              ferramentas SHAMAR e comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.</>
+          ) : (
+            <>Este é um ambiente restrito para alunos. Com o Acesso Básico, você libera a Imersão Finanças do Zero e
+              participa da comunidade por {BASIC_ACCESS_PRICE_LABEL}, pagamento único.</>
+          )}
         </p>
         <a href={BASIC_ACCESS_CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="primary-cta" onClick={onClose}>
           Adquirir acesso básico

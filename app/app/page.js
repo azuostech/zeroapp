@@ -9,6 +9,7 @@ import FAB from '@/components/layout/FAB';
 import NavigationCard from '@/components/layout/NavigationCard';
 import RestrictedAccessModal from '@/components/layout/RestrictedAccessModal';
 import { fetchCurrentProfile } from '@/src/lib/client/profile-cache';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { hasStudentAccess } from '@/src/modules/profile/domain/access';
 import { COMMUNITY_WHATSAPP_URL } from '@/src/lib/community/community-link';
 
@@ -100,7 +101,7 @@ export default function HomeHubPage() {
     { icon: '📚', label: 'Educação', href: '/conteudo' },
     { icon: '📋', label: 'Meu Diagnóstico', href: '/diagnostico-completo' },
     { icon: '💬', label: 'Comunidade', href: COMMUNITY_WHATSAPP_URL },
-    { icon: '🛡️', label: 'SHAMAR', href: '/shamar', locked: !canUseStudentAreas }
+    ...(SHAMAR_ENABLED ? [{ icon: '🛡️', label: 'SHAMAR', href: '/shamar', locked: !canUseStudentAreas }] : [])
   ];
 
   return (

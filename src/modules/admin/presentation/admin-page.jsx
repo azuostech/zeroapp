@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 import { getBrowserSupabase } from '@/src/lib/supabase/browser';
 
 const THEME_KEY = 'zeroapp-theme';
@@ -176,7 +177,7 @@ export default function AdminPage() {
                       ${u.status === 'active' ? `<button class="btn-action btn-disable" onclick="setStatus('${safeId}','disabled')">✗ Desativar</button>` : ''}
                       ${u.status === 'disabled' ? `<button class="btn-action btn-enable" onclick="setStatus('${safeId}','active')">↺ Reativar</button>` : ''}
                       <button class="btn-action btn-tier" onclick="openTierModal('${safeId}')">⚙️ Tier + Turma</button>
-                      <button class="btn-action btn-shamar ${shamarUnlocked ? 'active' : ''}" onclick="setShamarUnlocked('${safeId}',${shamarUnlocked ? 'false' : 'true'})">🛡️ SHAMAR ${shamarUnlocked ? 'ON' : 'OFF'}</button>
+                      ${SHAMAR_ENABLED ? `<button class="btn-action btn-shamar ${shamarUnlocked ? 'active' : ''}" onclick="setShamarUnlocked('${safeId}',${shamarUnlocked ? 'false' : 'true'})">🛡️ SHAMAR ${shamarUnlocked ? 'ON' : 'OFF'}</button>` : ''}
                       <button class="btn-action btn-reset" onclick="resetPassword('${safeEmail}')">🔑 Senha</button>
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
                       <a class="btn-action btn-open" href="/admin/users/${safePathId}/dashboard">↗ Dashboard</a>
@@ -707,9 +708,11 @@ export default function AdminPage() {
           <a className="nav-item nav-item-link" href="/admin/conteudo" id="nav-content">
             <span className="nav-icon">📚</span> Conteúdo
           </a>
-          <a className="nav-item nav-item-link" href="/admin/shamar" id="nav-shamar">
-            <span className="nav-icon">🛡️</span> SHAMAR
-          </a>
+          {SHAMAR_ENABLED ? (
+            <a className="nav-item nav-item-link" href="/admin/shamar" id="nav-shamar">
+              <span className="nav-icon">🛡️</span> SHAMAR
+            </a>
+          ) : null}
           <a className="nav-item nav-item-link" href="/admin/emails" id="nav-emails">
             <span className="nav-icon">📧</span> Emails
           </a>

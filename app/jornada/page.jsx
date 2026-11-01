@@ -6,6 +6,7 @@ import BottomNav from '@/components/layout/BottomNav';
 import FAB from '@/components/layout/FAB';
 import JacksonAIModal from '@/components/layout/JacksonAIModal';
 import { useJornada } from '@/hooks/useJornada';
+import { SHAMAR_ENABLED } from '@/src/lib/features';
 
 const UPGRADE_LINK = 'https://wa.me/';
 
@@ -56,15 +57,17 @@ export default function JornadaPage() {
         // no-op
       }
 
-      try {
-        const response = await fetch('/api/shamar/seasons', { cache: 'no-store' });
-        if (!response.ok) return;
-        const payload = await response.json().catch(() => ({}));
-        if (mounted) {
-          setShamarSummary(!payload?.locked && payload?.season ? payload : null);
+      if (SHAMAR_ENABLED) {
+        try {
+          const response = await fetch('/api/shamar/seasons', { cache: 'no-store' });
+          if (!response.ok) return;
+          const payload = await response.json().catch(() => ({}));
+          if (mounted) {
+            setShamarSummary(!payload?.locked && payload?.season ? payload : null);
+          }
+        } catch (_) {
+          // no-op
         }
-      } catch (_) {
-        // no-op
       }
     };
 
@@ -112,7 +115,7 @@ export default function JornadaPage() {
         {isLoading ? <div className="feedback">Carregando jornada...</div> : null}
         {error ? <div className="feedback error">{error}</div> : null}
 
-        {shamarSummary ? (
+        {SHAMAR_ENABLED && shamarSummary ? (
           <section className="shamar-journey">
             <div>
               <span>🛡️ SHAMAR ativo</span>
