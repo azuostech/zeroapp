@@ -2522,3 +2522,10 @@ Implementado:
 - A imagem de compartilhamento deixou de depender de `next/og`: `/api/patrimony/share-image` gera PNG 1080×1920 com `sharp`, resposta `no-store` e tratamento explícito de falha/retry na UI.
 - Verificações finais: `npm test` com 70/70 testes, `npm run build` aprovado, PNG validado pela assinatura e `git diff --check` sem erros.
 - Pendente de operação: executar os cenários manuais A1–A10 e E1–E10 no ambiente publicado. Não há migração destrutiva nem alteração de dados de clientes nesta entrega.
+
+## Home Hub — Patrimônio + SHAMAR oculto
+
+- `NEXT_PUBLIC_FEATURE_SHAMAR` controla a visibilidade e o acesso ao SHAMAR. O padrão é desligado; para religar, defina a variável como `true` na Vercel e faça um novo deploy, pois variáveis `NEXT_PUBLIC_` são incorporadas no build.
+- A flag controla o card da Home, o acesso rápido de Finanças, o resumo da Jornada, o benefício da tela de upgrade, os textos dos modais e e-mails, os rótulos do histórico de e-mails, o menu e toggle do admin e as rotas de aluno/admin. O cron `shamar-index` permanece agendado, mas retorna `skipped` depois de validar a autorização enquanto a flag estiver desligada.
+- A Home agora exibe, nesta ordem: Finanças, Patrimônio, Educação, Meu Diagnóstico e Comunidade; o card SHAMAR volta ao final da lista quando a flag é ligada.
+- `hasPatrimonyAccess(profile)` centraliza a regra de acesso: admin ou tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`. Perfis `DESPERTAR`, inclusive da turma `diagnostico`, seguem para `/upgrade`.

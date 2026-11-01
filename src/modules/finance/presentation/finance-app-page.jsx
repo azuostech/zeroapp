@@ -8,7 +8,7 @@ import { CoinsDisplay } from '@/components/gamification/CoinsDisplay';
 import { TierDisplay } from '@/components/gamification/TierDisplay';
 import BottomNav from '@/components/layout/BottomNav';
 import QuickAccessCard from '@/components/layout/QuickAccessCard';
-import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { hasPatrimonyAccess, hasStudentAccess } from '@/src/modules/profile/domain/access';
 import {
   SIMPLE_BLOCK_KEYS,
   cloneDefaultFinancialData,
@@ -141,6 +141,7 @@ export default function FinanceAppPage({
   showJourneySections = true
 }) {
   const [canAccessMavf, setCanAccessMavf] = useState(false);
+  const [canAccessPatrimony, setCanAccessPatrimony] = useState(false);
   const [hasActiveMavfSession, setHasActiveMavfSession] = useState(false);
   const [impersonationLabel, setImpersonationLabel] = useState('');
   const [workshopCode, setWorkshopCode] = useState('');
@@ -1739,6 +1740,7 @@ export default function FinanceAppPage({
 
         if (mounted) {
           setCanAccessMavf(canAccess);
+          setCanAccessPatrimony(hasPatrimonyAccess(payload.profile));
           setImpersonationLabel(
             adminMode ? `Atendendo: ${payload.profile.full_name || payload.profile.email || 'Cliente'}` : ''
           );
@@ -2061,7 +2063,7 @@ export default function FinanceAppPage({
           {!adminMode ? (
             <a
               className="btn btn-outline"
-              href={canAccessMavf ? '/financas/patrimonio' : '/upgrade'}
+              href={canAccessPatrimony ? '/financas/patrimonio' : '/upgrade'}
             >
               🏛️ Patrimônio
             </a>

@@ -1,3 +1,7 @@
+import { normalizeTier } from './tier-config';
+
+const PATRIMONY_TIERS = new Set(['MOVIMENTO', 'ACELERACAO', 'AUTOGOVERNO']);
+
 export function isAdminProfile(profile) {
   return profile?.role === 'admin' || profile?.is_admin === true;
 }
@@ -27,4 +31,8 @@ export function hasStudentAccess(profile) {
     .map((turma) => turma.trim().toLocaleLowerCase('pt-BR'))
     .filter(Boolean)
     .some((turma) => turma !== 'diagnostico');
+}
+
+export function hasPatrimonyAccess(profile) {
+  return isAdminProfile(profile) || PATRIMONY_TIERS.has(normalizeTier(profile?.tier));
 }

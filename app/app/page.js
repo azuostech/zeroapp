@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import FinanceSummaryCard from '@/components/finance/FinanceSummaryCard';
 import AppHeader from '@/components/layout/AppHeader';
@@ -10,7 +11,7 @@ import NavigationCard from '@/components/layout/NavigationCard';
 import RestrictedAccessModal from '@/components/layout/RestrictedAccessModal';
 import { fetchCurrentProfile } from '@/src/lib/client/profile-cache';
 import { SHAMAR_ENABLED } from '@/src/lib/features';
-import { hasStudentAccess } from '@/src/modules/profile/domain/access';
+import { hasPatrimonyAccess, hasStudentAccess } from '@/src/modules/profile/domain/access';
 import { COMMUNITY_WHATSAPP_URL } from '@/src/lib/community/community-link';
 
 const JacksonAIModal = dynamic(() => import('@/components/layout/JacksonAIModal'), {
@@ -33,6 +34,7 @@ function nowPeriod() {
 // CLAUDE-HANDOFF-MARKER: Home Hub V1 concluída com resumo financeiro, cards de navegação calibrados,
 // personalização no header e navegação inferior com atalho MAVF.
 export default function HomeHubPage() {
+  const router = useRouter();
   const [isIAOpen, setIsIAOpen] = useState(false);
   const [isLoadingFinance, setIsLoadingFinance] = useState(true);
   const [financialData, setFinancialData] = useState(null);
@@ -96,8 +98,10 @@ export default function HomeHubPage() {
   }, []);
 
   const canUseStudentAreas = hasStudentAccess(profile);
+  const canUsePatrimony = profile === null || hasPatrimonyAccess(profile);
   const navigationCards = [
     { icon: '💰', label: 'Finanças', href: '/financas' },
+    { icon: '🏛️', label: 'Patrimônio', href: '/financas/patrimonio', locked: !canUsePatrimony, lockedHref: '/upgrade' },
     { icon: '📚', label: 'Educação', href: '/conteudo' },
     { icon: '📋', label: 'Meu Diagnóstico', href: '/diagnostico-completo' },
     { icon: '💬', label: 'Comunidade', href: COMMUNITY_WHATSAPP_URL },
@@ -122,7 +126,7 @@ export default function HomeHubPage() {
               label={card.label}
               href={card.href}
               locked={card.locked}
-              onLockedClick={() => setRestrictedModalOpen(true)}
+              onLockedClick={() => (card.lockedHref ? router.push(card.lockedHref) : setRestrictedModalOpen(true))}
             />
           ))}
         </section>
