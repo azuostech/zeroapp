@@ -5,7 +5,7 @@ export const DEBT_TYPES = {
 };
 
 export const ASSET_CATEGORIES = {
-  reserva: { label: 'Reserva de emergência', productive: true },
+  reserva: { label: 'Reserva de Liquidez', productive: true },
   investimento: { label: 'Investimentos', productive: true },
   bem: { label: 'Bens', productive: false }, outro: { label: 'Outros', productive: false }
 };
@@ -24,6 +24,6 @@ export const COMPARE_INDICATORS = [
   { key: 'monthly_interest', label: 'Juros pagos por mês', better: 'lower', format: 'money' },
   { key: 'expensive_debt_total', label: 'Dívida cara (>5% a.m.)', better: 'lower', format: 'money' },
   { key: 'debt_income_ratio', label: 'Renda comprometida', better: 'lower', format: 'percent' },
-  { key: 'reserve_total', label: 'Reserva de emergência', better: 'higher', format: 'money' },
+  { key: 'reserve_total', label: 'Reserva de Liquidez', better: 'higher', format: 'money' },
   { key: 'overdue_count', label: 'Contas em atraso', better: 'lower', format: 'int' }
 ];

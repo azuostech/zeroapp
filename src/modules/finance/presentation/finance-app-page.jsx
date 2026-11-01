@@ -2150,7 +2150,7 @@ export default function FinanceAppPage({
             </div>
             <div className="bloco-body">
               <div className="add-row add-row-top">
-                <input type="text" className="add-input" id="new-pagar-primeiro" placeholder="+ Adicionar (ex: Reserva de emergência)" />
+                <input type="text" className="add-input" id="new-pagar-primeiro" placeholder="+ Adicionar (ex: Reserva de Liquidez)" />
                 <button className="add-btn" onClick={() => window.adicionarCat?.('pagar-primeiro')}>
                   Adicionar
                 </button>

@@ -11,7 +11,7 @@ import base from './patrimony.module.css';
 import styles from './patrimony-enhanced.module.css';
 import { formatBRL, formatPercent } from '@/src/modules/patrimony/domain/patrimony.money';
 
-const LABELS = { reserva: 'Reserva de emergência', investimento: 'Investimentos', bem: 'Bens', outro: 'Outros' };
+const LABELS = { reserva: 'Reserva de Liquidez', investimento: 'Investimentos', bem: 'Bens', outro: 'Outros' };
 
 export default function AssetsPage({ adminViewUserId }) {
   const { data, loading, error, refresh } = usePatrimony('/api/patrimony/overview', adminViewUserId);
@@ -46,7 +46,7 @@ export default function AssetsPage({ adminViewUserId }) {
       </section>
 
       <section className={base.card}>
-        <h2>Reserva de emergência</h2>
+        <h2>Reserva de Liquidez</h2>
         {metrics.reserve_months != null ? (
           <>
             <ProgressBar value={reserveProgress || 0} label={`${String(metrics.reserve_months).replace('.', ',')} mês(es) de custo de vida · meta ${metrics.reserve_target_months} meses`} />

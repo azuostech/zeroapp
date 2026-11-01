@@ -37,7 +37,7 @@ export function pickShareHighlight(indicators = []) {
   if (item.key === 'expensive_debt_total') return pct >= 45 ? 'Cortei pela metade a dívida cara.' : `Reduzi ${pct}% da minha dívida cara.`;
   if (item.key === 'total_debts') return `Reduzi ${pct}% das minhas dívidas.`;
   if (item.key === 'monthly_interest') return `Pago ${pct}% menos de juros por mês.`;
-  if (item.key === 'reserve_total' && item.from === 0 && item.to > 0) return 'Criei minha reserva de emergência.';
+  if (item.key === 'reserve_total' && item.from === 0 && item.to > 0) return 'Criei minha Reserva de Liquidez.';
   if (item.key === 'overdue_count' && item.to === 0) return 'Zerei as contas em atraso.';
   return `${item.label}: ${pct}% de evolução.`;
 }

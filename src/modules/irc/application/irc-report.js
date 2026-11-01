@@ -37,7 +37,7 @@ Contraste o momento atual e a visão de futuro, calibrando pela distância perce
 
 **7. Reprogramação — Método Finanças do Zero + Novos Hábitos**
 Esta é a única seção em lista. O Método Finanças do Zero organiza o dinheiro em:
-Receita, Lucro, Impostos, Despesas Fixas, Investimentos e Reserva de Emergência.
+Receita, Lucro, Impostos, Despesas Fixas, Investimentos e Reserva de Liquidez.
 Entregue 2 a 3 movimentos concretos, nomeando a crença contrariada.
 
 **8. Fechamento + convite**

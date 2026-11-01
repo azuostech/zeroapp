@@ -7,7 +7,7 @@ const STORAGE_KEY = 'zeroapp:jackson-ia-session';
 export const QUICK_CHIPS = [
   { id: 'analise', label: '📊 Analisar minha carteira', message: 'Analisa minha carteira deste mês e me diz onde estou.' },
   { id: 'vazamento', label: '💸 Onde estou vazando?', message: 'Onde estou perdendo dinheiro que poderia economizar?' },
-  { id: 'reserva', label: '🏦 Como melhorar minha reserva?', message: 'Como posso aumentar minha reserva de emergência?' },
+  { id: 'reserva', label: '🏦 Como melhorar minha reserva?', message: 'Como posso aumentar minha Reserva de Liquidez?' },
   { id: 'identidade', label: '💎 Trabalhar identidade', message: 'Quero refletir sobre minha identidade financeira.' },
   {
     id: 'gratidao',
