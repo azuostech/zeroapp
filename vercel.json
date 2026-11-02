@@ -36,6 +36,26 @@
     {
       "path": "/api/cron/patrimony-reminder",
       "schedule": "0 12 5 * *"
+    },
+    {
+      "path": "/api/cron/market-indices",
+      "schedule": "0 22 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market-b3",
+      "schedule": "15 22 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market-tesouro",
+      "schedule": "30 22 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market-cvm",
+      "schedule": "0 11 * * 1-6"
+    },
+    {
+      "path": "/api/cron/investments-revalue",
+      "schedule": "0 23 * * *"
     }
   ]
 }

@@ -6,7 +6,7 @@ const fail = (error, fallback) => { if (error) throw new Error(error.message || 
 
 export async function eligiblePatrimonyUserIds(service, days = 90) {
   const since = new Date(Date.now() - days * 86400000).toISOString(); const ids = new Set();
-  for (const table of ['patrimony_debts', 'patrimony_assets', 'patrimony_milestones']) {
+  for (const table of ['patrimony_debts', 'patrimony_assets', 'patrimony_milestones', 'investment_positions']) {
     const column = table === 'patrimony_milestones' ? 'created_at' : 'updated_at';
     const { data, error } = await service.from(table).select('user_id').gte(column, since); fail(error, `${table}_eligible_failed`);
     for (const row of data || []) ids.add(row.user_id);

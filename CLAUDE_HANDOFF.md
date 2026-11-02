@@ -2529,3 +2529,14 @@ Implementado:
 - A flag controla o card da Home, o acesso rápido de Finanças, o resumo da Jornada, o benefício da tela de upgrade, os textos dos modais e e-mails, os rótulos do histórico de e-mails, o menu e toggle do admin e as rotas de aluno/admin. O cron `shamar-index` permanece agendado, mas retorna `skipped` depois de validar a autorização enquanto a flag estiver desligada.
 - A Home agora exibe, nesta ordem: Finanças, Patrimônio, Educação, Meu Diagnóstico e Comunidade; o card SHAMAR volta ao final da lista quando a flag é ligada.
 - `hasPatrimonyAccess(profile)` centraliza a regra de acesso: admin ou tier `MOVIMENTO`, `ACELERACAO` ou `AUTOGOVERNO`. Perfis `DESPERTAR`, inclusive da turma `diagnostico`, seguem para `/upgrade`.
+
+## Investimentos — dados de mercado (Etapa 8)
+
+- A migration `scripts/migrate-investimentos-etapa-a.sql` cria as tabelas isoladas de investimentos e mercado. Ela ainda precisa ser validada e aplicada em ambiente isolado antes de produção.
+- Fontes verificadas em 2026-11-02:
+  - BCB SGS: JSON com `data` em `dd/MM/aaaa` e `valor` string; séries 12 CDI, 11 Selic, 433 IPCA e 1 PTAX venda.
+  - brapi: `results[0].regularMarketPrice` numérico e `regularMarketTime` ISO. O cron exige `BRAPI_TOKEN` e trata a ausência sem erro 500.
+  - Tesouro Transparente: recurso CSV `precotaxatesourodireto.csv`, separado por `;`, decimal com vírgula; cabeçalhos `Tipo Titulo`, `Data Vencimento`, `Data Base`, `Taxa Compra Manha`, `Taxa Venda Manha`, `PU Compra Manha`, `PU Venda Manha`, `PU Base Manha`. A URL fica em `TESOURO_PRICES_CSV_URL`; para reencontrá-la, abra Tesouro Transparente > Dados Abertos e pesquise “Taxas dos Títulos Ofertados pelo Tesouro Direto”.
+  - CVM: ZIP mensal `inf_diario_fi_AAAAMM.zip`, CSV `;`; em outubro/2026 os cabeçalhos incluem `CNPJ_FUNDO_CLASSE`, `DT_COMPTC` e `VL_QUOTA`. O parser também aceita o legado `CNPJ_FUNDO`.
+- Crons UTC: índices `22:00` seg–sex; B3 `22:15` seg–sex; Tesouro `22:30` seg–sex; CVM `11:00` seg–sáb; reavaliação `23:00` diária. Todos exigem `CRON_SECRET` e têm `maxDuration = 300`.
+- Falha de fonte não zera posição: mantém-se o último valor persistido. O backfill inicial do BCB começa em `2016-01-01`, em janelas máximas de cinco anos.
