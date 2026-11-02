@@ -38,16 +38,19 @@ const positionBaseSchema = z.object({
   first_contribution: firstContributionSchema
 });
 
+export function pricingMethodFor(value) {
+  let pricingMethod = ASSET_CLASSES[value.asset_class]?.defaultPricing || 'manual';
+  if (['renda_fixa_bancaria', 'debenture_cri_cra'].includes(value.asset_class)) pricingMethod = ({ cdi: 'cdi_curve', selic: 'selic_curve', pre: 'pre_curve', ipca: 'ipca_curve' })[value.indexer] || 'manual';
+  if (['fundo', 'previdencia'].includes(value.asset_class) && !value.cnpj) pricingMethod = 'manual';
+  return pricingMethod;
+}
+
 export const positionInputSchema = positionBaseSchema.superRefine((value, context) => {
   if (value.cnpj && value.cnpj.length !== 14) context.addIssue({ code: z.ZodIssueCode.custom, path: ['cnpj'], message: 'CNPJ deve ter 14 dígitos' });
   if (['acao', 'fii', 'etf', 'bdr'].includes(value.asset_class) && !/^[A-Z0-9]{4,12}$/.test(value.ticker || '')) context.addIssue({ code: z.ZodIssueCode.custom, path: ['ticker'], message: 'Ticker inválido' });
   if (value.first_contribution.occurred_on > today()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['first_contribution', 'occurred_on'], message: 'A data não pode ser futura' });
-}).transform((value) => {
-  let pricingMethod = ASSET_CLASSES[value.asset_class].defaultPricing;
-  if (['renda_fixa_bancaria', 'debenture_cri_cra'].includes(value.asset_class)) pricingMethod = ({ cdi: 'cdi_curve', selic: 'selic_curve', pre: 'pre_curve', ipca: 'ipca_curve' })[value.indexer] || 'manual';
-  if (['fundo', 'previdencia'].includes(value.asset_class) && !value.cnpj) pricingMethod = 'manual';
-  return { ...value, pricing_method: pricingMethod };
-});
+}).transform((value) => ({ ...value, pricing_method: pricingMethodFor(value) }));
+export const positionUpdateSchema = positionBaseSchema.omit({ first_contribution: true }).partial();
 
 export const movementInputSchema = z.object({
   kind: z.enum(['aporte', 'resgate', 'vencimento', 'provento', 'ajuste']), amount: signedMoney, quantity: optionalNumber,

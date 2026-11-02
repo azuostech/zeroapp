@@ -46,6 +46,7 @@ export async function middleware(request) {
   const isProfileApi = pathname.startsWith('/api/profile');
   const isFinanceApi = pathname.startsWith('/api/finance');
   const isPatrimonyApi = pathname.startsWith('/api/patrimony');
+  const isInvestmentsApi = pathname.startsWith('/api/investments');
   const isAdminApi = pathname.startsWith('/api/admin');
   const isAuthApi = pathname.startsWith('/api/auth');
   const isPortalApi = pathname === '/api/portal' || pathname.startsWith('/api/portal/');
@@ -56,6 +57,7 @@ export async function middleware(request) {
   const isContentArea = pathname.startsWith('/conteudo');
   const isFinanceArea = pathname.startsWith('/financas');
   const isPatrimonyArea = pathname.startsWith('/financas/patrimonio');
+  const isInvestmentsArea = pathname.startsWith('/financas/investimentos');
   const isPortalArea = pathname === '/portal' || pathname.startsWith('/portal/');
   const isJacksonArea = pathname.startsWith('/jackson-ia');
   const isShamarArea = pathname.startsWith('/shamar');
@@ -68,7 +70,7 @@ export async function middleware(request) {
   const studentOnlyPage = isShamarArea || isMavfArea || isJornadaArea;
   const studentOnlyApi = isShamarApi || isMavfApi || isCommunityApi;
   const protectedPage = !isPortalArea && (isAppArea || isAdminArea || isContentArea || isFinanceArea || isJacksonArea || isIrcArea || studentOnlyPage);
-  const protectedApi = !isPortalApi && (isFinanceApi || isPatrimonyApi || isAdminApi || isIrcApi || studentOnlyApi);
+  const protectedApi = !isPortalApi && (isFinanceApi || isPatrimonyApi || isInvestmentsApi || isAdminApi || isIrcApi || studentOnlyApi);
 
   if (isCommunityApi) {
     return jsonError('community_discontinued', 410);
@@ -173,6 +175,12 @@ export async function middleware(request) {
     return redirect(request, '/upgrade');
   }
   if (isPatrimonyApi && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+    return jsonError('tier_required', 403);
+  }
+  if (isInvestmentsArea && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
+    return redirect(request, '/upgrade');
+  }
+  if (isInvestmentsApi && !isAdmin && !FINANCE_TIERS.has(profileTier)) {
     return jsonError('tier_required', 403);
   }
 

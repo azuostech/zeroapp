@@ -1,5 +1,6 @@
 import { getServiceSupabase } from '@/src/lib/supabase/service';
 import { curveValue, investedAmount, marketValue } from '../domain/investments.valuation';
+import { firstDayOfMonth } from '../domain/investments.calendar';
 
 const digits = (value) => String(value || '').replace(/\D/g, '');
 const curveMethod = (position) => ({ cdi: 'cdi_curve', selic: 'selic_curve', pre: 'pre_curve', ipca: 'ipca_curve' })[position.indexer];
@@ -73,6 +74,28 @@ export async function revalueAll(service = getServiceSupabase(), asOf = new Date
     }
   }
   return result;
+}
+
+const nextMonth = (month) => { const date = new Date(`${month}T00:00:00.000Z`); date.setUTCMonth(date.getUTCMonth() + 1); return date.toISOString().slice(0, 10); };
+
+export async function buildPositionSeries({ supabase, position, movements = [], monthly = [], today = new Date().toISOString().slice(0, 10) }) {
+  const first = [...movements].filter((item) => item.kind === 'aporte').sort((a, b) => a.occurred_on.localeCompare(b.occurred_on))[0];
+  if (!first) return [];
+  const loaded = await supabase.from('market_index_series').select('*').order('ref_date');
+  if (loaded.error) throw new Error(loaded.error.message);
+  let month = firstDayOfMonth(first.occurred_on);
+  if (first.occurred_on > month) month = nextMonth(month);
+  const last = firstDayOfMonth(today);
+  const snapshots = new Map(monthly.map((item) => [item.month, item]));
+  const points = [];
+  while (month <= last) {
+    const relevantMovements = movements.filter((item) => item.occurred_on <= month);
+    const calculated = revaluePosition(position, { series: loaded.data || [], quotes: [], movements: relevantMovements, asOf: month });
+    const snapshot = snapshots.get(month);
+    points.push({ month, curve: calculated.curve_value ?? snapshot?.curve_value ?? null, market: snapshot?.value ?? null });
+    month = nextMonth(month);
+  }
+  return points;
 }
 
 export async function snapshotMonthlyValues(month, service = getServiceSupabase()) {

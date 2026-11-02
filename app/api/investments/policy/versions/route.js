@@ -1,0 +1,2 @@
+import { listPolicyVersions } from '@/src/modules/investments/application/investments-policy-service'; import { investmentsContext,errorResponse,json } from '@/src/modules/investments/application/investments-api';
+export async function GET(request){const r=await investmentsContext({request,requestedUserId:request.nextUrl.searchParams.get('user_id'),resource:'investment_policy'});if(r.response)return r.response;try{return json({data:await listPolicyVersions({supabase:r.supabase,userId:r.context.targetUserId})})}catch(e){return errorResponse(e)}}
