@@ -32,7 +32,7 @@ export async function freezeMilestone({ supabase, userId, actorId, actorRole = '
   return { ...milestone, push };
 }
 export async function listMilestones({ supabase, userId }) {
-  const { data, error } = await supabase.from('patrimony_milestones').select('id,sequence,kind,label,milestone_date,metrics,mentor_note,frozen_by_role,self_assessment,student_reflection,patrimony_commitments(id,description,due_date,status,resolved_at)').eq('user_id', userId).order('sequence', { ascending: false }); fail(error, 'milestones_load_failed');
+  const { data, error } = await supabase.from('patrimony_milestones').select('id,sequence,kind,label,milestone_date,metrics,mentor_note,frozen_by_role,self_assessment,student_reflection,created_at,patrimony_commitments(id,description,due_date,status,resolved_at)').eq('user_id', userId).order('sequence', { ascending: false }); fail(error, 'milestones_load_failed');
   return (data || []).map((item, index, all) => {
     const previous = all[index + 1];
     const commitmentItems = item.patrimony_commitments || [];

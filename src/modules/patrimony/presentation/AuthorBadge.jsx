@@ -7,6 +7,9 @@ function daysSince(value) {
 }
 
 export default function AuthorBadge({ item }) {
+  if (item?.frozen_by_role) {
+    return <span className={`${styles.authorBadge} ${item.frozen_by_role === 'mentor' ? styles.mentorBadge : ''}`}>{item.frozen_by_role}</span>;
+  }
   const days = daysSince(item?.updated_at);
   if (days != null && days > STALE_DAYS) {
     return <span className={`${styles.authorBadge} ${styles.staleBadge}`}>sem atualização há {days} dias</span>;

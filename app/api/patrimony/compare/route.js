@@ -53,6 +53,7 @@ export async function loadComparison({ supabase, userId, from = 'baseline', to =
       ? netWorthZeroProgress(toPoint.metrics.net_worth, baseline.metrics.net_worth)
       : null,
     mentorNote: toPoint.mentorNote,
+    studentReflection: toPoint.frozen_by_role === 'aluno' ? toPoint.student_reflection : null,
     projection: calculateNetWorthProjection(timelinePoints),
     availablePoints: [
       ...allMilestones.map((entry) => ({

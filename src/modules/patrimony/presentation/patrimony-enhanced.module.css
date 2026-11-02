@@ -97,6 +97,11 @@
   resize: vertical;
 }
 
+.assessment { display: grid; grid-template-columns: repeat(5, minmax(44px, 1fr)); gap: 8px; }
+.assessment button { min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-section); color: var(--text); font: inherit; font-weight: 800; }
+.assessment button[aria-pressed='true'] { border-color: var(--border-green); background: var(--green-dim); color: var(--green-text); }
+.assessmentLabels { display: flex; justify-content: space-between; margin: 6px 0 14px; color: var(--text2); font-size: 12px; }
+
 .commitmentComposer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;

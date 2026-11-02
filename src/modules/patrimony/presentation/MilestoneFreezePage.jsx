@@ -24,6 +24,7 @@ function delta(current, reference) {
 }
 
 export default function MilestoneFreezePage({ adminViewUserId }) {
+  const isAdmin = Boolean(adminViewUserId);
   const router = useRouter();
   const { data, loading, error, refresh } = usePatrimony('/api/patrimony/milestones/preview', adminViewUserId);
   const [date, setDate] = useState(localDate);
@@ -34,6 +35,9 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
   const [resolutions, setResolutions] = useState({});
   const [confirmingId, setConfirmingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [assessment, setAssessment] = useState(null);
+  const [reflection, setReflection] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function confirmStale(item) {
     setConfirmingId(item.id);
@@ -67,7 +71,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
       toast.error('Confirme ou atualize os itens desatualizados antes de congelar o marco.');
       return;
     }
-    if (!window.confirm('O marco vira a foto oficial deste momento e não pode ser editado.')) return;
+    setConfirmOpen(false);
     setSaving(true);
     try {
       const resolveCommitments = data.openCommitments
@@ -78,12 +82,14 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
         body: JSON.stringify({
           milestone_date: date,
           mentor_note: note,
+          self_assessment: assessment,
+          student_reflection: reflection,
           commitments,
           resolve_commitments: resolveCommitments
         })
       }, adminViewUserId);
-      toast.success('Marco congelado');
-      router.push(`/admin/users/${encodeURIComponent(adminViewUserId)}/patrimonio/evolucao`);
+      toast.success('Marco registrado');
+      router.push(isAdmin ? `/admin/users/${encodeURIComponent(adminViewUserId)}/patrimonio/evolucao` : '/financas/patrimonio/evolucao');
     } catch (reason) {
       toast.error(reason.message);
     } finally {
@@ -100,7 +106,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
   return (
     <PatrimonyShell
       title={data.nextSequence === 0 ? 'Registrar Estado A (ponto de partida)' : `Registrar marco · ${data.nextLabel}`}
-      subtitle="Revise os números com o aluno antes de congelar."
+      subtitle={`${data.nextLabel} · ${new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR')} · por você${isAdmin ? ' (mentor)' : ''}`}
       adminViewUserId={adminViewUserId}
     >
       <section className={base.card}>
@@ -108,7 +114,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
       </section>
 
       <section className={base.card}>
-        <h2><span className={styles.stepNumber}>1</span> Revise os números com o aluno</h2>
+        <h2><span className={styles.stepNumber}>1</span> Confira seus números</h2>
         <p className={base.itemTop}><span>Ativos · {data.assets.length} itens</span><b className={`${base.money} ${base.positive}`}>{formatBRL(data.metrics.total_assets)}</b></p>
         <p className={base.itemTop}><span>Dívidas · {data.debts.filter((item) => item.status === 'ativa').length} itens</span><b className={`${base.money} ${base.debt}`}>{formatBRL(data.metrics.total_debts)}</b></p>
         <p className={base.itemTop}><span>Patrimônio líquido</span><b className={base.money}>{formatBRL(data.metrics.net_worth)}</b></p>
@@ -130,26 +136,35 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
 
       {data.nextSequence > 0 ? (
         <section className={base.card}>
-          <h2>Compromissos do marco anterior</h2>
+          <h2><span className={styles.stepNumber}>2</span> Como foi seu plano de ação?</h2>
           {data.openCommitments.length ? data.openCommitments.map((item) => (
             <label key={item.id} className={styles.commitmentResolution}>
               <span>{item.description}</span>
               <select value={resolutions[item.id] || 'aberto'} onChange={(event) => setResolutions({ ...resolutions, [item.id]: event.target.value })}>
-                <option value="aberto">Manter aberto</option>
-                <option value="cumprido">Cumprido</option>
-                <option value="nao_cumprido">Não cumprido</option>
+                <option value="aberto">Escolha</option>
+                <option value="cumprido">Feito</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="nao_cumprido">Não fiz</option>
               </select>
             </label>
           )) : <p className={base.muted}>Nenhum compromisso aberto.</p>}
         </section>
       ) : null}
 
-      <section className={base.card}>
-        <h2><span className={styles.stepNumber}>2</span> Palavra do mentor</h2>
+      {isAdmin ? <section className={base.card}>
+        <h2><span className={styles.stepNumber}>3</span> Palavra do mentor</h2>
         <textarea className={styles.fullTextarea} maxLength="2000" value={note} onChange={(event) => setNote(event.target.value)} placeholder="O que mudou nesta sessão? O aluno vê este texto no Antes × Agora." />
-      </section>
+      </section> : <section className={base.card}>
+        <h2><span className={styles.stepNumber}>3</span> Como você se sente com seu dinheiro hoje?</h2>
+        <div className={styles.assessment} role="radiogroup" aria-label="Autoavaliação financeira">
+          {[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} aria-pressed={assessment === value} className={assessment === value ? base.active : ''} onClick={() => setAssessment(value)}>{value}</button>)}
+        </div>
+        <div className={styles.assessmentLabels}><span>Perdido</span><span>No controle</span></div>
+        <label className={base.form}>Sua reflexão<textarea className={styles.fullTextarea} maxLength="2000" value={reflection} onChange={(event) => setReflection(event.target.value)} /></label>
+        <small className={base.muted}>{reflection.length}/2000</small>
+      </section>}
 
-      <section className={base.card}>
+      {isAdmin ? <section className={base.card}>
         <h2><span className={styles.stepNumber}>3</span> Compromissos até o próximo encontro</h2>
         <div className={styles.commitmentComposer}>
           <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Novo compromisso" maxLength="200" />
@@ -162,7 +177,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
             <button className={`${base.button} ${base.secondary}`} onClick={() => removeCommitment(index)}>Remover</button>
           </div>
         ))}
-      </section>
+      </section> : null}
 
       {data.nextSequence > 0 ? (
         <section className={`${base.card} ${base.dark}`}>
@@ -175,10 +190,11 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
         </section>
       ) : null}
 
-      <button className={base.button} disabled={saving || data.staleItems.length > 0} onClick={freeze}>
-        {saving ? 'Congelando…' : '🔒 Congelar marco'}
+      <button className={base.button} disabled={saving || data.staleItems.length > 0} onClick={() => setConfirmOpen(true)}>
+        {saving ? 'Registrando…' : '🔒 Registrar marco'}
       </button>
-      <p className={base.muted}>O marco vira a foto oficial deste momento e não pode ser editado. O aluno recebe uma notificação.</p>
+      <p className={base.muted}>O marco vira uma foto oficial e não pode ser editado.</p>
+      {confirmOpen ? <div className={base.sheetBackdrop} role="presentation" onClick={() => setConfirmOpen(false)}><section className={base.sheet} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><h2>Registrar marco?</h2><p>O marco vira uma foto oficial e não pode ser editado. Ele aparece com o selo “{isAdmin ? 'mentor' : 'aluno'}”.</p><div className={base.row}><button className={`${base.button} ${base.secondary}`} onClick={() => setConfirmOpen(false)}>Voltar</button><button className={base.button} onClick={freeze}>Registrar marco</button></div></section></div> : null}
     </PatrimonyShell>
   );
 }
