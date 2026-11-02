@@ -8,6 +8,8 @@ import { usePatrimony, patrimonyMutation } from './usePatrimony';
 import base from './patrimony.module.css';
 import styles from './patrimony-enhanced.module.css';
 import { formatBRL } from '@/src/modules/patrimony/domain/patrimony.money';
+import Link from 'next/link';
+import { buildPatrimonyHref } from './PatrimonyShell';
 
 function localDate() {
   return new Intl.DateTimeFormat('en-CA', {
@@ -178,6 +180,8 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
           </div>
         ))}
       </section> : null}
+
+      <section className={base.card}><h2><span className={styles.stepNumber}>4</span> Próximas ações</h2><Link href={buildPatrimonyHref('/plano', adminViewUserId)}>{data.openCommitments.length} ações até o próximo marco ›</Link></section>
 
       {data.nextSequence > 0 ? (
         <section className={`${base.card} ${base.dark}`}>

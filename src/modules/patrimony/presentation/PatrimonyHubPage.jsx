@@ -107,6 +107,7 @@ export default function PatrimonyHubPage({ adminViewUserId }) {
       <nav className={base.navGrid} aria-label="Áreas do patrimônio">
         <Link className={`${base.tile} ${base.nav}`} href={buildPatrimonyHref('/ativos', adminViewUserId)}><b>💰 Meus Ativos</b><span>Ver e atualizar ›</span></Link>
         <Link className={`${base.tile} ${base.nav}`} href={buildPatrimonyHref('/dividas', adminViewUserId)}><b>⚠️ Gestor de Dívidas</b><span>{metrics.active_debt_count} ativas ›</span></Link>
+        <Link className={`${base.tile} ${base.nav}`} href={buildPatrimonyHref('/plano', adminViewUserId)}><b>Plano de Ação</b><span>{data.openCommitments.length} abertas ›</span></Link>
         <Link className={`${base.tile} ${base.nav}`} href={buildPatrimonyHref('/evolucao', adminViewUserId)}><b>📈 Minha Evolução</b><span>Ver marcos ›</span></Link>
         <Link className={`${base.tile} ${base.nav}`} href={buildPatrimonyHref('/comparar', adminViewUserId)}><b>↔️ Antes × Agora</b><span>Comparar ›</span></Link>
       </nav>

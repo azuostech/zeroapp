@@ -10,6 +10,7 @@ import { formatBRL } from '@/src/modules/patrimony/domain/patrimony.money';
 
 export default function EvolutionPage({ adminViewUserId }) {
   const { data, loading, error } = usePatrimony('/api/patrimony/milestones', adminViewUserId);
+  const { data: plan = [] } = usePatrimony('/api/patrimony/action-plan', adminViewUserId);
   const [metric, setMetric] = useState('net_worth');
   if (loading) return <PatrimonyShell title="Minha Evolução" adminViewUserId={adminViewUserId}><div className={styles.skeleton} /></PatrimonyShell>;
   if (error) return <PatrimonyShell title="Minha Evolução" adminViewUserId={adminViewUserId}><p className={styles.error}>{error}</p></PatrimonyShell>;
@@ -19,6 +20,7 @@ export default function EvolutionPage({ adminViewUserId }) {
     {!data?.length ? <div className={`${styles.card} ${styles.empty}`}><h2>Seu ponto de partida ainda será registrado</h2><p>Comece mapeando ativos e dívidas para preparar o Estado A.</p></div> : <>
       <div className={styles.toolbar}>{[['net_worth', 'Patrimônio'], ['total_debts', 'Dívidas'], ['monthly_interest', 'Juros/mês']].map(([key, label]) => <button key={key} onClick={() => setMetric(key)} className={`${styles.filter} ${metric === key ? styles.active : ''}`}>{label}</button>)}</div>
       <section className={styles.card}><NetWorthChart points={chronological} metric={metric} /></section>
+      <Link className={styles.card} href={buildPatrimonyHref('/plano', adminViewUserId)}>Plano de ação: {(plan || []).filter((item) => !['cumprido', 'nao_cumprido'].includes(item.status)).length} abertas ›</Link>
       <ol className={styles.timeline}>{data.map((item) => <li key={item.id} className={`${styles.card} ${item.sequence === 0 ? styles.dark : ''}`}>
         <div className={styles.itemTop}><b>{item.label}</b><time>{new Date(`${item.milestone_date}T12:00:00`).toLocaleDateString('pt-BR')}</time></div>
         <AuthorBadge item={item} />

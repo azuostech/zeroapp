@@ -101,6 +101,12 @@
 .assessment button { min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-section); color: var(--text); font: inherit; font-weight: 800; }
 .assessment button[aria-pressed='true'] { border-color: var(--border-green); background: var(--green-dim); color: var(--green-text); }
 .assessmentLabels { display: flex; justify-content: space-between; margin: 6px 0 14px; color: var(--text2); font-size: 12px; }
+.actionRow { display: grid; grid-template-columns: 28px minmax(0, 1fr) 44px; gap: 10px; align-items: start; }
+.actionRow input { width: 22px; height: 22px; }
+.menuButton { min-width: 44px; min-height: 44px; border: 0; background: var(--bg-section); border-radius: var(--radius-md); color: var(--text); font-size: 22px; }
+.completedAction { opacity: .7; }
+.completedAction b { text-decoration: line-through; }
+.newActionCard { width: 100%; border: 1px dashed var(--border-green); background: var(--bg-card); color: var(--green-text); min-height: 72px; font: inherit; font-weight: 800; }
 
 .commitmentComposer {
   display: grid;
