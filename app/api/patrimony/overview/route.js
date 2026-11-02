@@ -39,18 +39,15 @@ export async function GET(request) {
       settings,
       baselineSnapshot: baseline?.snapshot || null
     });
-    let openCommitments = [];
-    if (latest) {
-      const commitmentsResult = await supabase
-        .from('patrimony_commitments')
-        .select('*')
-        .eq('user_id', context.targetUserId)
-        .eq('milestone_id', latest.id)
-        .eq('status', 'aberto')
-        .order('due_date', { ascending: true, nullsFirst: false });
-      if (commitmentsResult.error) throw commitmentsResult.error;
-      openCommitments = commitmentsResult.data || [];
-    }
+    const commitmentsResult = await supabase
+      .from('patrimony_commitments')
+      .select('*')
+      .eq('user_id', context.targetUserId)
+      .is('closed_in_milestone_id', null)
+      .not('status', 'in', '(cumprido,nao_cumprido)')
+      .order('due_date', { ascending: true, nullsFirst: false });
+    if (commitmentsResult.error) throw commitmentsResult.error;
+    const openCommitments = commitmentsResult.data || [];
 
     const deltasVsBaseline = Object.fromEntries(
       ['total_assets', 'total_debts', 'monthly_interest', 'net_worth'].map((key) => [

@@ -104,6 +104,7 @@
 .actionRow { display: grid; grid-template-columns: 28px minmax(0, 1fr) 44px; gap: 10px; align-items: start; }
 .actionRow input { width: 22px; height: 22px; }
 .menuButton { min-width: 44px; min-height: 44px; border: 0; background: var(--bg-section); border-radius: var(--radius-md); color: var(--text); font-size: 22px; }
+.actionMenu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .completedAction { opacity: .7; }
 .completedAction b { text-decoration: line-through; }
 .newActionCard { width: 100%; border: 1px dashed var(--border-green); background: var(--bg-card); color: var(--green-text); min-height: 72px; font: inherit; font-weight: 800; }
@@ -304,6 +305,29 @@
   white-space: nowrap;
   border: 0;
 }
+
+.balanceChart { width: 100%; height: 150px; overflow: visible; margin-top: 8px; }
+.zeroLine { stroke: var(--text2); stroke-dasharray: 5 5; }
+.zeroLabel, .pointLabel { fill: var(--text2); font-size: 9px; }
+.balanceLine { fill: none; stroke: var(--green-text); stroke-width: 3; stroke-linejoin: round; }
+.milestonePoint { fill: var(--green); stroke: var(--green-text); stroke-width: 2; }
+.monthlyPoint { fill: var(--bg-card); stroke: var(--green-text); stroke-width: 2; }
+.chartLegend { margin-bottom: 0; }
+.balanceColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.balanceSummary { min-width: 0; padding: 12px; }
+.assetSummary { border-top: 4px solid var(--green); }
+.debtSummary { border-top: 4px solid var(--red); }
+.balanceRow { display: grid; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+.balanceRow b { font-size: 15px; overflow-wrap: anywhere; }
+.balanceTotal { border-bottom: 0; }
+.installmentNote { margin: -4px 4px 14px; }
+.blueText { color: var(--blue); }
+.blueBar { height: 9px; border-radius: var(--radius-full); background: var(--blue-dim); overflow: hidden; }
+.blueBar i { display: block; min-width: 6px; max-width: 100%; height: 100%; border-radius: inherit; background: var(--blue); }
+.balanceAsset { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.balanceAsset:last-child { border-bottom: 0; }
+.linkedDebt { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin-top: 10px; padding: 10px; border-radius: var(--radius-md); background: var(--bg-section); font-size: 12px; }
+.staleWarning { margin-bottom: 0; padding: 9px; border-radius: var(--radius-md); background: var(--gold-dim); color: var(--gold-dark); font-size: 12px; }
 
 @media (max-width: 374px) {
   .debtMeta { grid-template-columns: 1fr; }

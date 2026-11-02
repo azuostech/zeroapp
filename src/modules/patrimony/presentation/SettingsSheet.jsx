@@ -10,7 +10,8 @@ export default function SettingsSheet({ settings, suggestion, userId, onClose, o
   const [form, setForm] = useState({
     monthly_income: settings?.monthly_income ?? suggestion?.monthly_income ?? '',
     monthly_cost_of_living: settings?.monthly_cost_of_living ?? suggestion?.monthly_cost_of_living ?? '',
-    reserve_target_months: settings?.reserve_target_months || 6
+    reserve_target_months: settings?.reserve_target_months || 6,
+    daily_bank: settings?.daily_bank ?? ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -52,6 +53,9 @@ export default function SettingsSheet({ settings, suggestion, userId, onClose, o
           </label>
           <label>Meta de reserva em meses
             <input inputMode="numeric" min="1" max="24" value={form.reserve_target_months} onChange={(event) => setForm({ ...form, reserve_target_months: event.target.value })} />
+          </label>
+          <label>Banco da sua conta do dia a dia <span className={base.muted}>(opcional)</span>
+            <input maxLength="80" placeholder="Ex.: Nubank" value={form.daily_bank} onChange={(event) => setForm({ ...form, daily_bank: event.target.value })} />
           </label>
           <div className={base.row}>
             <button type="button" className={`${base.button} ${base.secondary}`} onClick={onClose}>Cancelar</button>

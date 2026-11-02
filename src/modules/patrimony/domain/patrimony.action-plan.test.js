@@ -10,5 +10,6 @@ describe('plano de ação', () => {
   });
   it('resume o plano', () => {
     expect(summarizePlan([{ status: 'cumprido' }, { status: 'aberto' }, { status: 'aberto' }, { status: 'em_andamento' }])).toEqual({ total: 4, done: 1, open: 3, pct: 25 });
+    expect(summarizePlan([{ status: 'nao_cumprido' }, { status: 'aberto' }]).open).toBe(1);
   });
 });

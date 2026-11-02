@@ -32,7 +32,12 @@ export const assetInputSchema = z.object({
   category: z.enum(Object.keys(ASSET_CATEGORIES)), name: z.string().trim().min(1).max(80), institution: optionalText(80),
   current_value: money, liquidity: z.enum(Object.keys(LIQUIDITY_LABELS)).optional().nullable(), linked_debt_id: z.string().uuid().optional().nullable(), notes: optionalText(1000)
 });
-export const settingsInputSchema = z.object({ monthly_income: optionalMoney, monthly_cost_of_living: optionalMoney, reserve_target_months: optionalInteger(1, 24).transform((value) => value ?? 6) });
+export const settingsInputSchema = z.object({
+  monthly_income: optionalMoney,
+  monthly_cost_of_living: optionalMoney,
+  reserve_target_months: optionalInteger(1, 24).transform((value) => value ?? 6),
+  daily_bank: optionalText(80)
+});
 export const commitmentStatusSchema = z.enum(['aberto', 'em_andamento', 'cumprido', 'nao_cumprido']);
 export const actionInputSchema = z.object({
   description: z.string().trim().min(1).max(200),

@@ -22,6 +22,6 @@ export async function GET(request) {
       { date: today, net_worth: metrics.net_worth, kind: 'hoje', label: 'Hoje' }
     ].sort((a, b) => a.date.localeCompare(b.date));
     const staleGoods = assets.filter((item) => item.category === 'bem' && (Date.now() - new Date(item.updated_at).getTime()) / 86400000 > 60);
-    return json({ data: { ...balance, series, staleGoods } });
+    return json({ data: { ...balance, series, staleGoods, assets, debts, settings } });
   } catch (error) { return errorResponse(error); }
 }

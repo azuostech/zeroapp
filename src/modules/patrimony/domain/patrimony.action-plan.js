@@ -23,7 +23,8 @@ export function actionProgress(action, { debtsById = {}, goalContributionsByGoal
 export function summarizePlan(actions = []) {
   const total = actions.length;
   const done = actions.filter((item) => item.status === 'cumprido').length;
-  return { total, done, open: total - done, pct: total ? Math.round(done / total * 100) : 0 };
+  const open = actions.filter((item) => !['cumprido', 'nao_cumprido'].includes(item.status)).length;
+  return { total, done, open, pct: total ? Math.round(done / total * 100) : 0 };
 }
 
 export function actionAuthorLabel(action) {
