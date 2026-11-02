@@ -208,6 +208,7 @@ CREATE POLICY patrimony_monthly_snapshots_admin_select ON public.patrimony_month
 REVOKE ALL ON public.patrimony_monthly_snapshots FROM anon;
 GRANT SELECT ON public.patrimony_monthly_snapshots TO authenticated;
 GRANT ALL ON public.patrimony_monthly_snapshots TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.patrimony_monthly_snapshots_id_seq TO service_role;
 
 -- ---------------------------------------------------------------------------
 -- 5. Conteúdo: Reserva de Liquidez
