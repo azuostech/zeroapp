@@ -14,6 +14,7 @@ export const LIQUIDITY_LABELS = { diaria: 'Liquidez diária', curto_prazo: 'Curt
 export const EXPENSIVE_RATE_MONTHLY = 5;
 export const HEALTHY_DEBT_INCOME_RATIO = 30;
 export const STALE_DAYS = 30;
+export const PASSIVE_INCOME_MONTHLY_RATE = 0.005;
 export const COINS = {
   DEBT_MAPPED_ACTION: 'debt_mapped', DEBT_MAPPED_AMOUNT: 25, DEBT_MAPPED_LIFETIME_CAP: 20,
   DEBT_CLEARED_ACTION: 'debt_cleared', DEBT_CLEARED_MIN_AGE_DAYS: 7

@@ -33,9 +33,19 @@ export const assetInputSchema = z.object({
   current_value: money, liquidity: z.enum(Object.keys(LIQUIDITY_LABELS)).optional().nullable(), linked_debt_id: z.string().uuid().optional().nullable(), notes: optionalText(1000)
 });
 export const settingsInputSchema = z.object({ monthly_income: optionalMoney, monthly_cost_of_living: optionalMoney, reserve_target_months: optionalInteger(1, 24).transform((value) => value ?? 6) });
-export const commitmentStatusSchema = z.enum(['aberto', 'cumprido', 'nao_cumprido']);
+export const commitmentStatusSchema = z.enum(['aberto', 'em_andamento', 'cumprido', 'nao_cumprido']);
+export const actionInputSchema = z.object({
+  description: z.string().trim().min(1).max(200),
+  due_date: z.string().date().optional().nullable(),
+  link_type: z.enum(['debt', 'goal', 'investment', 'asset', 'none']).default('none'),
+  link_id: z.string().uuid().optional().nullable(),
+  progress_source: z.enum(['manual', 'debt_balance', 'goal_contributions']).default('manual'),
+  target_amount: optionalMoney,
+  status: commitmentStatusSchema.optional()
+});
 export const milestoneInputSchema = z.object({
   milestone_date: z.string().date(), label: z.string().trim().min(1).max(60).optional(), mentor_note: optionalText(2000),
+  self_assessment: optionalInteger(1, 5), student_reflection: optionalText(2000),
   commitments: z.array(z.object({ description: z.string().trim().min(1).max(200), due_date: z.string().date().optional().nullable() })).default([]),
   resolve_commitments: z.array(z.object({ id: z.string().uuid(), status: commitmentStatusSchema })).default([])
 });

@@ -28,6 +28,14 @@
     {
       "path": "/api/cron/irc-delivery",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/patrimony-monthly",
+      "schedule": "0 6 1 * *"
+    },
+    {
+      "path": "/api/cron/patrimony-reminder",
+      "schedule": "0 12 5 * *"
     }
   ]
 }
