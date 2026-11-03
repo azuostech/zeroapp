@@ -102,6 +102,7 @@ export default function HomeHubPage() {
   const navigationCards = [
     { icon: '💰', label: 'Finanças', href: '/financas' },
     { icon: '🏛️', label: 'Patrimônio', href: '/financas/patrimonio', locked: !canUsePatrimony, lockedHref: '/upgrade' },
+    { icon: '📈', label: 'Investimentos', href: '/financas/investimentos', locked: !canUsePatrimony, lockedHref: '/upgrade' },
     { icon: '📚', label: 'Educação', href: '/conteudo' },
     { icon: '📋', label: 'Meu Diagnóstico', href: '/diagnostico-completo' },
     { icon: '💬', label: 'Comunidade', href: COMMUNITY_WHATSAPP_URL },

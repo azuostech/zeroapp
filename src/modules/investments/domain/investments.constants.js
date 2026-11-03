@@ -50,7 +50,7 @@ export const POLICY_RULE_LABELS = {
 export const TEXTS = {
   disclaimer: 'O ZeroApp organiza e mede seus investimentos. Não recomenda ativos: as decisões são suas, com apoio da mentoria.',
   estimated: 'Estimado pela taxa contratada e pelo CDI. Pode diferir um pouco do extrato do banco. Valor bruto, antes do IR.',
-  whyLiquidity: 'Não é um dinheiro esperando uma emergência. É o que te dá liberdade: atravessar imprevistos, aproveitar oportunidades e deixar o longo prazo trabalhar sem resgatar na hora errada.',
+  whyLiquidity: 'Não é um dinheiro parado sem propósito. É o que te dá liberdade: atravessar imprevistos, aproveitar oportunidades e deixar o longo prazo trabalhar sem resgatar na hora errada.',
   markToMarket: 'Quando os juros do país sobem, títulos já emitidos valem menos para quem quer comprar hoje. Isso é a marcação a mercado. Se você ficar até o vencimento, recebe exatamente o que contratou. A perda só existe se você vender agora.',
   volatility: 'Oscilar faz parte da renda variável. Vender na queda transforma oscilação em perda.'
 };

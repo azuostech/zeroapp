@@ -135,6 +135,15 @@
   font-weight: 700;
 }
 
+.investmentLink {
+  display: inline-flex;
+  margin-top: 8px;
+  color: var(--green-text);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .summaryLine {
   display: flex;
   align-items: center;

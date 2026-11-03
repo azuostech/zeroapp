@@ -19,6 +19,8 @@ function Delta({ value }) {
   return <small className={`${styles.metricDelta} ${improved ? base.positive : base.debt}`}>{improved ? '▲' : '▼'} {formatCompactBRL(Math.abs(value))}</small>;
 }
 
+const investmentsHref = (userId) => userId ? `/admin/users/${encodeURIComponent(userId)}/investimentos` : '/financas/investimentos';
+
 export default function PatrimonyHubPage({ adminViewUserId }) {
   const { data, loading, error, refresh } = usePatrimony('/api/patrimony/overview', adminViewUserId);
   const [editingDebt, setEditingDebt] = useState(undefined);
@@ -62,7 +64,7 @@ export default function PatrimonyHubPage({ adminViewUserId }) {
       </section>
 
       <div className={base.grid}>
-        <div className={base.tile}><small>ATIVOS</small><span className={`${base.money} ${base.positive}`}>{formatCompactBRL(metrics.total_assets)}</span><Delta value={data.deltasVsBaseline.total_assets} /></div>
+        <div className={base.tile}><small>ATIVOS</small><span className={`${base.money} ${base.positive}`}>{formatCompactBRL(metrics.total_assets)}</span><Delta value={data.deltasVsBaseline.total_assets} /><Link className={styles.investmentLink} href={investmentsHref(adminViewUserId)}>Ver meus investimentos ›</Link></div>
         <div className={base.tile}><small>DÍVIDAS</small><span className={`${base.money} ${base.debt}`}>{formatCompactBRL(metrics.total_debts)}</span><Delta value={data.deltasVsBaseline.total_debts == null ? null : -data.deltasVsBaseline.total_debts} /></div>
         <div className={base.tile}><small>JUROS/MÊS</small><span className={`${base.money} ${base.debt}`}>{formatCompactBRL(metrics.monthly_interest)}</span><Delta value={data.deltasVsBaseline.monthly_interest == null ? null : -data.deltasVsBaseline.monthly_interest} /></div>
       </div>
