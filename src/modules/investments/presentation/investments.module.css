@@ -74,6 +74,22 @@
 .eventValue{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
 .dark{background:var(--green-darker);color:var(--text-on-green);border:0}
 .dark p{color:inherit}
+.reserveValue{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.reserveBlocks{display:block;width:100%;height:38px;margin-top:8px}
+.blockLegend{display:flex;justify-content:space-between;color:var(--text3);font-size:10px;margin-bottom:13px}
+.checklist{display:grid;gap:15px}
+.checkRow{display:flex;gap:11px;align-items:flex-start;font-size:13px;line-height:1.45}
+.checkRow b{display:inline}
+.checkRow button{display:block;padding:5px 0;text-align:left;min-height:36px}
+.checkIcon{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;font-weight:900;flex:0 0 auto}
+.checkOk{background:var(--green-dim);color:var(--green-text)}
+.checkWarn{background:var(--gold-dim);color:var(--gold-dark)}
+.checkNeutral{background:var(--bg-section);color:var(--text3)}
+.positionList{display:grid;gap:9px;margin-bottom:12px}
+.positionCard{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:15px;color:inherit;text-decoration:none}
+.positionCard>div{min-width:0}
+.positionCard p{margin:4px 0;color:var(--text2);font-size:12px}
+.positionCard>strong{white-space:nowrap;font-size:13px}
 .migrationSlot:empty{display:none}
 @keyframes pulse{50%{opacity:.5}
 }
