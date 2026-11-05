@@ -90,6 +90,23 @@
 .positionCard>div{min-width:0}
 .positionCard p{margin:4px 0;color:var(--text2);font-size:12px}
 .positionCard>strong{white-space:nowrap;font-size:13px}
+.portfolioTotal{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 2px 14px}
+.portfolioTotal strong{font-size:22px;color:var(--green-text)}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-bottom:18px;padding:4px;background:var(--bg-section);border-radius:var(--radius-lg)}
+.tabs button{min-height:40px;border:0;border-radius:var(--radius-md);background:transparent;color:var(--text2);font-size:11px;font-weight:800;padding:5px}
+.tabs .tabActive{background:var(--bg-card);color:var(--green-text);box-shadow:var(--shadow-sm)}
+.portfolioGroup{margin-bottom:20px}
+.groupHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 2px 9px}
+.groupHead h2{font-size:14px;margin:0}.groupHead h2 i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px}
+.groupHead p{margin:4px 0 0;color:var(--text2);font-size:11px}.groupHead>strong{font-size:13px;white-space:nowrap}
+.portfolioItem{display:block;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;color:inherit;text-decoration:none}
+.portfolioItemTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.portfolioName{min-width:0}.portfolioName>b,.portfolioName>span,.portfolioName>small{display:block}.portfolioName>span{margin:4px 0;color:var(--text2);font-size:11px;line-height:1.55}.portfolioName>small{font-size:11px;color:var(--text2)}
+.portfolioValue{text-align:right;white-space:nowrap}.portfolioValue>b,.portfolioValue>small{display:block}.portfolioValue>b{font-family:var(--font-mono);font-size:13px}.portfolioValue>small{margin-top:4px;font-size:10px;font-weight:800}
+.returnUp{color:var(--green-text)}.returnDown{color:var(--red)}
+.deadlineItem{border-color:var(--gold)}.deadlineWarning{margin:10px -4px -4px;padding:9px;border-radius:var(--radius-md);background:var(--gold-dim);color:var(--gold-dark);font-size:11px}
+.cardTitle{font-size:15px;margin-top:0}.sourceLegend{display:grid;gap:8px;font-size:12px}.sourceLegend span{display:flex;align-items:center;gap:7px}.sourceLegend i{width:11px;height:11px;border-radius:3px}.legendMarket{background:var(--green)}.legendEstimated{background:var(--blue)}.legendManual{background:var(--text3)}
+.closed{margin:18px 0}.closed summary{min-height:44px;display:flex;align-items:center;font-weight:800;cursor:pointer}.closed[open] summary{margin-bottom:9px}
 .migrationSlot:empty{display:none}
 @keyframes pulse{50%{opacity:.5}
 }
