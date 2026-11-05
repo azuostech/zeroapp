@@ -12,13 +12,14 @@ export function buildInvestmentsHref(path = '', userId = null) {
   return userId ? `/admin/users/${encodeURIComponent(userId)}/investimentos${path}` : `/financas/investimentos${path}`;
 }
 
-export default function InvestmentsShell({ title, subtitle, adminViewUserId, backHref, backLabel = 'voltar', children }) {
+export default function InvestmentsShell({ title, subtitle, adminViewUserId, backHref, backLabel = 'voltar', beforeTitle, children }) {
   const [aiOpen, setAiOpen] = useState(false);
   const fallbackBack = title === 'Investimentos' ? (adminViewUserId ? `/admin/users/${encodeURIComponent(adminViewUserId)}/dashboard` : '/app') : buildInvestmentsHref('', adminViewUserId);
   return <div className={`${styles.shell} ${adminViewUserId ? styles.adminShell : ''}`}>
     {adminViewUserId ? <MentorSessionBanner userId={adminViewUserId} /> : <AppHeader />}
     <header className={styles.head}>
       <Link className={styles.back} href={backHref || fallbackBack}>← {backLabel}</Link>
+      {beforeTitle}
       <h1>{title}</h1>
       {subtitle ? <p>{subtitle}</p> : null}
     </header>
