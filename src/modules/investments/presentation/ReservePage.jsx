@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import InvestmentsShell, { buildInvestmentsHref } from './InvestmentsShell';
 import SourceBadge from './SourceBadge';
+import RedemptionSheet from './RedemptionSheet';
 import { useInvestments } from './useInvestments';
 import SettingsSheet from '@/src/modules/patrimony/presentation/SettingsSheet';
 import { formatBRL } from '@/src/modules/patrimony/domain/patrimony.money';
@@ -27,7 +28,7 @@ function checklistCopy(key, data) {
 }
 
 export default function ReservePage({ adminViewUserId }) {
-  const { data, loading, error, refresh } = useInvestments('/api/investments/reserve', adminViewUserId); const [settingsOpen, setSettingsOpen] = useState(false);
+  const { data, loading, error, refresh } = useInvestments('/api/investments/reserve', adminViewUserId); const [settingsOpen, setSettingsOpen] = useState(false); const [redemptionOpen, setRedemptionOpen] = useState(false);
   if (loading) return <InvestmentsShell title="Reserva de Liquidez" subtitle="Liberdade para decidir com calma." adminViewUserId={adminViewUserId}><div className={styles.skeleton} /></InvestmentsShell>;
   if (error) return <InvestmentsShell title="Reserva de Liquidez" adminViewUserId={adminViewUserId}><p className={styles.error}>{error}</p></InvestmentsShell>;
   const targetMonths = Number(data.settings?.reserve_target_months || 6); const cost = Number(data.settings?.monthly_cost_of_living || 0);
@@ -44,7 +45,8 @@ export default function ReservePage({ adminViewUserId }) {
     <div className={styles.sectionHead}><h2>ONDE ELA ESTÁ</h2></div>
     <div className={styles.positionList}>{data.positions.map((position) => <Link key={position.id} className={styles.positionCard} href={buildInvestmentsHref(`/${position.id}`, adminViewUserId)}><div><b>{position.name}</b><p>{position.institution || 'Instituição não informada'}{position.indexer ? ` · ${position.indexer.toUpperCase()}` : ''}</p><SourceBadge source={position.current_value_source} date={position.current_value_at} /></div><strong className={styles.money}>{formatBRL(position.current_value)}</strong></Link>)}</div>
     <section className={`${styles.card} ${styles.dark}`}><h2>Por que “Reserva de Liquidez”?</h2><p>{TEXTS.whyLiquidity}</p></section>
-    {data.positions.length ? <Link className={`${styles.button} ${styles.secondary}`} href={buildInvestmentsHref(`/carteira?resgate=1&goal=${data.goal?.id || ''}`, adminViewUserId)}>Registrar uso da reserva</Link> : null}
+    {data.positions.length ? <button className={`${styles.button} ${styles.secondary}`} type="button" onClick={() => setRedemptionOpen(true)}>Registrar uso da reserva</button> : null}
     {settingsOpen ? <SettingsSheet settings={data.settings} userId={adminViewUserId} onClose={() => setSettingsOpen(false)} onSaved={refresh} /> : null}
+    {redemptionOpen ? <RedemptionSheet positions={data.positions} goals={data.goal ? [data.goal] : []} reserveMode userId={adminViewUserId} onClose={() => setRedemptionOpen(false)} onSaved={refresh} /> : null}
   </InvestmentsShell>;
 }

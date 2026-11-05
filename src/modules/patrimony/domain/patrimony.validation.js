@@ -48,6 +48,17 @@ export const actionInputSchema = z.object({
   target_amount: optionalMoney,
   status: commitmentStatusSchema.optional()
 });
+export const actionRequestSchema = actionInputSchema.extend({
+  origin: z.literal('resgate_adiado').optional(),
+  context: z.object({
+    reason_code: z.enum(['objetivo_planejado', 'imprevisto', 'quitar_divida', 'trocar_investimento', 'medo_queda', 'outro']),
+    feeling: z.enum(['tranquilo', 'ansioso', 'com_medo', 'empolgado', 'pressionado']),
+    amount: money
+  }).optional()
+}).superRefine((input, context) => {
+  if (Boolean(input.origin) !== Boolean(input.context)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['context'], message: 'Origem e contexto devem ser enviados juntos' });
+  if (input.origin && (input.link_type !== 'investment' || !input.link_id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ['link_id'], message: 'Informe o investimento' });
+});
 export const milestoneInputSchema = z.object({
   milestone_date: z.string().date(), label: z.string().trim().min(1).max(60).optional(), mentor_note: optionalText(2000),
   self_assessment: optionalInteger(1, 5), student_reflection: optionalText(2000),

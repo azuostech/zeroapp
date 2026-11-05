@@ -90,8 +90,11 @@ export async function updatePosition({ supabase, userId, id, input }) { const { 
 export async function archivePosition({ supabase, userId, id }) { const saved = await supabase.from('investment_positions').update({ archived_at: new Date().toISOString(), status: 'encerrada' }).eq('id', id).eq('user_id', userId).select('id').maybeSingle(); fail(saved.error); if (!saved.data) fail(new Error('not_found'), null, 404); }
 
 export async function addMovement({ supabase, userId, positionId, input }) {
+  const current = await getPosition({ supabase, userId, id: positionId });
+  const closesPosition = input.kind === 'resgate' && ((input.quantity != null && current.quantity != null && Number(input.quantity) >= Number(current.quantity)) || Number(input.amount) >= Number(current.current_value));
   const before = input.kind === 'aporte' ? await supabase.from('investment_movements').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('kind', 'aporte') : { count: 0 };
   const inserted = await supabase.from('investment_movements').insert({ ...input, user_id: userId, position_id: positionId }).select('*').single(); fail(inserted.error, 'movement_create_failed'); await syncPositionQuantity({ supabase, userId, positionId }); await revalueUser(userId);
+  if (closesPosition) { const closed = await supabase.from('investment_positions').update({ status: 'encerrada', current_value: 0, quantity: current.quantity == null ? null : 0, ...(current.pricing_method === 'manual' ? { manual_value: 0 } : {}) }).eq('id', positionId).eq('user_id', userId); fail(closed.error, 'position_close_failed'); }
   const position = await getPosition({ supabase, userId, id: positionId }); let claims = coinClaimsForContribution({ movement: inserted.data, isFirstEverContribution: (before.count || 0) === 0 });
   if (input.kind === 'aporte') claims = [...claims, ...await reserveClaims({ supabase, userId })];
   return { movement: inserted.data, position, coins: await awardInvestmentClaims({ userId, claims }) };

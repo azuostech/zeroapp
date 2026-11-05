@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
-import InvestmentsShell, { buildInvestmentsHref } from './InvestmentsShell';
+import InvestmentsShell from './InvestmentsShell';
 import CurveVsMarketChart from './CurveVsMarketChart';
 import SourceBadge from './SourceBadge';
 import PositionFormSheet from './PositionFormSheet';
 import ContributionSheet from './ContributionSheet';
+import RedemptionSheet from './RedemptionSheet';
 import { useInvestments } from './useInvestments';
 import { formatBRL } from '@/src/modules/patrimony/domain/patrimony.money';
 import { ASSET_CLASSES, FEELINGS, GOAL_KINDS, RESGATE_REASONS, TEXTS } from '../domain/investments.constants';
@@ -28,7 +28,7 @@ function movementOrigin(item) {
 }
 
 export default function PositionDetailPage({ id, adminViewUserId }) {
-  const positionQuery = useInvestments(`/api/investments/positions/${id}`, adminViewUserId); const goalsQuery = useInvestments('/api/investments/goals', adminViewUserId); const overviewQuery = useInvestments('/api/investments/overview', adminViewUserId); const [editOpen, setEditOpen] = useState(false); const [contributionOpen, setContributionOpen] = useState(false); const [editingMovement, setEditingMovement] = useState(null); const loading = positionQuery.loading || goalsQuery.loading || overviewQuery.loading; const error = positionQuery.error || goalsQuery.error || overviewQuery.error;
+  const positionQuery = useInvestments(`/api/investments/positions/${id}`, adminViewUserId); const goalsQuery = useInvestments('/api/investments/goals', adminViewUserId); const overviewQuery = useInvestments('/api/investments/overview', adminViewUserId); const [editOpen, setEditOpen] = useState(false); const [contributionOpen, setContributionOpen] = useState(false); const [redemptionOpen, setRedemptionOpen] = useState(false); const [editingMovement, setEditingMovement] = useState(null); const loading = positionQuery.loading || goalsQuery.loading || overviewQuery.loading; const error = positionQuery.error || goalsQuery.error || overviewQuery.error;
   if (loading) return <InvestmentsShell title="Investimento" adminViewUserId={adminViewUserId}><div className={styles.skeleton} /></InvestmentsShell>;
   if (error) return <InvestmentsShell title="Investimento" adminViewUserId={adminViewUserId}><p className={styles.error}>{error}</p></InvestmentsShell>;
   const position = positionQuery.data; const goal = (goalsQuery.data || []).find((item) => item.id === position.goal_id); const returns = positionReturn(position); const hasMarket = marketMethods.has(position.pricing_method); const onlyCurve = curveMethods.has(position.pricing_method); const showCurve = hasMarket && position.curve_value != null; const curveReturn = position.curve_value != null && Number(position.invested_amount) > 0 ? (Number(position.curve_value) / Number(position.invested_amount) - 1) * 100 : null; const showMarkToMarket = showCurve && Number(position.current_value) < Number(position.curve_value) * .995; const firstNoteMovement = [...position.movements].reverse().find((item) => item.kind === 'aporte' && item.decision_note);
@@ -44,10 +44,11 @@ export default function PositionDetailPage({ id, adminViewUserId }) {
     <section className={styles.card}><span className={styles.eyebrow}>POR QUE EU COMPREI</span>{firstNoteMovement ? <blockquote>“{firstNoteMovement.decision_note}”</blockquote> : <button className={styles.textLink} type="button" onClick={() => setEditingMovement(position.movements.at(-1) || null)}>Escrever por que você escolheu este investimento</button>}{firstNoteMovement ? <p className={styles.muted}>Seu diário de decisão · {dateBR(firstNoteMovement.occurred_on)}</p> : null}</section>
     <div className={styles.sectionHead}><h2>MOVIMENTAÇÕES</h2></div>
     <div className={styles.movementList}>{position.movements.map((movement) => { const negative = ['resgate', 'vencimento'].includes(movement.kind) || movement.kind === 'ajuste' && Number(movement.amount) < 0; return <button type="button" className={styles.movement} key={movement.id} onClick={() => setEditingMovement(movement)}><div><b>{movementNames[movement.kind]}</b><span>{dateBR(movement.occurred_on)} · {movementOrigin(movement)}</span>{movement.kind === 'resgate' ? <small>{RESGATE_REASONS[movement.reason_code] || movement.reason_code} · {FEELINGS[movement.feeling] || movement.feeling}</small> : null}</div><strong className={`${styles.money} ${negative ? styles.returnDown : styles.returnUp}`}>{negative ? '−' : '+'}{formatBRL(Math.abs(Number(movement.amount)))}</strong></button>; })}</div>
-    <div className={styles.buttonRow}><button className={styles.button} type="button" onClick={() => setContributionOpen(true)}>Aportar</button><Link className={`${styles.button} ${styles.secondary}`} href={buildInvestmentsHref(`/${id}?resgate=1`, adminViewUserId)}>Resgatar</Link></div>
+    <div className={styles.buttonRow}><button className={styles.button} type="button" onClick={() => setContributionOpen(true)}>Aportar</button><button className={`${styles.button} ${styles.secondary}`} type="button" onClick={() => setRedemptionOpen(true)}>Resgatar</button></div>
     <button className={styles.editLink} type="button" onClick={() => setEditOpen(true)}>Editar dados · trocar objetivo</button>
     {editOpen ? <PositionFormSheet position={position} goals={goalsQuery.data || []} overview={overviewQuery.data} userId={adminViewUserId} onClose={() => setEditOpen(false)} onSaved={positionQuery.refresh} /> : null}
     {contributionOpen ? <ContributionSheet positions={[position]} positionId={position.id} overview={overviewQuery.data} userId={adminViewUserId} onClose={() => setContributionOpen(false)} onSaved={async () => { await Promise.all([positionQuery.refresh(), overviewQuery.refresh()]); }} /> : null}
+    {redemptionOpen ? <RedemptionSheet positions={[position]} positionId={position.id} goals={goalsQuery.data || []} userId={adminViewUserId} onClose={() => setRedemptionOpen(false)} onSaved={async () => { await Promise.all([positionQuery.refresh(), overviewQuery.refresh()]); }} /> : null}
     {editingMovement ? <ContributionSheet positions={[position]} movement={editingMovement} overview={overviewQuery.data} userId={adminViewUserId} onClose={() => setEditingMovement(null)} onSaved={async () => { await Promise.all([positionQuery.refresh(), overviewQuery.refresh()]); }} /> : null}
   </InvestmentsShell>;
 }

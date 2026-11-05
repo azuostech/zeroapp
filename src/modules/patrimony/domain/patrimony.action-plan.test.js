@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { actionProgress, summarizePlan } from './patrimony.action-plan';
+import { actionRequestSchema } from './patrimony.validation';
 
 describe('plano de ação', () => {
   it('calcula progresso pelo saldo da dívida', () => {
@@ -11,5 +12,11 @@ describe('plano de ação', () => {
   it('resume o plano', () => {
     expect(summarizePlan([{ status: 'cumprido' }, { status: 'aberto' }, { status: 'aberto' }, { status: 'em_andamento' }])).toEqual({ total: 4, done: 1, open: 3, pct: 25 });
     expect(summarizePlan([{ status: 'nao_cumprido' }, { status: 'aberto' }]).open).toBe(1);
+  });
+  it('aceita somente o contexto completo de resgate adiado', () => {
+    const base = { description: 'Conversar sobre o Tesouro na sessão', link_type: 'investment', link_id: '00000000-0000-4000-8000-000000000001' };
+    expect(actionRequestSchema.safeParse({ ...base, origin: 'resgate_adiado', context: { reason_code: 'medo_queda', feeling: 'ansioso', amount: 300 } }).success).toBe(true);
+    expect(actionRequestSchema.safeParse({ ...base, origin: 'resgate_adiado' }).success).toBe(false);
+    expect(actionRequestSchema.safeParse({ ...base, origin: 'qualquer' }).success).toBe(false);
   });
 });
