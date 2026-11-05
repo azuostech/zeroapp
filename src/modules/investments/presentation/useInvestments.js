@@ -23,7 +23,8 @@ export function useInvestments(endpoint, adminViewUserId = null) {
 
 export async function investmentsMutation(url, options = {}, userId = null) {
   const body = options.body ? JSON.parse(options.body) : {};
-  const response = await fetch(url, { ...options, cache: 'no-store', headers: { 'Content-Type': 'application/json', ...options.headers }, body: options.body ? JSON.stringify(userId ? { ...body, user_id: userId } : body) : undefined });
+  const endpoint = userId && !options.body ? withInvestmentUser(url, userId) : url;
+  const response = await fetch(endpoint, { ...options, cache: 'no-store', headers: { 'Content-Type': 'application/json', ...options.headers }, body: options.body ? JSON.stringify(userId ? { ...body, user_id: userId } : body) : undefined });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || 'Não foi possível salvar');
   const coins = payload.data?.coins;

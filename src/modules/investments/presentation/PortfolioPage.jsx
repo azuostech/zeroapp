@@ -1,8 +1,10 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import InvestmentsShell, { buildInvestmentsHref } from './InvestmentsShell';
 import SourceBadge from './SourceBadge';
+import PositionFormSheet from './PositionFormSheet';
+import ContributionSheet from './ContributionSheet';
 import { useInvestments } from './useInvestments';
 import { formatBRL, formatCompactBRL } from '@/src/modules/patrimony/domain/patrimony.money';
 import { ASSET_CLASSES, GOAL_COLORS, GOAL_KINDS, TEXTS } from '../domain/investments.constants';
@@ -36,7 +38,8 @@ function PositionItem({ position, userId, outsidePolicy, deadlineAlert }) {
 }
 
 export default function PortfolioPage({ adminViewUserId }) {
-  const positionsQuery = useInvestments('/api/investments/positions', adminViewUserId); const goalsQuery = useInvestments('/api/investments/goals', adminViewUserId); const overviewQuery = useInvestments('/api/investments/overview', adminViewUserId); const [tab, setTab] = useState('goal');
+  const positionsQuery = useInvestments('/api/investments/positions', adminViewUserId); const goalsQuery = useInvestments('/api/investments/goals', adminViewUserId); const overviewQuery = useInvestments('/api/investments/overview', adminViewUserId); const [tab, setTab] = useState('goal'); const [positionSheet, setPositionSheet] = useState(null); const [contributionOpen, setContributionOpen] = useState(false); const [preselectedGoal, setPreselectedGoal] = useState('');
+  useEffect(() => { const query = new URLSearchParams(window.location.search); if (query.get('new') === '1') setPositionSheet({}); if (query.get('aporte') === '1') setContributionOpen(true); setPreselectedGoal(query.get('goal') || ''); }, []);
   const loading = positionsQuery.loading || goalsQuery.loading || overviewQuery.loading; const error = positionsQuery.error || goalsQuery.error || overviewQuery.error;
   const positions = positionsQuery.data || []; const goals = goalsQuery.data || []; const active = positions.filter((item) => item.status !== 'encerrada'); const closed = positions.filter((item) => item.status === 'encerrada'); const groups = useMemo(() => groupPositions(active, tab, goals), [active, tab, goals]);
   if (loading) return <InvestmentsShell title="Minha carteira" adminViewUserId={adminViewUserId}><div className={styles.skeleton} /></InvestmentsShell>;
@@ -47,7 +50,9 @@ export default function PortfolioPage({ adminViewUserId }) {
     <div className={styles.tabs} role="tablist" aria-label="Agrupar carteira">{TABS.map((item) => <button key={item.key} role="tab" aria-selected={tab === item.key} className={tab === item.key ? styles.tabActive : ''} onClick={() => setTab(item.key)}>{item.label}</button>)}</div>
     {!active.length ? <section className={`${styles.card} ${styles.empty}`}><h2>Sua carteira começa com uma decisão.</h2><p>Adicione seu primeiro investimento e dê um emprego claro para esse dinheiro.</p></section> : groups.map((group) => { const progress = group.goal?.kind === 'objetivo_prazo' ? goalProgress(group.goal, group.total, new Date().toISOString().slice(0, 10)) : null; return <section className={styles.portfolioGroup} key={group.key}><header className={styles.groupHead}><div><h2><i style={{ background: group.color }} />{group.label}</h2>{progress ? <p>Meta {formatBRL(group.goal.target_amount)} · {progress.pct}% · faltam {progress.monthsLeft} meses</p> : null}</div><strong className={styles.money}>{formatCompactBRL(group.total)}</strong></header><div className={styles.positionList}>{group.positions.map((position) => <PositionItem key={position.id} position={position} userId={adminViewUserId} outsidePolicy={outside.has(position.id)} deadlineAlert={deadlineAlerts.find((alert) => alert.href.endsWith(`/${position.id}`))} />)}</div></section>; })}
     <section className={styles.card}><h2 className={styles.cardTitle}>De onde vêm os valores</h2><div className={styles.sourceLegend}><span><i className={styles.legendMarket} />B3, Tesouro e CVM</span><span><i className={styles.legendEstimated} />Estimado pela taxa</span><span><i className={styles.legendManual} />Informado por você</span></div><p className={styles.muted}>{TEXTS.estimated}</p></section>
-    <Link className={styles.button} href={buildInvestmentsHref('/carteira?new=1', adminViewUserId)}>Adicionar investimento</Link>
+    <button className={styles.button} type="button" onClick={() => setPositionSheet({})}>Adicionar investimento</button>
     {closed.length ? <details className={styles.closed}><summary>Encerrados ({closed.length})</summary><div className={styles.positionList}>{closed.map((position) => <PositionItem key={position.id} position={position} userId={adminViewUserId} />)}</div></details> : null}
+    {positionSheet ? <PositionFormSheet goals={goals} preselectedGoalId={preselectedGoal} overview={overviewQuery.data} userId={adminViewUserId} onClose={() => setPositionSheet(null)} onSaved={async () => { await Promise.all([positionsQuery.refresh(), goalsQuery.refresh(), overviewQuery.refresh()]); }} /> : null}
+    {contributionOpen ? <ContributionSheet positions={active} overview={overviewQuery.data} userId={adminViewUserId} onClose={() => setContributionOpen(false)} onSaved={async () => { await Promise.all([positionsQuery.refresh(), overviewQuery.refresh()]); }} /> : null}
   </InvestmentsShell>;
 }
