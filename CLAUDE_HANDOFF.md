@@ -2540,3 +2540,52 @@ Implementado:
   - CVM: ZIP mensal `inf_diario_fi_AAAAMM.zip`, CSV `;`; em outubro/2026 os cabeçalhos incluem `CNPJ_FUNDO_CLASSE`, `DT_COMPTC` e `VL_QUOTA`. O parser também aceita o legado `CNPJ_FUNDO`.
 - Crons UTC: índices `22:00` seg–sex; B3 `22:15` seg–sex; Tesouro `22:30` seg–sex; CVM `11:00` seg–sáb; reavaliação `23:00` diária. Todos exigem `CRON_SECRET` e têm `maxDuration = 300`.
 - Falha de fonte não zera posição: mantém-se o último valor persistido. O backfill inicial do BCB começa em `2016-01-01`, em janelas máximas de cinco anos.
+
+## Investimentos & Patrimônio 2.0
+
+### Banco, autoria e acesso
+
+- O Bloco 1 estende Patrimônio com autoria, marcos do aluno, plano de ação e snapshots mensais em `scripts/migrate-patrimonio-2-etapa-a.sql`. O Bloco 2 fica em `scripts/migrate-investimentos-etapa-a.sql` e cria `investment_goals`, `investment_positions`, `investment_movements`, `investment_policies`, `investment_import_batches`, `investment_coin_claims`, `investment_monthly_values`, `market_quotes` e `market_index_series`.
+- Todas as tabelas novas têm RLS. Alunos autenticados acessam apenas as próprias linhas e somente quando `patrimony_has_access()` permite (tiers MOVIMENTO, ACELERACAO e AUTOGOVERNO). Admins usam políticas próprias e a atuação em nome do aluno fica auditada. `investment_coin_claims` é exclusivamente service role; cotações e índices são leitura global para usuários autenticados.
+- Posições, movimentos, política e ações guardam autoria. A política é imutável: cada edição insere uma nova versão; o trigger define versão, data e papel do autor. Aluno não pode sobrescrever a palavra do mentor.
+- O dashboard do mentor espelha hub, carteira, detalhe, reserva, política e calendário em `/admin/users/[id]/investimentos/**`. A importação B3 e sua rota admin permanecem bloqueadas até existir o fixture real exigido abaixo.
+
+### Fontes, atualização e configuração
+
+- Índices: BCB SGS (CDI 12, Selic 11, IPCA 433 e PTAX venda 1). B3: brapi. Tesouro: CSV do Tesouro Transparente. Fundos/previdência: informe diário da CVM.
+- Variáveis obrigatórias de operação: `CRON_SECRET`, `BRAPI_TOKEN` e `TESOURO_PRICES_CSV_URL`. Para reencontrar o CSV, acesse Tesouro Transparente → Dados Abertos e procure “Taxas dos Títulos Ofertados pelo Tesouro Direto”; confirme os cabeçalhos antes de trocar a URL.
+- Horários UTC em `vercel.json`: índices 22:00 seg–sex, B3 22:15 seg–sex, Tesouro 22:30 seg–sex, CVM 11:00 seg–sáb e reavaliação 23:00 diária. O snapshot do Patrimônio roda 06:00 UTC no dia 1º.
+- A origem do valor fica explícita (`b3`, `tesouro`, `cvm`, `bcb`, `estimado` ou `manual`). Falha externa preserva o último valor válido; nunca grava zero por indisponibilidade da fonte.
+
+### Cálculos e política
+
+- Curvas CDI/Selic acumulam fatores diários sobre os fluxos. Prefixado usa `(1 + taxa a.a.)^(dias úteis/252)`. IPCA+ combina inflação mensal proporcional com a curva prefixada; ausência do mês usa projeção sinalizada.
+- Retorno mensal usa Dietz simplificado: `resultado = saldo final − saldo inicial − fluxos líquidos`; percentual = resultado dividido por `saldo inicial + fluxos/2`. Valores são brutos, sem IR, come-cotas ou taxas.
+- No balanço, folga de curto prazo = ativos disponíveis em até 30 dias / dívida que vence em 12 meses. Independência = renda passiva estimada (`0,5%` ao mês dos ativos produtivos) / custo de vida.
+- Posições ativas entram no total de ativos e nos ativos produtivos do Patrimônio. Reserva soma posições do objetivo `reserva_liquidez` e ativos manuais ainda não migrados; `migrated_from_asset_id` impede dupla contagem. Snapshots de marco são v2 e guardam objetivos e posições; leitores continuam aceitando v1.
+- Política padrão: 6 meses de Reserva de Liquidez; renda variável só após a reserva; máximo de 10% em renda variável; reserva com liquidez diária e baixo risco; até R$ 250 mil por instituição coberta pelo FGC.
+
+### ZeroCoins, marcos e decisões
+
+- Há três claims idempotentes: `investment_first` (+100 no primeiro aporte elegível), `investment_month` (+20 uma vez por mês com aporte de ao menos R$ 50) e `reserve_month_reached` (+50 por novo mês inteiro de reserva, até a meta). A tabela de claims e `award_coins` evitam duplicidade.
+- Marcos podem ser criados pelo aluno ou mentor e registram autoria, métricas e snapshot. O Antes × Agora inclui `reserve_months` somente quando os dois pontos possuem o indicador.
+- Resgates registram motivo e sentimento. Quando o aluno escolhe esperar, nenhum movimento é criado: surge uma ação `resgate_adiado` com contexto, visível no plano e no card “Decisões de investimento recentes” do mentor.
+
+### Migração do Patrimônio
+
+- A migração é sempre explícita pelo aluno ou mentor. `GET /api/investments/migrate-from-patrimony` lista ativos manuais elegíveis; `POST` cria posição manual e aporte `migracao_patrimonio`, depois arquiva o ativo com data. Objetivo sugerido: Reserva de Liquidez para `reserva` e Independência financeira para `investimento`, ajustável antes de confirmar.
+- O índice único de `migrated_from_asset_id`, a validação de propriedade e o rollback compensatório evitam duplicidade. Nunca executar migração em lote automaticamente.
+- Novos ativos financeiros não são mais criados em Patrimônio; itens antigos continuam editáveis até a migração. A tela de ativos mostra posições sincronizadas por objetivo.
+
+### Aplicação e rollback
+
+1. Faça backup e use staging. Aplique primeiro `scripts/migrate-patrimonio-2-etapa-a.sql`; valide as queries B1–B12 do prompt.
+2. Aplique `scripts/migrate-investimentos-etapa-a.sql`; valide I1–I10, configure as três variáveis e rode cada cron uma vez para backfill/verificação.
+3. Só depois promova o app. Não aplique o Bloco 2 diretamente na base ativa sem staging e aprovação operacional.
+4. Rollback do app: reverta o merge. Rollback de banco: `scripts/rollback-patrimonio-2-etapa-a.sql` para o Bloco 1; `scripts/rollback-investimentos-etapa-a.sql` para o Bloco 2. O rollback de Investimentos remove tabelas e só pode ser usado quando não houver dados reais. As claims de coins são preservadas deliberadamente.
+
+### Pendências e limites
+
+- A importação da B3 está bloqueada. Falta `src/modules/investments/domain/__fixtures__/b3-posicao-exemplo.xlsx`, exportado da Área do Investidor com abas e cabeçalhos reais e dados anonimizados. Não implementar parser por adivinhação.
+- QA autenticado Q1–Q13, aplicação da migration de Investimentos, crons manuais e testes de staging ainda dependem de ambiente isolado. Nesta branch foram executados somente testes/build locais; nenhuma leitura ou escrita foi feita na base ativa durante as Etapas 17–20.
+- Cripto e COE usam cadastro manual em “Outro”; não há tela especializada. IR, come-cotas, taxas, suitability, recomendação, Open Finance e integração direta com corretoras estão fora do escopo.

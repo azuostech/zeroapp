@@ -11,6 +11,7 @@ import { ASSET_CLASSES, GOAL_COLORS, GOAL_KINDS, TEXTS } from '../domain/investm
 import { goalProgress } from '../domain/investments.goals';
 import { positionReturn } from '../domain/investments.valuation';
 import styles from './investments.module.css';
+import AuthorBadge from '@/src/modules/patrimony/presentation/AuthorBadge';
 
 const TABS = [{ key: 'goal', label: 'Por objetivo' }, { key: 'class', label: 'Por classe' }, { key: 'institution', label: 'Por instituição' }];
 const marketMethods = new Set(['b3_quote', 'tesouro_price', 'cvm_quota', 'fx_ptax']);
@@ -32,6 +33,7 @@ function PositionItem({ position, userId, outsidePolicy, deadlineAlert }) {
   const returns = positionReturn(position); const hasMarket = marketMethods.has(position.pricing_method); const average = position.quantity > 0 ? Number(position.invested_amount || 0) / Number(position.quantity) : null;
   return <Link className={`${styles.portfolioItem} ${deadlineAlert ? styles.deadlineItem : ''}`} href={buildInvestmentsHref(`/${position.id}`, userId)}>
     <div className={styles.portfolioItemTop}><div className={styles.portfolioName}><b>{position.name}</b><span>{position.institution || 'Instituição não informada'}{indexLabel(position) ? ` · ${indexLabel(position)}` : ''} · <SourceBadge source={position.current_value_source} date={position.current_value_at} /></span>{position.quantity != null && ['acao', 'fii', 'etf', 'bdr'].includes(position.asset_class) ? <small>{Number(position.quantity).toLocaleString('pt-BR')} cotas{average != null ? ` · PM ${formatBRL(average)}` : ''}</small> : null}</div><div className={styles.portfolioValue}><b>{formatBRL(position.current_value)}</b>{hasMarket && returns.pct != null ? <small className={returns.pct >= 0 ? styles.returnUp : styles.returnDown}>{returns.pct >= 0 ? '▲' : '▼'} {Math.abs(returns.pct).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</small> : null}</div></div>
+    <AuthorBadge item={position} />
     {outsidePolicy ? <span className={`${styles.badge} ${styles.badgeRed}`}>FORA DA POLÍTICA</span> : null}
     {deadlineAlert ? <p className={styles.deadlineWarning}>{deadlineAlert.text}</p> : null}
   </Link>;

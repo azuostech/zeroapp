@@ -7,6 +7,7 @@ import { DEFAULT_POLICY_RULES } from '../domain/investments.constants';
 import { summarizePolicy } from '../domain/investments.policy';
 import { useInvestments } from './useInvestments';
 import styles from './investments.module.css';
+import AuthorBadge from '@/src/modules/patrimony/presentation/AuthorBadge';
 
 const ROLE_COPY = {
   mentor: { provenance: 'Ajustada na sessão com o mentor', badge: 'MENTOR' },
@@ -53,7 +54,7 @@ export default function PolicyPage({ adminViewUserId }) {
   const policy = data.policy || { version: 1, rules: DEFAULT_POLICY_RULES, created_by_role: 'sistema', created_at: null }; const score = summarizePolicy(ordered); const role = ROLE_COPY[policy.created_by_role] || ROLE_COPY.sistema;
   async function showVersions() { setVersionsLoading(true); setVersionsOpen(true); try { const response = await fetch(`/api/investments/policy/versions${adminViewUserId ? `?user_id=${encodeURIComponent(adminViewUserId)}` : ''}`, { cache: 'no-store' }); const payload = await response.json(); if (!response.ok) throw new Error(payload.error || 'Não foi possível carregar as versões'); setVersions(payload.data || []); } catch (reason) { toast.error(reason.message); setVersionsOpen(false); } finally { setVersionsLoading(false); } }
   return <InvestmentsShell title="Minha política" subtitle="As regras que você combinou com você mesmo." adminViewUserId={adminViewUserId}>
-    <section className={`${styles.card} ${styles.policyVersion}`}><span className={styles.shield} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z" /></svg></span><div><b>Versão {policy.version} · {dateLabel(policy.created_at)}</b><p>{role.provenance}</p></div><span className={styles.authorBadge}>{role.badge}</span></section>
+    <section className={`${styles.card} ${styles.policyVersion}`}><span className={styles.shield} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z" /></svg></span><div><b>Versão {policy.version} · {dateLabel(policy.created_at)}</b><p>{role.provenance}</p></div><AuthorBadge item={policy} /></section>
     <section className={styles.policyScore} aria-label="Placar da política"><div className={styles.scoreOk}><b>{score.ok}</b><span>cumpridas</span></div><div className={styles.scoreBuilding}><b>{score.construcao}</b><span>em construção</span></div><div className={styles.scoreOutside}><b>{score.fora}</b><span>fora da regra</span></div></section>
     <div className={styles.sectionHead}><h2>SUAS REGRAS</h2></div>
     <div className={styles.policyRules}>{ordered.map((result) => { const badge = result.status === 'construcao' ? `${result.progressPct || 0}%` : STATUS_COPY[result.status]; return <article className={`${styles.policyRule} ${styles[`policy_${result.status}`] || ''}`} key={result.type}><div className={styles.policyRuleTop}><b><LabelWithMonoNumbers>{result.label}</LabelWithMonoNumbers></b><span>{badge}</span></div><p>{result.detail}</p>{result.status === 'construcao' ? <div className={`${styles.bar} ${styles.barGold}`}><i style={{ width: `${result.progressPct || 0}%` }} /></div> : null}{result.status === 'sem_dados' ? <button className={styles.textLink} type="button" onClick={() => setEditOpen(true)}>Completar esta regra</button> : null}</article>; })}</div>
