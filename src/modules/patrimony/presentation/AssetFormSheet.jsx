@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import base from './patrimony.module.css';
 import { patrimonyMutation } from './usePatrimony';
+import Link from 'next/link';
 
-const initial = { category: 'reserva', name: '', institution: '', current_value: '', liquidity: 'diaria', linked_debt_id: null, notes: '' };
+const initial = { category: 'bem', name: '', institution: '', current_value: '', liquidity: 'diaria', linked_debt_id: null, notes: '' };
 
 export default function AssetFormSheet({ asset, debts = [], userId, onClose, onSaved }) {
   const [form, setForm] = useState(asset ? { ...initial, ...asset } : initial);
@@ -57,9 +58,10 @@ export default function AssetFormSheet({ asset, debts = [], userId, onClose, onS
         <form className={base.form} onSubmit={submit}>
           <label>Categoria
             <select value={form.category} onChange={set('category')}>
-              <option value="reserva">Reserva</option><option value="investimento">Investimento</option><option value="bem">Bem</option><option value="outro">Outro</option>
+              {asset && ['reserva', 'investimento'].includes(asset.category) ? <option value={asset.category}>{asset.category === 'reserva' ? 'Reserva' : 'Investimento'}</option> : null}<option value="bem">Bem</option><option value="outro">Outro</option>
             </select>
           </label>
+          {!asset ? <p className={base.muted}>Investimentos agora ficam no módulo Investimentos. <Link href={userId ? `/admin/users/${encodeURIComponent(userId)}/investimentos` : '/financas/investimentos'}>Abrir Investimentos</Link></p> : null}
           <label>Nome<input ref={firstInput} required value={form.name} onChange={set('name')} /></label>
           <label>Instituição<input value={form.institution || ''} onChange={set('institution')} /></label>
           <label>Valor atual<input required inputMode="decimal" value={form.current_value} onChange={set('current_value')} /></label>

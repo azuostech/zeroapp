@@ -92,6 +92,8 @@ CREATE INDEX IF NOT EXISTS idx_investment_positions_user ON public.investment_po
 CREATE INDEX IF NOT EXISTS idx_investment_positions_goal ON public.investment_positions(goal_id);
 CREATE INDEX IF NOT EXISTS idx_investment_positions_ticker ON public.investment_positions(ticker) WHERE ticker IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_investment_positions_cnpj ON public.investment_positions(cnpj) WHERE cnpj IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_investment_positions_migrated_asset
+  ON public.investment_positions(migrated_from_asset_id) WHERE migrated_from_asset_id IS NOT NULL;
 
 -- 3. Livro-razão
 CREATE TABLE IF NOT EXISTS public.investment_movements (

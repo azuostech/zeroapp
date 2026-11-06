@@ -78,7 +78,7 @@ export function enrichDebts({ debts = [], settings = {}, baselineSnapshot = null
   };
 }
 
-export function enrichAssets({ assets = [], debts = [], settings = {}, baselineSnapshot = null }) {
+export function enrichAssets({ assets = [], debts = [], settings = {}, baselineSnapshot = null, positions = [], goals = [] }) {
   const baselineAssets = baselineSnapshot?.assets || [];
   const byDebtId = new Map(debts.map((debt) => [debt.id, debt]));
   const enriched = assets.map((asset) => {
@@ -93,7 +93,7 @@ export function enrichAssets({ assets = [], debts = [], settings = {}, baselineS
       linkedDebt: asset.linked_debt_id ? byDebtId.get(asset.linked_debt_id) || null : null
     };
   });
-  const metrics = computeMetrics({ assets, debts, settings });
+  const metrics = computeMetrics({ assets, debts, settings, positions, goals });
   return {
     assets: enriched,
     composition: {

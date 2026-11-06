@@ -3,11 +3,12 @@ import { STALE_DAYS } from '@/src/modules/patrimony/domain/patrimony.constants';
 import { listAssets, listDebts, getSettings } from './patrimony-service';
 import { sendPushToUser } from '@/src/lib/push/push-service';
 import { buildSnapshot, safeMilestoneNotification } from './patrimony-milestone-helpers';
+import { listGoals, listPositions } from '@/src/modules/investments/application/investments-service';
 
 const fail = (error, fallback) => { if (error) throw new Error(error.message || fallback); };
 
 export { buildSnapshot } from './patrimony-milestone-helpers';
-async function live({ supabase, userId }) { const [assets, debts, settings] = await Promise.all([listAssets({ supabase, userId }), listDebts({ supabase, userId }), getSettings({ supabase, userId })]); return { assets, debts, settings, metrics: computeMetrics({ assets, debts, settings }) }; }
+async function live({ supabase, userId }) { const [assets, debts, settings, positions, goals] = await Promise.all([listAssets({ supabase, userId }), listDebts({ supabase, userId }), getSettings({ supabase, userId }), listPositions({ supabase, userId }), listGoals({ supabase, userId })]); return { assets, debts, settings, positions, goals, metrics: computeMetrics({ assets, debts, settings, positions, goals }) }; }
 export async function previewMilestone({ supabase, userId, actorRole = 'mentor' }) {
   const [{ data: milestones, error }, state] = await Promise.all([supabase.from('patrimony_milestones').select('id,sequence,label,milestone_date,metrics').eq('user_id', userId).order('sequence', { ascending: false }), live({ supabase, userId })]); fail(error, 'milestones_load_failed');
   const previous = milestones?.[0] || null; const baseline = milestones?.find((item) => item.sequence === 0) || null; const nextSequence = previous ? previous.sequence + 1 : 0;

@@ -3,19 +3,23 @@ import { getSettings, listAssets, listDebts } from '@/src/modules/patrimony/appl
 import { compareMetrics, daysBetween, pickShareHighlight, verdict } from '@/src/modules/patrimony/domain/patrimony.compare';
 import { computeMetrics, netWorthZeroProgress } from '@/src/modules/patrimony/domain/patrimony.calculations';
 import { calculateNetWorthProjection, resolveComparisonPoint } from '@/src/modules/patrimony/application/patrimony-enrichment';
+import { listGoals, listPositions } from '@/src/modules/investments/application/investments-service';
+import { buildSnapshot } from '@/src/modules/patrimony/application/patrimony-milestone-helpers';
 
 async function loadCurrentPoint({ supabase, userId }) {
-  const [assets, debts, settings] = await Promise.all([
+  const [assets, debts, settings, positions, goals] = await Promise.all([
     listAssets({ supabase, userId }),
     listDebts({ supabase, userId }),
-    getSettings({ supabase, userId })
+    getSettings({ supabase, userId }),
+    listPositions({ supabase, userId }),
+    listGoals({ supabase, userId })
   ]);
   return {
     id: 'current',
     label: 'Hoje (ao vivo)',
     date: new Date().toISOString().slice(0, 10),
-    metrics: computeMetrics({ assets, debts, settings }),
-    snapshot: { version: 1, captured_at: new Date().toISOString(), assets, debts, settings },
+    metrics: computeMetrics({ assets, debts, settings, positions, goals }),
+    snapshot: buildSnapshot({ assets, debts, settings, positions, goals }),
     mentorNote: null
   };
 }

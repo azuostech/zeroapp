@@ -9,11 +9,16 @@ describe('patrimony milestones', () => {
       debts: [
         { id: 'active', debt_type: 'cartao', creditor: 'Banco', current_balance: 500, status: 'ativa', updated_at: 'ignored' },
         { id: 'paid', debt_type: 'cartao', creditor: 'Banco', current_balance: 0, status: 'quitada' }
-      ]
+      ],
+      goals: [{ id: 'goal', kind: 'reserva_liquidez', name: 'Reserva', target_amount: null, target_date: null, updated_at: 'ignored' }],
+      positions: [{ id: 'position', goal_id: 'goal', asset_class: 'tesouro', name: 'Tesouro Selic', current_value: 1000, invested_amount: 900, status: 'ativa', updated_at: 'ignored' }]
     });
+    expect(snapshot.version).toBe(2);
     expect(snapshot.assets[0]).not.toHaveProperty('updated_at');
     expect(snapshot.debts).toHaveLength(1);
     expect(snapshot.debts[0].id).toBe('active');
+    expect(snapshot.goals[0]).not.toHaveProperty('updated_at');
+    expect(snapshot.positions[0]).toMatchObject({ id: 'position', invested_amount: 900 });
   });
 
   it('does not fail milestone creation when push fails', async () => {

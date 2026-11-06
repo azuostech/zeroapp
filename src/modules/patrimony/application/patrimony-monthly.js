@@ -15,20 +15,22 @@ export async function eligiblePatrimonyUserIds(service, days = 90) {
 }
 
 async function loadState(service, userId) {
-  const [assets, debts, settings] = await Promise.all([
+  const [assets, debts, settings, positions, goals] = await Promise.all([
     service.from('patrimony_assets').select('*').eq('user_id', userId).is('archived_at', null),
     service.from('patrimony_debts').select('*').eq('user_id', userId).is('archived_at', null),
-    service.from('patrimony_settings').select('*').eq('user_id', userId).maybeSingle()
+    service.from('patrimony_settings').select('*').eq('user_id', userId).maybeSingle(),
+    service.from('investment_positions').select('*').eq('user_id', userId).is('archived_at', null),
+    service.from('investment_goals').select('*').eq('user_id', userId).is('archived_at', null)
   ]);
-  fail(assets.error, 'assets_load_failed'); fail(debts.error, 'debts_load_failed'); fail(settings.error, 'settings_load_failed');
-  return { assets: assets.data || [], debts: debts.data || [], settings: settings.data || { reserve_target_months: 6 } };
+  fail(assets.error, 'assets_load_failed'); fail(debts.error, 'debts_load_failed'); fail(settings.error, 'settings_load_failed'); fail(positions.error, 'positions_load_failed'); fail(goals.error, 'goals_load_failed');
+  return { assets: assets.data || [], debts: debts.data || [], settings: settings.data || { reserve_target_months: 6 }, positions: positions.data || [], goals: goals.data || [] };
 }
 
 export async function createMonthlySnapshots(service, now = new Date()) {
   const users = await eligiblePatrimonyUserIds(service); const result = { processed: 0, skipped: 0, errors: [] };
   const month = `${now.toISOString().slice(0, 7)}-01`; const today = now.toISOString().slice(0, 10);
   for (const userId of users) {
-    try { const state = await loadState(service, userId); const metrics = { ...computeMetrics(state), balance: computeBalanceSheet({ ...state, positions: [], today }) }; const saved = await service.from('patrimony_monthly_snapshots').upsert({ user_id: userId, month, metrics }, { onConflict: 'user_id,month' }); fail(saved.error, 'snapshot_save_failed'); result.processed += 1; } catch (error) { result.errors.push({ user_id: userId, error: error.message }); }
+    try { const state = await loadState(service, userId); const metrics = { ...computeMetrics(state), balance: computeBalanceSheet({ ...state, today }) }; const saved = await service.from('patrimony_monthly_snapshots').upsert({ user_id: userId, month, metrics }, { onConflict: 'user_id,month' }); fail(saved.error, 'snapshot_save_failed'); result.processed += 1; } catch (error) { result.errors.push({ user_id: userId, error: error.message }); }
   }
   return result;
 }

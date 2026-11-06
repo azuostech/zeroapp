@@ -26,7 +26,7 @@ export function daysBetween(fromDate, toDate) {
 }
 
 export function pickShareHighlight(indicators = []) {
-  const narrativePriority = ['expensive_debt_total', 'total_debts', 'monthly_interest', 'reserve_total', 'overdue_count'];
+  const narrativePriority = ['expensive_debt_total', 'total_debts', 'monthly_interest', 'reserve_total', 'reserve_months', 'overdue_count'];
   const rank = (key) => {
     const index = narrativePriority.indexOf(key);
     return index === -1 ? Number.MAX_SAFE_INTEGER : index;
@@ -38,6 +38,7 @@ export function pickShareHighlight(indicators = []) {
   if (item.key === 'total_debts') return `Reduzi ${pct}% das minhas dívidas.`;
   if (item.key === 'monthly_interest') return `Pago ${pct}% menos de juros por mês.`;
   if (item.key === 'reserve_total' && item.from === 0 && item.to > 0) return 'Criei minha Reserva de Liquidez.';
+  if (item.key === 'reserve_months' && item.delta >= 1) return `Minha Reserva de Liquidez já cobre ${Number(item.to).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} ${Number(item.to) === 1 ? 'mês' : 'meses'}.`;
   if (item.key === 'overdue_count' && item.to === 0) return 'Zerei as contas em atraso.';
   return `${item.label}: ${pct}% de evolução.`;
 }

@@ -117,7 +117,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
 
       <section className={base.card}>
         <h2><span className={styles.stepNumber}>1</span> Confira seus números</h2>
-        <p className={base.itemTop}><span>Ativos · {data.assets.length} itens</span><b className={`${base.money} ${base.positive}`}>{formatBRL(data.metrics.total_assets)}</b></p>
+        <p className={base.itemTop}><span>Ativos · {data.assets.length + (data.positions?.length || 0)} itens</span><b className={`${base.money} ${base.positive}`}>{formatBRL(data.metrics.total_assets)}</b></p>
         <p className={base.itemTop}><span>Dívidas · {data.debts.filter((item) => item.status === 'ativa').length} itens</span><b className={`${base.money} ${base.debt}`}>{formatBRL(data.metrics.total_debts)}</b></p>
         <p className={base.itemTop}><span>Patrimônio líquido</span><b className={base.money}>{formatBRL(data.metrics.net_worth)}</b></p>
 
@@ -198,6 +198,7 @@ export default function MilestoneFreezePage({ adminViewUserId }) {
         {saving ? 'Registrando…' : '🔒 Registrar marco'}
       </button>
       <p className={base.muted}>O marco vira uma foto oficial e não pode ser editado.</p>
+      {data.positions?.length ? <p className={base.muted}>Os investimentos são atualizados automaticamente.</p> : null}
       {confirmOpen ? <div className={base.sheetBackdrop} role="presentation" onClick={() => setConfirmOpen(false)}><section className={base.sheet} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><h2>Registrar marco?</h2><p>O marco vira uma foto oficial e não pode ser editado. Ele aparece com o selo “{isAdmin ? 'mentor' : 'aluno'}”.</p><div className={base.row}><button className={`${base.button} ${base.secondary}`} onClick={() => setConfirmOpen(false)}>Voltar</button><button className={base.button} onClick={freeze}>Registrar marco</button></div></section></div> : null}
     </PatrimonyShell>
   );

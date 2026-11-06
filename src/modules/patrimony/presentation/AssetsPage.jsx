@@ -10,6 +10,7 @@ import ProgressBar from './ProgressBar';
 import base from './patrimony.module.css';
 import styles from './patrimony-enhanced.module.css';
 import { formatBRL, formatPercent } from '@/src/modules/patrimony/domain/patrimony.money';
+import Link from 'next/link';
 
 const LABELS = { reserva: 'Reserva de Liquidez', investimento: 'Investimentos', bem: 'Bens', outro: 'Outros' };
 
@@ -24,6 +25,8 @@ export default function AssetsPage({ adminViewUserId }) {
   const composition = data.assetComposition || {};
   const total = Math.max(1, metrics.total_assets);
   const reserveProgress = data.reserveTargetValue ? Math.min(100, Math.round(metrics.reserve_total / data.reserveTargetValue * 100)) : null;
+  const investmentsHref = adminViewUserId ? `/admin/users/${encodeURIComponent(adminViewUserId)}/investimentos` : '/financas/investimentos';
+  const positionGroups = (data.goals || []).map((goal) => ({ goal, positions: (data.positions || []).filter((position) => position.goal_id === goal.id) })).filter((group) => group.positions.length);
 
   return (
     <PatrimonyShell title="Meus Ativos" subtitle="Tudo que é seu e tem valor." adminViewUserId={adminViewUserId}>
@@ -58,6 +61,13 @@ export default function AssetsPage({ adminViewUserId }) {
             <button className={`${base.button} ${base.secondary}`} onClick={() => setSettingsOpen(true)}>Informar custo de vida</button>
           </>
         )}
+        <div className={styles.reserveChecks}>{(data.reserveChecklist || []).map((item) => <span key={item.key} className={item.ok === true ? base.positive : item.ok === false ? base.debt : base.muted}>{item.ok === true ? '✓' : item.ok === false ? '!' : '·'} {item.text}</span>)}</div>
+      </section>
+
+      <section className={base.card}>
+        <div className={base.itemTop}><div><h2>Investimentos</h2><small className={base.muted}>Sincronizado com o módulo Investimentos</small></div><Link href={investmentsHref}>Abrir Investimentos</Link></div>
+        <div className={base.list}>{positionGroups.map(({ goal, positions }) => <div className={styles.syncedGoal} key={goal.id}><span>{goal.name}</span><b className={`${base.money} ${base.positive}`}>{formatBRL(positions.reduce((sum, item) => sum + Number(item.current_value || 0), 0))}</b><small>{positions.length} {positions.length === 1 ? 'posição' : 'posições'}</small></div>)}</div>
+        {!positionGroups.length ? <p className={base.muted}>Nenhuma posição sincronizada ainda.</p> : null}
       </section>
 
       {Object.keys(LABELS).map((category) => {
@@ -73,6 +83,7 @@ export default function AssetsPage({ adminViewUserId }) {
                     <div>
                       <b>{asset.name}</b>
                       <small className={base.muted}>{asset.institution || 'Atualize quando o valor mudar'}</small>
+                      {['reserva', 'investimento'].includes(asset.category) ? <small className={styles.legacyAsset}>Ainda no Patrimônio · Trazer para Investimentos</small> : null}
                     </div>
                     <span className={`${base.money} ${base.positive}`}>{formatBRL(asset.current_value)}</span>
                   </div>

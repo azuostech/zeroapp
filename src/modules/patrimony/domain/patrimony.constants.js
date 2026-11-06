@@ -26,5 +26,6 @@ export const COMPARE_INDICATORS = [
   { key: 'expensive_debt_total', label: 'Dívida cara (>5% a.m.)', better: 'lower', format: 'money' },
   { key: 'debt_income_ratio', label: 'Renda comprometida', better: 'lower', format: 'percent' },
   { key: 'reserve_total', label: 'Reserva de Liquidez', better: 'higher', format: 'money' },
+  { key: 'reserve_months', label: 'Reserva de Liquidez (meses)', better: 'higher', format: 'months' },
   { key: 'overdue_count', label: 'Contas em atraso', better: 'lower', format: 'int' }
 ];

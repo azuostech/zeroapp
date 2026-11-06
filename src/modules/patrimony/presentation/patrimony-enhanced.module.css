@@ -337,6 +337,10 @@
 .balanceAsset:last-child { border-bottom: 0; }
 .linkedDebt { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin-top: 10px; padding: 10px; border-radius: var(--radius-md); background: var(--bg-section); font-size: 12px; }
 .staleWarning { margin-bottom: 0; padding: 9px; border-radius: var(--radius-md); background: var(--gold-dim); color: var(--gold-dark); font-size: 12px; }
+.reserveChecks { display: grid; gap: 7px; margin-top: 14px; font-size: 12px; }
+.syncedGoal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.syncedGoal small { grid-column: 1 / -1; color: var(--text2); }
+.legacyAsset { display: block; margin-top: 5px; color: var(--gold-dark); font-weight: 700; }
 
 @media (max-width: 374px) {
   .debtMeta { grid-template-columns: 1fr; }

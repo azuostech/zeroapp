@@ -72,6 +72,7 @@ export default function BalancePage({ adminViewUserId }) {
       <section className={base.card}>
         <span className={base.eyebrow}>ATIVOS</span>
         <div className={base.list}>
+          {data.positions?.length ? <div className={styles.balanceAsset}><div className={base.itemTop}><b>Investimentos · Sincronizado</b><b className={`${base.money} ${base.positive}`}>{formatBRL(data.positions.reduce((sum, item) => sum + Number(item.current_value || 0), 0))}</b></div><small className={base.muted}>{data.positions.length} {data.positions.length === 1 ? 'posição atualizada' : 'posições atualizadas'} pelo módulo Investimentos</small></div> : null}
           {(data.assets || []).map((asset) => {
             const linked = linkedByAsset.get(asset.id);
             return <div className={styles.balanceAsset} key={asset.id}>
@@ -81,7 +82,7 @@ export default function BalancePage({ adminViewUserId }) {
               {staleIds.has(asset.id) ? <p className={styles.staleWarning}>{isVehicle(asset) ? 'Carros perdem valor todo ano. Confira a Tabela FIPE e atualize.' : 'Confira o valor de mercado e atualize.'}</p> : null}
             </div>;
           })}
-          {!data.assets?.length ? <p className={base.muted}>Nenhum ativo cadastrado ainda.</p> : null}
+          {!data.assets?.length && !data.positions?.length ? <p className={base.muted}>Nenhum ativo cadastrado ainda.</p> : null}
         </div>
       </section>
       {settingsOpen ? <SettingsSheet settings={data.settings} userId={adminViewUserId} onClose={() => setSettingsOpen(false)} onSaved={refresh} /> : null}

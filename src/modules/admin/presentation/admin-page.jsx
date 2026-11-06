@@ -182,6 +182,7 @@ export default function AdminPage() {
                       <button class="btn-action btn-view" onclick="openFinModal('${safeId}','${safeName}')">📊 Dados</button>
                       <a class="btn-action btn-open" href="/admin/users/${safePathId}/dashboard">↗ Dashboard</a>
                       <a class="btn-action btn-open" href="/admin/users/${safePathId}/patrimonio">🏛️ Patrimônio</a>
+                      <a class="btn-action btn-open" href="/admin/users/${safePathId}/investimentos">📈 Investimentos</a>
                       <a class="btn-action btn-mavf" href="/admin/users/${safePathId}/mavf">🎯 MAVF</a>
                     </div>
                   </td>

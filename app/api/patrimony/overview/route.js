@@ -8,6 +8,8 @@ import {
 import { computeMetrics, netWorthZeroProgress, prioritizeDebts } from '@/src/modules/patrimony/domain/patrimony.calculations';
 import { enrichAssets } from '@/src/modules/patrimony/application/patrimony-enrichment';
 import { roundCents } from '@/src/modules/patrimony/domain/patrimony.money';
+import { listGoals, listPositions } from '@/src/modules/investments/application/investments-service';
+import { reserveChecklist } from '@/src/modules/investments/domain/investments.goals';
 
 export async function GET(request) {
   const requestedUserId = request.nextUrl.searchParams.get('user_id');
@@ -16,7 +18,7 @@ export async function GET(request) {
   const { supabase, context } = resolved;
 
   try {
-    const [assets, debts, settings, settingsSuggestion, milestonesResult] = await Promise.all([
+    const [assets, debts, settings, settingsSuggestion, milestonesResult, positions, goals] = await Promise.all([
       listAssets({ supabase, userId: context.targetUserId }),
       listDebts({ supabase, userId: context.targetUserId }),
       getSettings({ supabase, userId: context.targetUserId }),
@@ -25,19 +27,23 @@ export async function GET(request) {
         .from('patrimony_milestones')
         .select('id,sequence,kind,label,milestone_date,metrics,snapshot,mentor_note')
         .eq('user_id', context.targetUserId)
-        .order('sequence', { ascending: true })
+        .order('sequence', { ascending: true }),
+      listPositions({ supabase, userId: context.targetUserId }),
+      listGoals({ supabase, userId: context.targetUserId })
     ]);
     if (milestonesResult.error) throw milestonesResult.error;
 
     const milestones = milestonesResult.data || [];
     const baseline = milestones.find((item) => item.sequence === 0) || null;
     const latest = milestones.at(-1) || null;
-    const metrics = computeMetrics({ assets, debts, settings });
+    const metrics = computeMetrics({ assets, debts, settings, positions, goals });
     const assetData = enrichAssets({
       assets,
       debts,
       settings,
-      baselineSnapshot: baseline?.snapshot || null
+      baselineSnapshot: baseline?.snapshot || null,
+      positions,
+      goals
     });
     const commitmentsResult = await supabase
       .from('patrimony_commitments')
@@ -60,6 +66,9 @@ export async function GET(request) {
     return json({
       data: {
         assets: assetData.assets,
+        positions,
+        goals,
+        reserveChecklist: reserveChecklist({ positions: positions.filter((item) => goals.find((goal) => goal.id === item.goal_id)?.kind === 'reserva_liquidez'), dailyBank: settings.daily_bank }),
         assetComposition: assetData.composition,
         reserveTargetValue: assetData.reserveTargetValue,
         debts: prioritizeDebts(debts),

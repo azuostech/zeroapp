@@ -7,6 +7,8 @@ import styles from './investments.module.css';
 import { formatBRL, formatCompactBRL } from '@/src/modules/patrimony/domain/patrimony.money';
 import { progressTone } from '@/src/modules/patrimony/domain/patrimony.calculations';
 import { TEXTS } from '../domain/investments.constants';
+import MigrateFromPatrimonyCard from './MigrateFromPatrimonyCard';
+import MentorDecisionsCard from './MentorDecisionsCard';
 
 const MONTH = new Intl.DateTimeFormat('pt-BR', { month: 'long' });
 const signedBRL = (value) => `${Number(value) >= 0 ? '+' : '−'}${formatBRL(Math.abs(Number(value || 0)))}`;
@@ -20,7 +22,7 @@ function internalHref(href, userId) {
 }
 
 export default function InvestmentsHubPage({ adminViewUserId }) {
-  const { data, loading, error } = useInvestments('/api/investments/overview', adminViewUserId);
+  const { data, loading, error, refresh } = useInvestments('/api/investments/overview', adminViewUserId);
   const [allAlerts, setAllAlerts] = useState(false);
   if (loading) return <InvestmentsShell title="Investimentos" subtitle="Todo real investido tem um emprego." adminViewUserId={adminViewUserId} backLabel="Início"><div className={styles.skeleton} /></InvestmentsShell>;
   if (error) return <InvestmentsShell title="Investimentos" adminViewUserId={adminViewUserId} backLabel="Início"><p className={styles.error}>{error}</p></InvestmentsShell>;
@@ -29,7 +31,8 @@ export default function InvestmentsHubPage({ adminViewUserId }) {
   const alerts = allAlerts ? data.alerts.all : data.alerts.top3; const planned = Number(data.contributions.planned?.total || 0); const done = Number(data.contributions.done || 0); const contributionPct = planned > 0 ? Math.round(done / planned * 100) : 0; const tone = progressTone(contributionPct);
   const addHref = buildInvestmentsHref('/carteira?new=1', adminViewUserId);
   return <InvestmentsShell title="Investimentos" subtitle="Todo real investido tem um emprego." adminViewUserId={adminViewUserId} backLabel="Início">
-    <div className={styles.migrationSlot} aria-hidden="true" />
+    <MigrateFromPatrimonyCard userId={adminViewUserId} onMigrated={refresh} />
+    {adminViewUserId ? <MentorDecisionsCard userId={adminViewUserId} /> : null}
     {!data.positionCount ? <section className={`${styles.card} ${styles.empty}`}><h2>Comece pela sua Reserva de Liquidez</h2><p>{TEXTS.whyLiquidity}</p><div className={styles.buttonRow}><Link className={styles.button} href={addHref}>Adicionar investimento</Link><Link className={`${styles.button} ${styles.secondary}`} href={buildInvestmentsHref('/importar-b3', adminViewUserId)}>Importar da B3</Link></div></section> : null}
     <section className={`${styles.card} ${styles.hero}`}>
       <div className={styles.summaryLine}><span className={styles.eyebrow}>TOTAL INVESTIDO</span><span className={styles.muted}>atualizado {updated}</span></div>

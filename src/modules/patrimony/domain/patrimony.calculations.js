@@ -58,21 +58,30 @@ export function cheaperReferenceRate(debts = [], currentDebt) {
   return rates.length ? Math.max(...rates) : null;
 }
 
-export function computeMetrics({ assets = [], debts = [], settings = {} }) {
-  const activeAssets = assets.filter((item) => !item.archived_at);
+export function computeMetrics({ assets = [], debts = [], settings = {}, positions = [], goals = [] }) {
+  const activePositions = positions.filter((item) => !item.archived_at && item.status !== 'encerrada');
+  const migratedAssetIds = new Set(activePositions.map((item) => item.migrated_from_asset_id).filter(Boolean));
+  const activeAssets = assets.filter((item) => !item.archived_at && !migratedAssetIds.has(item.id));
   const activeDebts = debts.filter((item) => !item.archived_at && item.status === 'ativa');
   const sumAssets = (filter) => roundCents(activeAssets.filter(filter).reduce((sum, item) => sum + number(item.current_value), 0));
-  const totalAssets = sumAssets(() => true); const totalDebts = roundCents(activeDebts.reduce((sum, item) => sum + number(item.current_balance), 0));
-  const reserveTotal = sumAssets((item) => item.category === 'reserva');
+  const sumPositions = (filter) => roundCents(activePositions.filter(filter).reduce((sum, item) => sum + number(item.current_value), 0));
+  const reserveGoalIds = new Set(goals.filter((item) => !item.archived_at && item.kind === 'reserva_liquidez').map((item) => item.id));
+  const positionTotal = sumPositions(() => true);
+  const totalAssets = roundCents(sumAssets(() => true) + positionTotal); const totalDebts = roundCents(activeDebts.reduce((sum, item) => sum + number(item.current_balance), 0));
+  const reserveTotal = roundCents(sumAssets((item) => item.category === 'reserva') + sumPositions((item) => reserveGoalIds.has(item.goal_id)));
+  const investmentsPositionsTotal = roundCents(positionTotal - sumPositions((item) => reserveGoalIds.has(item.goal_id)));
+  const variableIncome = new Set(['acao', 'fii', 'etf', 'bdr', 'cripto']);
   const monthlyIncome = settings.monthly_income == null ? null : number(settings.monthly_income);
   const livingCost = settings.monthly_cost_of_living == null ? null : number(settings.monthly_cost_of_living);
   const monthlyOutflow = roundCents(activeDebts.reduce((sum, item) => sum + debtMonthlyOutflow(item), 0));
   const expensive = activeDebts.filter((item) => number(item.interest_rate_monthly) > EXPENSIVE_RATE_MONTHLY);
   return {
     total_assets: totalAssets,
-    productive_assets: sumAssets((item) => ASSET_CATEGORIES[item.category]?.productive),
+    productive_assets: roundCents(sumAssets((item) => ASSET_CATEGORIES[item.category]?.productive) + positionTotal),
     reserve_total: reserveTotal,
-    investments_total: sumAssets((item) => item.category === 'investimento'),
+    investments_total: roundCents(sumAssets((item) => item.category === 'investimento') + investmentsPositionsTotal),
+    investments_positions_total: positionTotal,
+    variable_income_total: sumPositions((item) => variableIncome.has(item.asset_class)),
     goods_total: sumAssets((item) => item.category === 'bem'),
     total_debts: totalDebts, net_worth: roundCents(totalAssets - totalDebts),
     monthly_interest: roundCents(activeDebts.reduce((sum, item) => sum + debtMonthlyInterest(item), 0)),
