@@ -2532,7 +2532,7 @@ Implementado:
 
 ## Investimentos — dados de mercado (Etapa 8)
 
-- A migration `scripts/migrate-investimentos-etapa-a.sql` cria as tabelas isoladas de investimentos e mercado. Ela ainda precisa ser validada e aplicada em ambiente isolado antes de produção.
+- A migration `scripts/migrate-investimentos-etapa-a.sql` cria as tabelas isoladas de investimentos e mercado. Foi aplicada em produção em 07/11/2026 após backup completo e validação transacional.
 - Fontes verificadas em 2026-11-02:
   - BCB SGS: JSON com `data` em `dd/MM/aaaa` e `valor` string; séries 12 CDI, 11 Selic, 433 IPCA e 1 PTAX venda.
   - brapi: `results[0].regularMarketPrice` numérico e `regularMarketTime` ISO. O cron exige `BRAPI_TOKEN` e trata a ausência sem erro 500.
@@ -2586,13 +2586,15 @@ Implementado:
 
 ### Aplicação e rollback
 
-1. Faça backup e use staging. Aplique primeiro `scripts/migrate-patrimonio-2-etapa-a.sql`; valide as queries B1–B12 do prompt.
-2. Aplique `scripts/migrate-investimentos-etapa-a.sql`; valide I1–I10, configure as três variáveis e rode cada cron uma vez para backfill/verificação.
-3. Só depois promova o app. Não aplique o Bloco 2 diretamente na base ativa sem staging e aprovação operacional.
-4. Rollback do app: reverta o merge. Rollback de banco: `scripts/rollback-patrimonio-2-etapa-a.sql` para o Bloco 1; `scripts/rollback-investimentos-etapa-a.sql` para o Bloco 2. O rollback de Investimentos remove tabelas e só pode ser usado quando não houver dados reais. As claims de coins são preservadas deliberadamente.
+1. `scripts/migrate-patrimonio-2-etapa-a.sql` e `scripts/migrate-investimentos-etapa-a.sql` já estão aplicados em produção. Não reaplique sem novo preflight.
+2. Em 07/11/2026, antes da migration de Investimentos, foi gerado o backup `backups/backup_zeroapp_20261107_064935.sql`, com 3.457.002 bytes e SHA-256 `7e9bad28cdbe4bc71e182e1c94162e3a8e0eba97a8bfdf677ef91b164b3323be`; a cópia local está com permissão `600` e ignorada pelo Git.
+3. O ambiente possui default grants amplos. Por isso a migration agora revoga `ALL` também de `authenticated` antes de conceder o conjunto mínimo. Em produção a correção foi aplicada imediatamente, antes de qualquer linha ser criada, e os grants foram conferidos tabela por tabela.
+4. I1–I10 passaram em produção dentro de transações individuais com `ROLLBACK`. A conferência final mostrou zero linhas nas nove tabelas novas, zero resíduos de QA e contagens inalteradas no Patrimônio (2 settings, 2 marcos e 4 compromissos).
+5. Antes de promover o app, configure as três variáveis e rode cada cron uma vez para backfill/verificação. Faça a liberação inicial de Investimentos de forma controlada.
+6. Rollback do app: reverta o merge. Rollback de banco: `scripts/rollback-patrimonio-2-etapa-a.sql` para o Bloco 1; `scripts/rollback-investimentos-etapa-a.sql` para o Bloco 2. O rollback de Investimentos remove tabelas e só pode ser usado quando não houver dados reais. As claims de coins são preservadas deliberadamente.
 
 ### Pendências e limites
 
-- QA autenticado Q1–Q13, aplicação da migration de Investimentos, crons manuais e testes de staging ainda dependem de ambiente isolado. Nesta branch foram executados somente testes/build locais; nenhuma leitura ou escrita foi feita na base ativa durante as Etapas 17–20.
+- QA autenticado de interface Q1–Q13, crons manuais e backfill ainda estão pendentes. A migration e os testes SQL I1–I10 já foram concluídos em produção; os testes SQL usaram `ROLLBACK` e não deixaram dados.
 - A auditoria npm em 07/11/2026 reportou vulnerabilidades no stack (incluindo Next.js). Na árvore do `exceljs`, `brace-expansion` foi fixado no lockfile em 1.1.21; permanece a vulnerabilidade moderada de `uuid` 8.x, em funções que esta rota não usa. A rota do ZeroApp usa somente leitura de XLSX, limitada a 5 MB. Não foi executado `npm audit fix`, pois as demais correções sugeridas incluem mudanças potencialmente incompatíveis; tratar em atualização de dependências separada antes da promoção.
 - Cripto e COE usam cadastro manual em “Outro”; não há tela especializada. IR, come-cotas, taxas, suitability, recomendação, Open Finance e integração direta com corretoras estão fora do escopo.

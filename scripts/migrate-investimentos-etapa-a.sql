@@ -322,6 +322,9 @@ CREATE POLICY market_index_series_read ON public.market_index_series FOR SELECT 
 REVOKE ALL ON public.investment_goals, public.investment_positions, public.investment_movements,
   public.investment_policies, public.investment_import_batches, public.investment_coin_claims,
   public.investment_monthly_values, public.market_quotes, public.market_index_series FROM anon;
+REVOKE ALL ON public.investment_goals, public.investment_positions, public.investment_movements,
+  public.investment_policies, public.investment_import_batches, public.investment_coin_claims,
+  public.investment_monthly_values, public.market_quotes, public.market_index_series FROM authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.investment_goals, public.investment_positions TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.investment_movements TO authenticated;
 GRANT SELECT, INSERT ON public.investment_policies, public.investment_import_batches TO authenticated;
