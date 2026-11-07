@@ -33,6 +33,11 @@ export const ALERTS_ON_HUB = 3;
 export const FGC_LIMIT_DEFAULT = 250000;
 export const MIN_CONTRIBUTION_FOR_COINS = 50;
 export const INVESTMENT_COINS = { first: 100, month: 20, reserveLevel: 50 };
+export const B3_STEPS = [
+  'Entre na Área do Investidor da B3 com seu CPF.',
+  'Abra a área de posição e escolha a data mais recente.',
+  'Baixe o arquivo em Excel (.xlsx) e envie aqui.'
+];
 export const DEFAULT_POLICY_RULES = [
   { type: 'reserve_months_target', params: { months: 6 }, enabled: true },
   { type: 'variable_income_after_reserve', params: {}, enabled: true },

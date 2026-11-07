@@ -33,7 +33,7 @@ export default function InvestmentsHubPage({ adminViewUserId }) {
   return <InvestmentsShell title="Investimentos" subtitle="Todo real investido tem um emprego." adminViewUserId={adminViewUserId} backLabel="Início">
     <MigrateFromPatrimonyCard userId={adminViewUserId} onMigrated={refresh} />
     {adminViewUserId ? <MentorDecisionsCard userId={adminViewUserId} /> : null}
-    {!data.positionCount ? <section className={`${styles.card} ${styles.empty}`}><h2>Comece pela sua Reserva de Liquidez</h2><p>{TEXTS.whyLiquidity}</p><div className={styles.buttonRow}><Link className={styles.button} href={addHref}>Adicionar investimento</Link><Link className={`${styles.button} ${styles.secondary}`} href={buildInvestmentsHref('/importar-b3', adminViewUserId)}>Importar da B3</Link></div></section> : null}
+    {!data.positionCount ? <section className={`${styles.card} ${styles.empty}`}><h2>Comece pela sua Reserva de Liquidez</h2><p>{TEXTS.whyLiquidity}</p><div className={styles.buttonRow}><Link className={styles.button} href={addHref}>Adicionar investimento</Link><Link className={`${styles.button} ${styles.secondary}`} href={buildInvestmentsHref('/importar', adminViewUserId)}>Importar da B3</Link></div></section> : null}
     <section className={`${styles.card} ${styles.hero}`}>
       <div className={styles.summaryLine}><span className={styles.eyebrow}>TOTAL INVESTIDO</span><span className={styles.muted}>atualizado {updated}</span></div>
       <div className={`${styles.money} ${styles.big}`}>{formatBRL(data.total)}</div>

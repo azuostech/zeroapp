@@ -2548,7 +2548,7 @@ Implementado:
 - O Bloco 1 estende Patrimônio com autoria, marcos do aluno, plano de ação e snapshots mensais em `scripts/migrate-patrimonio-2-etapa-a.sql`. O Bloco 2 fica em `scripts/migrate-investimentos-etapa-a.sql` e cria `investment_goals`, `investment_positions`, `investment_movements`, `investment_policies`, `investment_import_batches`, `investment_coin_claims`, `investment_monthly_values`, `market_quotes` e `market_index_series`.
 - Todas as tabelas novas têm RLS. Alunos autenticados acessam apenas as próprias linhas e somente quando `patrimony_has_access()` permite (tiers MOVIMENTO, ACELERACAO e AUTOGOVERNO). Admins usam políticas próprias e a atuação em nome do aluno fica auditada. `investment_coin_claims` é exclusivamente service role; cotações e índices são leitura global para usuários autenticados.
 - Posições, movimentos, política e ações guardam autoria. A política é imutável: cada edição insere uma nova versão; o trigger define versão, data e papel do autor. Aluno não pode sobrescrever a palavra do mentor.
-- O dashboard do mentor espelha hub, carteira, detalhe, reserva, política e calendário em `/admin/users/[id]/investimentos/**`. A importação B3 e sua rota admin permanecem bloqueadas até existir o fixture real exigido abaixo.
+- O dashboard do mentor espelha hub, carteira, detalhe, reserva, política, calendário e importação B3 em `/admin/users/[id]/investimentos/**`.
 
 ### Fontes, atualização e configuração
 
@@ -2577,6 +2577,13 @@ Implementado:
 - O índice único de `migrated_from_asset_id`, a validação de propriedade e o rollback compensatório evitam duplicidade. Nunca executar migração em lote automaticamente.
 - Novos ativos financeiros não são mais criados em Patrimônio; itens antigos continuam editáveis até a migração. A tela de ativos mostra posições sincronizadas por objetivo.
 
+### Importação da B3
+
+- O fixture real e anonimizado fica em `src/modules/investments/domain/__fixtures__/b3-posicao-exemplo.xlsx`. As abas encontradas são `Acoes`, `BDR`, `Fundo de Investimento`, `Renda Fixa` e `Tesouro Direto`; as contas da cópia versionada foram substituídas por zeros sem alterar abas ou cabeçalhos.
+- `investments.b3.js` encontra cabeçalhos pelo texto normalizado, ignora totais e concilia por ticker, código ISIN do Tesouro ou instituição/produto/vencimento da renda fixa. O fixture produz 6 posições úteis.
+- `POST /api/investments/import/preview` aceita somente `.xlsx` de até 5 MB, processa em memória com `exceljs` e não persiste o arquivo. `POST /api/investments/import/commit` recebe novamente os itens confirmados, grava o lote, posições e movimentos `b3_import`, e tenta revalorizar sem transformar uma falha de cotação em falha da importação.
+- Itens importados não recebem `investment_month`; apenas `investment_first` pode ser concedido quando não existia posição anterior. A UI exige objetivo nos itens novos e decisão explícita nos itens `CONFIRMAR`.
+
 ### Aplicação e rollback
 
 1. Faça backup e use staging. Aplique primeiro `scripts/migrate-patrimonio-2-etapa-a.sql`; valide as queries B1–B12 do prompt.
@@ -2586,6 +2593,6 @@ Implementado:
 
 ### Pendências e limites
 
-- A importação da B3 está bloqueada. Falta `src/modules/investments/domain/__fixtures__/b3-posicao-exemplo.xlsx`, exportado da Área do Investidor com abas e cabeçalhos reais e dados anonimizados. Não implementar parser por adivinhação.
 - QA autenticado Q1–Q13, aplicação da migration de Investimentos, crons manuais e testes de staging ainda dependem de ambiente isolado. Nesta branch foram executados somente testes/build locais; nenhuma leitura ou escrita foi feita na base ativa durante as Etapas 17–20.
+- A auditoria npm em 07/11/2026 reportou vulnerabilidades no stack (incluindo Next.js). Na árvore do `exceljs`, `brace-expansion` foi fixado no lockfile em 1.1.21; permanece a vulnerabilidade moderada de `uuid` 8.x, em funções que esta rota não usa. A rota do ZeroApp usa somente leitura de XLSX, limitada a 5 MB. Não foi executado `npm audit fix`, pois as demais correções sugeridas incluem mudanças potencialmente incompatíveis; tratar em atualização de dependências separada antes da promoção.
 - Cripto e COE usam cadastro manual em “Outro”; não há tela especializada. IR, come-cotas, taxas, suitability, recomendação, Open Finance e integração direta com corretoras estão fora do escopo.
