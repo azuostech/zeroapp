@@ -2593,6 +2593,8 @@ Implementado:
 5. Antes de promover o app, configure as três variáveis e rode cada cron uma vez para backfill/verificação. Faça a liberação inicial de Investimentos de forma controlada.
 6. Rollback do app: reverta o merge. Rollback de banco: `scripts/rollback-patrimonio-2-etapa-a.sql` para o Bloco 1; `scripts/rollback-investimentos-etapa-a.sql` para o Bloco 2. O rollback de Investimentos remove tabelas e só pode ser usado quando não houver dados reais. As claims de coins são preservadas deliberadamente.
 
+`NEXT_PUBLIC_FEATURE_INVESTMENTS` controla a liberação aos alunos e fica desligada por padrão. Com a flag ausente ou diferente de `true`, o card não aparece na Home, páginas de aluno redirecionam para `/app` e APIs de aluno respondem `404 feature_disabled`; administradores continuam acessando as rotas do mentor para QA.
+
 ### Pendências e limites
 
 - QA autenticado de interface Q1–Q13, crons manuais e backfill ainda estão pendentes. A migration e os testes SQL I1–I10 já foram concluídos em produção; os testes SQL usaram `ROLLBACK` e não deixaram dados.

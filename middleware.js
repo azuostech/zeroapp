@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
-import { SHAMAR_ENABLED } from '@/src/lib/features';
+import { INVESTMENTS_ENABLED, SHAMAR_ENABLED } from '@/src/lib/features';
 import { hasDiagnosticAccess, hasStudentAccess } from '@/src/modules/profile/domain/access';
 
 const ROOT_PATH = '/';
@@ -152,6 +152,13 @@ export async function middleware(request) {
   // still used by a few content features and must never redirect a student to
   // the administration area or grant access to admin routes.
   const isAdmin = profile.role === 'admin';
+
+  // Liberação controlada: alunos não acessam Investimentos até a flag pública
+  // ser ativada. Admin continua com acesso para QA pelas rotas do mentor.
+  if (!INVESTMENTS_ENABLED && !isAdmin) {
+    if (isInvestmentsApi) return jsonError('feature_disabled', 404);
+    if (isInvestmentsArea) return redirect(request, '/app');
+  }
 
   if (isAdminArea && !isAdmin) {
     return redirect(request, '/app');
